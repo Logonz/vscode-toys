@@ -7,29 +7,56 @@ import { activateDotRepeat } from "./dot-repeat/main";
 import { activateDoubleAction } from "./double-action/main";
 import { activateJump } from "./jump/main";
 import { activateGit } from "./git/main";
+import { activateCopyHighlight } from "./copy-highlight/main";
 
 try {
- require("./debug");
+  require("./debug");
 } catch (e) {
   console.log("Error importing debug.ts");
 }
 
-let activateFunctions: {
+let vsToys: {
   name: string;
-  activator: (context: vscode.ExtensionContext) => void;
+  moduleContext: string;
+  activator: (name: string, context: vscode.ExtensionContext) => void;
+  deactivator: () => void;
 }[] = [
-  { name: "Double Action", activator: activateDoubleAction },
-  { name: "Dot Repeat", activator: activateDotRepeat },
-  { name: "Smart Open", activator: activateSmartOpen },
-  { name: "Jump", activator: activateJump },
-  { name: "Git", activator: activateGit },
-];
-let deactivateFunctions: { name: string; deactivator: () => void }[] = [
-  { name: "Double Action", deactivator: () => {} },
-  { name: "Dot Repeat", deactivator: () => {} },
-  { name: "Smart Open", deactivator: () => {} },
-  { name: "Jump", deactivator: () => {} },
-  { name: "Git", deactivator: () => {} },
+  {
+    name: "Copy Highlight",
+    moduleContext: "copy-highlight",
+    activator: activateCopyHighlight,
+    deactivator: () => {},
+  },
+  {
+    name: "Dot Repeat",
+    moduleContext: "dot-repeat",
+    activator: activateDotRepeat,
+    deactivator: () => {},
+  },
+  {
+    name: "Double Action",
+    moduleContext: "double-action",
+    activator: activateDoubleAction,
+    deactivator: () => {},
+  },
+  {
+    name: "Git",
+    moduleContext: "git",
+    activator: activateGit,
+    deactivator: () => {},
+  },
+  {
+    name: "Jump",
+    moduleContext: "jump",
+    activator: activateJump,
+    deactivator: () => {},
+  },
+  {
+    name: "Smart Open",
+    moduleContext: "smart-open",
+    activator: activateSmartOpen,
+    deactivator: () => {},
+  },
 ];
 
 let DAcontext: vscode.ExtensionContext;
@@ -54,35 +81,31 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Set a context to indicate that the extension is installed
   // To be used when binding commands to the extension
-  vscode.commands.executeCommand("setContext", "VSToysInstalled", true);
-  printChannelOutput("VSToysInstalled context set to true");
+  vscode.commands.executeCommand("setContext", "vstoys.installed", true);
+  printChannelOutput("vstoys.installed context set to true");
 
-  // activateDoubleAction(context);
-
-  // activateDotRepeat(context);
-
-  // activateSmartOpen(context);
-
-  // activateJump(context);
-
-  // activateGit(context);
-
-  activateFunctions.forEach((func) => {
-    printChannelOutput(`---> Loading Module: ${func.name}`);
-    console.log(`---> Loading Module: ${func.name}`);
-    func.activator(context);
+  vsToys.forEach((toy) => {
+    const fullContext = `vstoys.${toy.moduleContext}.active`;
+    // TODO: Check if the "toy" should be enabled or not
+    printChannelOutput(`---> Loading Module: ${toy.name}, Activating Context: ${fullContext}`);
+    console.log(`---> Loading Module: ${toy.name}, Activating Context: ${fullContext}`);
+    vscode.commands.executeCommand("setContext", fullContext, true);
+    toy.activator(toy.name, context);
   });
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() { 
+export function deactivate() {
   // Set a context to indicate that the extension is not installed
-  vscode.commands.executeCommand("setContext", "VSToysInstalled", false);
-  printChannelOutput("VSToysInstalled context set to false");
-  deactivateFunctions.forEach((func) => {
-    printChannelOutput(`---> Loading Module: ${func.name}`);
-    console.log(`---> Loading Module: ${func.name}`);
-    func.deactivator();
+  vscode.commands.executeCommand("setContext", "vstoys.installed", false);
+  printChannelOutput("vstoys.installed context set to false");
+
+  vsToys.forEach((toy) => {
+    const fullContext = `vstoys.${toy.moduleContext}.active`;
+    printChannelOutput(`---> Loading Module: ${toy.name}, Deactivating Context: ${fullContext}`);
+    console.log(`---> Loading Module: ${toy.name}, Deactivating Context: ${fullContext}`);
+    vscode.commands.executeCommand("setContext", fullContext, false);
+    toy.deactivator();
   });
 }
 
@@ -99,5 +122,5 @@ export function createOutputChannel(name: string): (content: string, reveal?: bo
     if (reveal) {
       outputChan.show(true);
     }
-  }
+  };
 }

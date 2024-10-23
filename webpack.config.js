@@ -3,7 +3,7 @@
 "use strict";
 
 const path = require("path");
-const CopyWebpackPlugin = require("copy-webpack-plugin");
+// const CopyWebpackPlugin = require("copy-webpack-plugin");
 const webpack = require("webpack");
 const homedir = require("os").homedir();
 const packageJSON = require("./package.json");
@@ -15,12 +15,14 @@ const extensionDir = path.join(
 
 console.log("Node Env: ", process.env.NODE_ENV);
 
+// TODO: This is a bit of a work in progress with the injections...
 console.log("Starting to inject package.json files");
 const fs = require("fs");
 const JSONC = require("jsonc").jsonc;
 // Read the main package.json
-let packageJson = JSONC.parse(fs.readFileSync("package.json", "utf8"));
+let packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 // Clear out configurations, keybinds and commands
+packageJson.tags = {};
 packageJson.contributes.commands = [];
 packageJson.contributes.configuration.properties = {};
 packageJson.contributes.keybindings = [];
@@ -40,7 +42,7 @@ for (const file of injectFiles) {
   fs.writeFileSync("package.json", JSON.stringify(merged, null, 2));
 
   // Read the main package.json
-  packageJson = JSONC.parse(fs.readFileSync("package.json", "utf8"));
+  packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 }
 
 //@ts-check

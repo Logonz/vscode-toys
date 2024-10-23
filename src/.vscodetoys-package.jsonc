@@ -8,7 +8,7 @@
         // Insert your configuration properties here
         "vstoys.enabled": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Global enable/disable for the VSCode Toys"
         }
       }

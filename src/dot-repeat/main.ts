@@ -25,13 +25,13 @@ export interface RepeatExit {
 export let printDotRepeatOutput: (content: string, reveal?: boolean) => void;
 
 
-export function activateDotRepeat(context: vscode.ExtensionContext) {
-  printDotRepeatOutput = createOutputChannel("Dot Repeat");
-  printDotRepeatOutput("Dot Repeat activating");
+export function activateDotRepeat(name: string, context: vscode.ExtensionContext) {
+  printDotRepeatOutput = createOutputChannel(name);
+  printDotRepeatOutput(`${name} activating`);
   
   let anyContextActive = false;
   const activeContexts: Map<string, ActionContext> = new Map();
-  const globalContextId = "da-global-context-active";
+  const globalContextId = "vstoys.dot-repeat.global";
   
   function createContext(contextId: string, timeoutSeconds: number = 3) {
     // Create the context
@@ -58,13 +58,11 @@ export function activateDotRepeat(context: vscode.ExtensionContext) {
     });
     if (!anyContextActive) {
       printDotRepeatOutput(
-        "  Deactivating global context (da-global-context-active)",
-        true
+        "  Deactivating global context (vstoys.dot-repeat.global)",
       );
       vscode.commands.executeCommand(
         "setContext",
-        "da-global-context-active",
-        false
+        "vstoys.dot-repeat.global",
       );
     }
   }
@@ -128,5 +126,5 @@ export function activateDotRepeat(context: vscode.ExtensionContext) {
       }
     )
   );
-  printDotRepeatOutput("Dot Repeat activated", false);
+  printDotRepeatOutput(`${name} activated`, false);
 }

@@ -11,6 +11,11 @@
     "configuration": {
       "properties": {
         // Insert your configuration properties here
+        "vstoys.double-action.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Double Action module in VSCode Toys"
+        },
         "vstoys.double-action.timeoutPress": {
           "type": "boolean",
           "default": false,
@@ -44,7 +49,7 @@
         "command": "vstoys.double-action.execute",
         "key": "f21",
         "mac": "f21",
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && vstoys.double-action.active"
       }
     ]
   }

@@ -13,9 +13,9 @@ import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelServ
  */
 export let printJumpOutput: (content: string, reveal?: boolean) => void;
 
-export function activateSmartOpen(context: vscode.ExtensionContext) {
-  printJumpOutput = createOutputChannel("Smart Open");
-  printJumpOutput("Smart Oopen activating");
+export function activateSmartOpen(name: string, context: vscode.ExtensionContext) {
+  printJumpOutput = createOutputChannel(`${name}`);
+  printJumpOutput(`${name} activating`);
   InitializeFind(context);
 
   context.subscriptions.push(
@@ -32,5 +32,5 @@ export function activateSmartOpen(context: vscode.ExtensionContext) {
     })
   );
 
-  printJumpOutput("Smart Open activated", false);
+  printJumpOutput(`${name} activated`, false);
 }
