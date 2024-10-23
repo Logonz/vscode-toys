@@ -12,9 +12,14 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
-icon.png
+*.png
+*.jpg
+*.jpeg
+*.pdn
 
 *.ts-backup
 *.txt
 *.stackdump
 material-icons.json
+
+!icon.jpg
