@@ -1,97 +1,85 @@
-# Double Action - VS Code Extension
+# VsToys - Visual Studio Code Utilities
 
-The **Double Action** extension allows you to bind a single key to two different commands based on whether the key is pressed once or twice within a configurable time window. Additionally, it introduces a **timeout mode**, allowing more control over how and when the single press action is executed.
+**VsToys** is a collection of utilities designed to enhance your productivity in Visual Studio Code. It provides multiple features, including customizable keybindings for single and double actions, smarter file navigation, Git enhancements, and more. With VsToys, you can streamline repetitive tasks, boost efficiency, and make working with your codebase smoother.
 
-## Features
+## Key Features
 
+### Double Action
 - **Single Press Command**: Executes a configurable command when the key is pressed once.
 - **Double Press Command**: Executes a different command if the key is pressed twice within a threshold time (double-press).
 - **Pre Double Press Command**: Optionally execute a command before the double press command (e.g., to exit from a previous state or clear the selection).
-- **Timeout Mode**: Control the behavior of the single press. When **timeout mode** is enabled, the single press command waits until the double press threshold has passed before executing, ensuring that no double press has occurred.
-- **Customizable Threshold**: Set the threshold time (in milliseconds) within which a second key press is considered a double press.
+- **Timeout Mode**: Control the behavior of the single press. When enabled, the single press waits for the double press threshold to pass before executing, ensuring no double press has occurred.
+
+### Dot Repeat
+- **Repeat Last Action**: Execute repeated actions based on a previous command, making it easier to repeat selections or movements.
+- **Timeout for Actions**: Actions will timeout after a set period unless triggered, giving you the flexibility to chain or exit commands.
+
+### Smart Open
+- **Fuzzy Search**: Quickly find and open files in your workspace based on a smart fuzzy search algorithm.
+- **Customizable Labels**: Use custom patterns to define how files should be labeled in search results, allowing for easier file identification.
+- **Quick Navigation**: Jump to frequently accessed files, leveraging metadata like recency and frequency.
+
+### Git Enhancements
+- **Stage File**: Easily stage files from your current working directory.
+- **Stage Hunk**: Stage individual hunks at the current selection point, offering fine-grained control over staging.
 
 ## Commands
 
-- **Double Action: Execute** (`double-action.execute`): The main command that triggers single or double actions based on the key press timing.
-
-## Default Keybinding
-
-The default keybinding for the `execute` command is:
-
-- **F21**: You can configure the keybinding in your `keybindings.json` file if needed.
-
-### Example Keybinding
-
-```json
-{
-  "command": "double-action.execute",
-  "key": "f21",
-  "mac": "f21",
-  "when": "editorTextFocus"
-}
-```
+| Command                                | Description                                                            | Default Keybinding |
+|----------------------------------------|------------------------------------------------------------------------|--------------------|
+| `vstoys.double-action.execute`         | Execute single or double press actions based on timing.                 | `f21`              |
+| `vstoys.dot-repeat.repeatExecute`      | Execute a repeated action, useful for actions like expand selections.   | `alt+a`            |
+| `vstoys.dot-repeat.repeatExit`         | Exit repeat mode and deactivate contexts.                               | `escape`           |
+| `vstoys.smart-open.openSmart`          | Smart fuzzy search for quickly opening files in your workspace.         | *Not assigned*     |
+| `vstoys.git.stageFile`                 | Stage the current file in Git.                                          | *Not assigned*     |
+| `vstoys.git.stageHunk`                 | Stage the current hunk at the current selection point in Git.           | *Not assigned*     |
 
 ## Configuration Options
 
-This extension exposes several configuration options under the `double-action` namespace:
+This extension exposes several configuration options under the `vstoys` namespace:
 
-| Setting                           | Type    | Default                       | Description |
-|------------------------------------|---------|-------------------------------|-------------|
-| `double-action.timeoutPress`       | boolean | `false`                       | If `true`, the single press command will wait for the double press threshold to pass before executing. This ensures the single press action is only executed if no double press occurs. |
-| `double-action.singlePressCommand` | string  | `findJump.activate`            | The command to execute on a single key press. |
-| `double-action.preDoublePressCommand` | string | `findJump.activateWithSelection` | Command to execute before the double press action, useful for clearing previous states. Set to an empty string if not needed. |
-| `double-action.doublePressCommand` | string  | `findJump.activateWithSelection`| The command to execute on a double key press. |
-| `double-action.doublePressThreshold`| number | 800                           | The time in milliseconds to consider a key double pressed. After this time, it resets the internal state. |
+### Double Action Settings
+| Setting                                     | Type    | Default                                   | Description |
+|---------------------------------------------|---------|-------------------------------------------|-------------|
+| `double-action.timeoutPress`                | boolean | `false`                                   | Wait for double press before executing single press command. |
+| `double-action.singlePressCommand`          | string  | `findJump.activate`                       | Command to execute on single key press. |
+| `double-action.preDoublePressCommand`       | string  | `findJump.activateWithSelection`          | Command to execute before double press, useful for clearing states. |
+| `double-action.doublePressCommand`          | string  | `findJump.activateWithSelection`          | Command to execute on double key press. |
+| `double-action.doublePressThreshold`        | number  | 800                                       | Time window (ms) for detecting a double press. |
 
-To change these settings, open your settings JSON file (or use the GUI) and add or modify the relevant configuration:
+### Smart Open Settings
+| Setting                             | Type    | Default         | Description |
+|-------------------------------------|---------|-----------------|-------------|
+| `vstoys.smart-open.enabled`         | boolean | `true`          | Enable Smart Open feature. |
 
-```json
-{
-  "double-action.timeoutPress": true,
-  "double-action.singlePressCommand": "your.singlePressCommand",
-  "double-action.preDoublePressCommand": "",
-  "double-action.doublePressCommand": "your.doublePressCommand",
-  "double-action.doublePressThreshold": 800
-}
-```
+### Dot Repeat Settings
+| Setting                             | Type    | Default         | Description |
+|-------------------------------------|---------|-----------------|-------------|
+| `vstoys.dot-repeat.enabled`         | boolean | `true`          | Enable Dot Repeat feature. |
 
-## Timeout Mode
+## Timeout Mode (Double Action)
 
-If you enable **timeout mode** by setting `double-action.timeoutPress` to `true`, the behavior of the extension changes:
-
-- The **single press command** will not execute immediately but will wait for the double press threshold to pass. If no second press is detected, the single press command will be executed.
-- The **double press command** will execute immediately on detection of a double press.
-
-This mode is useful when you want to avoid triggering the single press command before confirming if the user intends to double press.
-
-## Usage
-
-1. Install the extension from the VS Code marketplace or by using a `.vsix` package.
-2. Configure the commands for single press, pre-double press, and double press actions in the settings.
-3. Use the default keybinding (`F21`) or configure your own keybinding.
-4. Press the key once for the single press action or twice quickly for the double press action.
-5. Optionally enable **timeout mode** for additional control over single and double press behavior.
+By setting `double-action.timeoutPress` to `true`, you can enable **timeout mode**, where the single press command only executes after confirming no double press has occurred. This prevents the single press action from triggering before the time threshold for double press has passed.
 
 ## Installation
 
-You can install this extension in two ways:
+You can install VsToys from the VSCode marketplace or by manually installing a `.vsix` package:
+```bash
+code --install-extension vscode-toys.vsix
+```
 
-1. **Marketplace**: Search for "Double Action" in the VSCode Extensions Marketplace and click "Install".
-2. **Manual Installation**: Use the following command to install the extension from a `.vsix` file:
-    ```bash
-    code --install-extension vscode-double-action.vsix
-    ```
+## Contribution
+
+Contributions to VsToys are welcome! If you have ideas, improvements, or bug reports, feel free to open an issue or submit a pull request on [GitHub](https://github.com/Logonz/vscode-toys/issues).
 
 ## Development
 
-To build and develop this extension locally, you can use the following scripts:
+To develop VsToys locally:
 
-- `npm run compile`: Compiles the TypeScript source.
-- `npm run watch`: Watches for changes and recompiles the source automatically.
-- `npm run test`: Runs tests using the VS Code Test Runner.
+1. Clone the repository.
+2. Install dependencies using `npm install`.
+3. Use `npm run watch` to watch for changes and recompile automatically.
 
-## Issues & Contributions
+## License
 
-If you find a bug or want to suggest a feature, please open an issue on [GitHub](https://github.com/Logonz/vscode-double-action/issues).
-
-Contributions are welcome! Feel free to fork the repository and submit a pull request.
+VsToys is licensed under the MIT License. See [LICENSE](https://github.com/Logonz/vscode-toys/blob/main/LICENSE) for more details.
