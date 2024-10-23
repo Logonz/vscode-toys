@@ -9,6 +9,10 @@
   "engines": {
     "vscode": "^1.89.1"
   },
+  "tags": [
+    "dot-repeat",
+    "motion"
+  ],
   "categories": [
     "Other",
     "Keymaps"
@@ -46,14 +50,18 @@
       {
         "command": "vstoys.dot-repeat.repeatExit",
         "title": "VsToys - DotRepeat: repeatExit"
+      },
+      {
+        "command": "vstoys.copy-highlight.copy",
+        "title": "VsToys - Copy Highlight: Copy"
       }
     ],
     "configuration": {
-      "title": "Visual Studio Code Toys - Configuration",
+      "title": "VsToys - Configuration",
       "properties": {
         "vstoys.enabled": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Global enable/disable for the VSCode Toys"
         },
         "vstoys.smart-open.enabled": {
@@ -61,10 +69,20 @@
           "default": true,
           "description": "Enable the Smart Open module in VSCode Toys"
         },
+        "vstoys.jump.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Jump module in VSCode Toys"
+        },
         "vstoys.git.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable the Git module in VSCode Toys"
+        },
+        "vstoys.double-action.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Double Action module in VSCode Toys"
         },
         "vstoys.double-action.timeoutPress": {
           "type": "boolean",
@@ -95,24 +113,49 @@
           "type": "boolean",
           "default": true,
           "description": "Enable the Dot-Repeat module in VSCode Toys"
+        },
+        "vstoys.copy-highlight.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Copy Highlight module in VSCode Toys"
+        },
+        "vstoys.copy-highlight.foregroundColor": {
+          "type": "string",
+          "description": "Foreground color for the copy highlighting"
+        },
+        "vstoys.copy-highlight.backgroundColor": {
+          "type": "string",
+          "default": "editor.wordHighlightBackground",
+          "description": "Background color for the copy highlighting\nFor more information about color check out https://code.visualstudio.com/api/references/theme-color for more available colors\nrgba(R, G, B, A) is also supported"
+        },
+        "vstoys.copy-highlight.timeout": {
+          "type": "number",
+          "default": 100,
+          "description": "Timeout duration in milliseconds"
         }
       }
     },
     "keybindings": [
       {
+        "command": "vstoys.smart-open.openSmart",
+        "key": "ctrl+p",
+        "mac": "ctrl+p",
+        "when": "vstoys.smart-open.active"
+      },
+      {
         "command": "vstoys.double-action.execute",
         "key": "f21",
         "mac": "f21",
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && vstoys.double-action.active"
       },
       {
         "command": "vstoys.dot-repeat.repeatExit",
         "key": "escape",
         "mac": "escape",
         "args": {
-          "contextId": "da-smart-select-repeat"
+          "deactivateAll": true
         },
-        "when": "da-smart-select-repeat == true"
+        "when": "vstoys.dot-repeat.global"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
@@ -122,7 +165,16 @@
           "contextId": "da-smart-select-repeat",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && vstoys.dot-repeat.active"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExit",
+        "key": "escape",
+        "mac": "escape",
+        "args": {
+          "contextId": "da-smart-select-repeat"
+        },
+        "when": "da-smart-select-repeat"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
@@ -132,7 +184,7 @@
           "contextId": "da-smart-select-repeat",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus && da-smart-select-repeat == true"
+        "when": "editorTextFocus && da-smart-select-repeat"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
@@ -142,7 +194,33 @@
           "contextId": "da-smart-select-repeat",
           "command": "editor.action.smartSelect.shrink"
         },
-        "when": "editorTextFocus && da-smart-select-repeat == true"
+        "when": "editorTextFocus && da-smart-select-repeat"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "a",
+        "mac": "a",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.expand"
+        },
+        "when": "editorTextFocus && da-smart-select-repeat"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "shift+a",
+        "mac": "shift+a",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.shrink"
+        },
+        "when": "editorTextFocus && da-smart-select-repeat"
+      },
+      {
+        "command": "vstoys.copy-highlight.copy",
+        "key": "ctrl+c",
+        "mac": "cmd+c",
+        "when": "editorTextFocus && vstoys.copy-highlight.active"
       }
     ]
   },

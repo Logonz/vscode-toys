@@ -1,12 +1,7 @@
 import * as vscode from "vscode";
 import { execSync } from "child_process";
-import * as fs from "fs";
-import * as tmp from "tmp";
-import parseDiff from "parse-diff";
 import { createOutputChannel } from "../extension"; // Ensure this is correctly implemented
-import deindent from "deindent"; // If not used, consider removing
 import path from "path";
-import { CustomEditorLabelService, ICustomEditorLabelPatterns } from '../helpers/customEditorLabelService';
 import { RegisterGitStageHunk } from "./stagehunk";
 import { RegisterGitStageFile } from "./stagefile";
 
@@ -18,28 +13,17 @@ import { RegisterGitStageFile } from "./stagefile";
  */
 export let printGitOutput: (content: string, reveal?: boolean) => void;
 
-export function activateGit(context: vscode.ExtensionContext) {
-  printGitOutput = createOutputChannel("Git");
-  console.log("Git extension activated.");
+export function activateGit(name: string, context: vscode.ExtensionContext) {
+  printGitOutput = createOutputChannel(`${name}`);
+  console.log(`${name} extension activated.`);
 
   context.subscriptions.push(
     RegisterGitStageHunk(),
     RegisterGitStageFile(),
   );
 
-  // console.log("\n\n\n\n");
-  // console.log(vscode.workspace.getConfiguration("workbench").get("editor.customLabels"));
-  // const customLabelsEnabled: boolean | undefined = vscode.workspace.getConfiguration("workbench").get("editor.customLabels.enabled");
-  // const customLabelsPatterns: ICustomEditorLabelPatterns | undefined = vscode.workspace.getConfiguration("workbench").get("editor.customLabels.patterns");
-  // console.log(customLabelsEnabled);
-  // console.log(customLabelsPatterns);
-
-  // // Create an instance of the service
-  // if (customLabelsEnabled && customLabelsPatterns) {
-  //   // console.log(labelService.getName("src/git/main.ts"));
-  //   console.log(labelService.getName(vscode.window.activeTextEditor?.document.uri!));
-  // }
 }
+
 function decoratorTest() {
   let beforeDecoration: vscode.ThemableDecorationAttachmentRenderOptions = {
     contentText: "HTML",

@@ -19,6 +19,12 @@
     },
     "keybindings": [
       // Insert your keybindings here
+      {
+        "command": "vstoys.smart-open.openSmart",
+        "key": "ctrl+p",
+        "mac": "ctrl+p",
+        "when": "vstoys.smart-open.active"
+      }
     ]
   }
 }

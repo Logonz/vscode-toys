@@ -6,6 +6,11 @@
     "configuration": {
       "properties": {
         // Insert your configuration properties here
+        "vstoys.jump.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Jump module in VSCode Toys"
+        }
       }
     },
     "keybindings": [

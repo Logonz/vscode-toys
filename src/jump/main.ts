@@ -9,9 +9,9 @@ import { createOutputChannel } from "../extension";
  */
 export let printJumpOutput: (content: string, reveal?: boolean) => void;
 
-export function activateJump(context: vscode.ExtensionContext) {
-  printJumpOutput = createOutputChannel("Jump");
-  printJumpOutput("Jump activated");
+export function activateJump(name: string, context: vscode.ExtensionContext) {
+  printJumpOutput = createOutputChannel(`${name}`);
+  printJumpOutput(`${name} activated`);
 
   // Get the current visible text editors from all groups
   // let visibleTextEditors = vscode.window.visibleTextEditors;

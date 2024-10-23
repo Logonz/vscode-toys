@@ -3,6 +3,8 @@
 import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
 
+const ConfigSpace = "vstoys.double-action";
+
 /**
  * Prints the given content on the output channel.
  *
@@ -11,12 +13,13 @@ import { createOutputChannel } from "../extension";
  */
 let printDoubleActionOutput: (content: string, reveal?: boolean) => void;
 
-export function activateDoubleAction(context: vscode.ExtensionContext) {
-  printDoubleActionOutput = createOutputChannel("Double Action");
-  printDoubleActionOutput("Double Action activating");
+export function activateDoubleAction(name: string, context: vscode.ExtensionContext) {
+  console.log(`Activating ${name}`);
+  printDoubleActionOutput = createOutputChannel(`${name}`);
+  printDoubleActionOutput(`${name} activating`);
 
   // TODO: Do we need to recreate this object to update the configuration?
-  let config = vscode.workspace.getConfiguration("double-action");
+  let config = vscode.workspace.getConfiguration(`${ConfigSpace}`);
 
   // Read the configuration settings
   let timeoutPress: boolean = config.get("timeoutPress") as boolean;
@@ -32,16 +35,16 @@ export function activateDoubleAction(context: vscode.ExtensionContext) {
   // The commandId parameter must match the command field in package.json
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
-      console.log("Configuration changed");
       if (
-        event.affectsConfiguration("double-action.timeoutPress") ||
-        event.affectsConfiguration("double-action.singlePressCommand") ||
-        event.affectsConfiguration("double-action.preDoublePressCommand") ||
-        event.affectsConfiguration("double-action.doublePressCommand") ||
-        event.affectsConfiguration("double-action.doublePressThreshold")
+        event.affectsConfiguration(`${ConfigSpace}.timeoutPress`) ||
+        event.affectsConfiguration(`${ConfigSpace}.singlePressCommand`) ||
+        event.affectsConfiguration(`${ConfigSpace}.preDoublePressCommand`) ||
+        event.affectsConfiguration(`${ConfigSpace}.doublePressCommand`) ||
+        event.affectsConfiguration(`${ConfigSpace}.doublePressThreshold`)
       ) {
+        printDoubleActionOutput("Configuration changed");
         // TODO: Do we need to recreate this object to update the configuration?
-        config = vscode.workspace.getConfiguration("double-action");
+        config = vscode.workspace.getConfiguration(`${ConfigSpace}`);
         timeoutPress = config.get("timeoutPress") as boolean;
         singlePressCommand = config.get("singlePressCommand") as string;
         preDoublePressCommand = config.get("preDoublePressCommand") as string;
@@ -59,11 +62,11 @@ export function activateDoubleAction(context: vscode.ExtensionContext) {
   );
 
   const disposable = vscode.commands.registerCommand(
-    "double-action.execute",
+    "vstoys.double-action.execute",
     () => {
       if (!timeoutPress) {
         if (!first) {
-          console.log("[Double-Action] Double press detected!");
+          console.log(`[${name}] Double press detected!`);
 
           first = true;
           // This is used personally to exit the previous command
@@ -77,7 +80,7 @@ export function activateDoubleAction(context: vscode.ExtensionContext) {
             timeoutId = null;
           }
         } else {
-          console.log("[Double-Action] Single press");
+          console.log(`[${name}] Single press`);
 
           first = false;
           vscode.commands.executeCommand(singlePressCommand);
@@ -90,7 +93,7 @@ export function activateDoubleAction(context: vscode.ExtensionContext) {
           // Double press detected
           clearTimeout(timeoutId);
           timeoutId = null;
-          console.log("[Double-Action] Double press detected!");
+          console.log(`[${name}] Double press detected!`);
           // This is used personally to exit the previous command
           if (preDoublePressCommand !== "") {
             vscode.commands.executeCommand(preDoublePressCommand);
@@ -101,7 +104,7 @@ export function activateDoubleAction(context: vscode.ExtensionContext) {
           timeoutId = setTimeout(() => {
             // Single press
             timeoutId = null;
-            console.log("[Double-Action] Single press");
+            console.log(`[${name}] Single press`);
             // Execute your single press command here
             vscode.commands.executeCommand(singlePressCommand);
           }, doublePressThreshold);
@@ -111,5 +114,5 @@ export function activateDoubleAction(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(disposable);
 
-  printDoubleActionOutput("Double Action activated", false);
+  printDoubleActionOutput(`${name} activated`, false);
 }

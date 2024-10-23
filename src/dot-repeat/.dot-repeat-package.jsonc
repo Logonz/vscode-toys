@@ -1,4 +1,8 @@
 {
+  "tags": [
+    "dot-repeat",
+    "motion"
+  ],
   "contributes": {
     "commands": [
       // Insert your commands here
@@ -23,15 +27,20 @@
     },
     "keybindings": [
       // Insert your keybindings here
+      // ! Global Exit
+      // ? Will exit all and any active repeat contexts
       {
         "command": "vstoys.dot-repeat.repeatExit",
         "key": "escape",
         "mac": "escape",
         "args": {
-          "contextId": "da-smart-select-repeat"
+          "deactivateAll": true
         },
-        "when": "da-smart-select-repeat == true"
+        // This can never be true unless vscode.dot-repeat.active is true, so it's safe to exclude it
+        "when": "vstoys.dot-repeat.global"
       },
+      // ! Smart Select
+      // ? Initializer
       {
         "command": "vstoys.dot-repeat.repeatExecute",
         "key": "alt+a",
@@ -40,8 +49,21 @@
           "contextId": "da-smart-select-repeat",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && vstoys.dot-repeat.active"
       },
+      // ? Exit
+      {
+        "command": "vstoys.dot-repeat.repeatExit",
+        "key": "escape",
+        "mac": "escape",
+        "args": {
+          "contextId": "da-smart-select-repeat"
+        },
+        // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
+        "when": "da-smart-select-repeat"
+      },
+      // ? Repeaters
+      //   * Expand
       {
         "command": "vstoys.dot-repeat.repeatExecute",
         "key": "up",
@@ -50,8 +72,10 @@
           "contextId": "da-smart-select-repeat",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus && da-smart-select-repeat == true"
+        // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
+        "when": "editorTextFocus && da-smart-select-repeat"
       },
+      //   * Shrink
       {
         "command": "vstoys.dot-repeat.repeatExecute",
         "key": "down",
@@ -60,8 +84,34 @@
           "contextId": "da-smart-select-repeat",
           "command": "editor.action.smartSelect.shrink"
         },
-        "when": "editorTextFocus && da-smart-select-repeat == true"
+        // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
+        "when": "editorTextFocus && da-smart-select-repeat"
+      },
+      //   * Expand
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "a",
+        "mac": "a",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.expand"
+        },
+        // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
+        "when": "editorTextFocus && da-smart-select-repeat"
+      },
+      //   * Shrink
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "shift+a",
+        "mac": "shift+a",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.shrink"
+        },
+        // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
+        "when": "editorTextFocus && da-smart-select-repeat"
       }
+      // ? End
     ]
   }
 }
