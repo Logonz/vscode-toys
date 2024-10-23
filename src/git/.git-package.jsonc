@@ -1,0 +1,28 @@
+{
+  "contributes": {
+    "commands": [
+      // Insert your commands here
+      {
+        "command": "vstoys.git.stageFile",
+        "title": "VsToys - Git: Stage File"
+      },
+      {
+        "command": "vstoys.git.stageHunk",
+        "title": "VsToys - Git: Stage Hunk at Selection"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.git.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Git module in VSCode Toys"
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+    ]
+  }
+}

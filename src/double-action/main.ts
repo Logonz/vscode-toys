@@ -1,10 +1,19 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import { printChannelOutput } from "../extension";
+import { createOutputChannel } from "../extension";
+
+/**
+ * Prints the given content on the output channel.
+ *
+ * @param content The content to be printed.
+ * @param reveal Whether the output channel should be revealed.
+ */
+let printDoubleActionOutput: (content: string, reveal?: boolean) => void;
 
 export function activateDoubleAction(context: vscode.ExtensionContext) {
-  printChannelOutput("Double Action activating");
+  printDoubleActionOutput = createOutputChannel("Double Action");
+  printDoubleActionOutput("Double Action activating");
 
   // TODO: Do we need to recreate this object to update the configuration?
   let config = vscode.workspace.getConfiguration("double-action");
@@ -102,5 +111,5 @@ export function activateDoubleAction(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(disposable);
 
-  printChannelOutput("Double Action activated", false);
+  printDoubleActionOutput("Double Action activated", false);
 }

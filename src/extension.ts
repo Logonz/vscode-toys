@@ -16,20 +16,20 @@ try {
 
 let activateFunctions: {
   name: string;
-  func: (context: vscode.ExtensionContext) => void;
+  activator: (context: vscode.ExtensionContext) => void;
 }[] = [
-  { name: "Double Action", func: activateDoubleAction },
-  { name: "Dot Repeat", func: activateDotRepeat },
-  { name: "Smart Open", func: activateSmartOpen },
-  { name: "Jump", func: activateJump },
-  { name: "Git", func: activateGit },
+  { name: "Double Action", activator: activateDoubleAction },
+  { name: "Dot Repeat", activator: activateDotRepeat },
+  { name: "Smart Open", activator: activateSmartOpen },
+  { name: "Jump", activator: activateJump },
+  { name: "Git", activator: activateGit },
 ];
-let deactivateFunctions: { name: string; func: () => void }[] = [
-  { name: "Double Action", func: () => {} },
-  { name: "Dot Repeat", func: () => {} },
-  { name: "Smart Open", func: () => {} },
-  { name: "Jump", func: () => {} },
-  { name: "Git", func: () => {} },
+let deactivateFunctions: { name: string; deactivator: () => void }[] = [
+  { name: "Double Action", deactivator: () => {} },
+  { name: "Dot Repeat", deactivator: () => {} },
+  { name: "Smart Open", deactivator: () => {} },
+  { name: "Jump", deactivator: () => {} },
+  { name: "Git", deactivator: () => {} },
 ];
 
 let DAcontext: vscode.ExtensionContext;
@@ -37,16 +37,25 @@ export function getExtensionContext(): vscode.ExtensionContext {
   return DAcontext;
 }
 
+/**
+ * Prints the given content on the output channel.
+ *
+ * @param content The content to be printed.
+ * @param reveal Whether the output channel should be revealed.
+ */
+export let printChannelOutput: (content: string, reveal?: boolean) => void;
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
   DAcontext = context;
-  outputChannel = vscode.window.createOutputChannel("Double Action");
+  printChannelOutput = createOutputChannel("Main");
   printChannelOutput("Started");
 
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "double-action" is now active!');
+  // Set a context to indicate that the extension is installed
+  // To be used when binding commands to the extension
+  vscode.commands.executeCommand("setContext", "VSToysInstalled", true);
+  printChannelOutput("VSToysInstalled context set to true");
 
   // activateDoubleAction(context);
 
@@ -61,23 +70,34 @@ export function activate(context: vscode.ExtensionContext) {
   activateFunctions.forEach((func) => {
     printChannelOutput(`---> Loading Module: ${func.name}`);
     console.log(`---> Loading Module: ${func.name}`);
-    func.func(context);
+    func.activator(context);
   });
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { 
+  // Set a context to indicate that the extension is not installed
+  vscode.commands.executeCommand("setContext", "VSToysInstalled", false);
+  printChannelOutput("VSToysInstalled context set to false");
+  deactivateFunctions.forEach((func) => {
+    printChannelOutput(`---> Loading Module: ${func.name}`);
+    console.log(`---> Loading Module: ${func.name}`);
+    func.deactivator();
+  });
+}
 
-let outputChannel: vscode.OutputChannel;
 /**
- * Prints the given content on the output channel.
+ * Creates an output channel with the given name and returns a function that can be used to print content to the channel.
  *
- * @param content The content to be printed.
- * @param reveal Whether the output channel should be revealed.
+ * @param name - The name of the output channel. Will be prefixed with "VSCode Toys - ".
+ * @returns A function that takes content to be printed to the output channel, and an optional boolean to reveal the channel.
  */
-export function printChannelOutput(content: string, reveal = false): void {
-  outputChannel.appendLine(content);
-  if (reveal) {
-    outputChannel.show(true);
+export function createOutputChannel(name: string): (content: string, reveal?: boolean) => void {
+  const outputChan = vscode.window.createOutputChannel(`VSCode Toys - ${name}`);
+  return function (content: string, reveal = false): void {
+    outputChan.appendLine(content);
+    if (reveal) {
+      outputChan.show(true);
+    }
   }
 }

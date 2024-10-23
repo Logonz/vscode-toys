@@ -1,0 +1,51 @@
+{
+  // TODO: Make the names here better.
+  "contributes": {
+    "commands": [
+      // Insert your commands here
+      {
+        "command": "vstoys.double-action.execute",
+        "title": "VsToys - DoubleAction: Execute"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.double-action.timeoutPress": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the extension will wait for a timeout to execute the single press command rather than executing it immediately and if within the timeout only execute the double press, the default behavior will execute the single press command immediately and the double press command after the double press threshold"
+        },
+        "vstoys.double-action.singlePressCommand": {
+          "type": "string",
+          "default": "findJump.activate",
+          "description": "Command to execute when single pressing the key"
+        },
+        "vstoys.double-action.preDoublePressCommand": {
+          "type": "string",
+          "default": "findJump.activateWithSelection",
+          "description": "Command to execute before executing the double press command (I personally use this to exit a previos command)"
+        },
+        "vstoys.double-action.doublePressCommand": {
+          "type": "string",
+          "default": "findJump.activateWithSelection",
+          "description": "Command to execute when double pressing the key"
+        },
+        "vstoys.double-action.doublePressThreshold": {
+          "type": "number",
+          "default": 800,
+          "description": "Threshold in milliseconds to consider a double press, it resets the internal boolean after this time"
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+      {
+        "command": "vstoys.double-action.execute",
+        "key": "f21",
+        "mac": "f21",
+        "when": "editorTextFocus"
+      }
+    ]
+  }
+}

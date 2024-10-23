@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { InlineInput } from "./inlineInput";
-import { printChannelOutput } from "../extension";
+import { createOutputChannel } from "../extension";
 import { ActionContext } from "./action";
 
 export interface RepeatInput extends RepeatExit {
@@ -16,14 +16,23 @@ export interface RepeatExit {
   deactivateAll?: boolean;
 }
 
-let anyContextActive = false;
+/**
+ * Prints the given content on the output channel.
+ *
+ * @param content The content to be printed.
+ * @param reveal Whether the output channel should be revealed.
+ */
+export let printDotRepeatOutput: (content: string, reveal?: boolean) => void;
+
 
 export function activateDotRepeat(context: vscode.ExtensionContext) {
-  printChannelOutput("Dot Repeat activating");
-
+  printDotRepeatOutput = createOutputChannel("Dot Repeat");
+  printDotRepeatOutput("Dot Repeat activating");
+  
+  let anyContextActive = false;
   const activeContexts: Map<string, ActionContext> = new Map();
   const globalContextId = "da-global-context-active";
-
+  
   function createContext(contextId: string, timeoutSeconds: number = 3) {
     // Create the context
     const newContext = new ActionContext(contextId, timeoutSeconds, deactivateContext);
@@ -48,7 +57,7 @@ export function activateDotRepeat(context: vscode.ExtensionContext) {
       }
     });
     if (!anyContextActive) {
-      printChannelOutput(
+      printDotRepeatOutput(
         "  Deactivating global context (da-global-context-active)",
         true
       );
@@ -62,10 +71,10 @@ export function activateDotRepeat(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "double-action.repeatExecute",
+      "vstoys.dot-repeat.repeatExecute",
       (input: RepeatInput) => {
-        console.log("[double-action] RepeatExecute command executed", input);
-        printChannelOutput("RepeatExecute command executed", false);
+        console.log("[vstoys.dot-repeat] RepeatExecute command executed", input);
+        printDotRepeatOutput("RepeatExecute command executed", false);
         if (input) {
           if (!input.contextId) {
             vscode.window.showErrorMessage(
@@ -87,12 +96,12 @@ export function activateDotRepeat(context: vscode.ExtensionContext) {
       }
     ),
     vscode.commands.registerCommand(
-      "double-action.repeatExit",
+      "vstoys.dot-repeat.repeatExit",
       (input: RepeatExit) => {
-        console.log("[double-action] RepeatExit command executed", input);
+        console.log("[vstoys.dot-repeat] RepeatExit command executed", input);
         if (input) {
           if (input.deactivateAll) {
-            printChannelOutput("Deactivating all contexts", false);
+            printDotRepeatOutput("Deactivating all contexts", false);
             activeContexts.forEach((context) => {
               context.deactivate();
             });
@@ -112,12 +121,12 @@ export function activateDotRepeat(context: vscode.ExtensionContext) {
             if (context) {
               context.deactivate();
             } else {
-              printChannelOutput("Context not found", false);
+              printDotRepeatOutput("Context not found", false);
             }
           }
         }
       }
     )
   );
-  printChannelOutput("Dot Repeat activated", false);
+  printDotRepeatOutput("Dot Repeat activated", false);
 }
