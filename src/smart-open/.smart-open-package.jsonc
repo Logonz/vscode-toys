@@ -1,0 +1,24 @@
+{
+  "contributes": {
+    "commands": [
+      // Insert your commands here
+      {
+        "command": "vstoys.smart-open.openSmart",
+        "title": "VsToys: SmartOpen"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.smart-open.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Smart Open module in VSCode Toys"
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+    ]
+  }
+}

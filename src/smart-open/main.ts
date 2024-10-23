@@ -2,15 +2,24 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { InitializeFind, SpawnQuickPick } from "./find";
-import { printChannelOutput } from "../extension";
+import { createOutputChannel } from "../extension";
 import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelService";
 
+/**
+ * Prints the given content on the output channel.
+ *
+ * @param content The content to be printed.
+ * @param reveal Whether the output channel should be revealed.
+ */
+export let printJumpOutput: (content: string, reveal?: boolean) => void;
+
 export function activateSmartOpen(context: vscode.ExtensionContext) {
-  printChannelOutput("Smart Oopen activating");
+  printJumpOutput = createOutputChannel("Smart Open");
+  printJumpOutput("Smart Oopen activating");
   InitializeFind(context);
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("double-action.SmartOpen", async () => {
+    vscode.commands.registerCommand("vstoys.smart-open.openSmart", async () => {
       await SpawnQuickPick();
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
@@ -23,5 +32,5 @@ export function activateSmartOpen(context: vscode.ExtensionContext) {
     })
   );
 
-  printChannelOutput("Smart Open activated", false);
+  printJumpOutput("Smart Open activated", false);
 }

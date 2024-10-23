@@ -1,0 +1,20 @@
+{
+  "contributes": {
+    "commands": [
+      // Insert your commands here
+    ],
+    "configuration": {
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Global enable/disable for the VSCode Toys"
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+    ]
+  }
+}

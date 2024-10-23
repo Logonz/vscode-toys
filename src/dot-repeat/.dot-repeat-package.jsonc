@@ -1,0 +1,67 @@
+{
+  "contributes": {
+    "commands": [
+      // Insert your commands here
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "title": "VsToys - DotRepeat: repeatExecute"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExit",
+        "title": "VsToys - DotRepeat: repeatExit"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.dot-repeat.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Dot-Repeat module in VSCode Toys"
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+      {
+        "command": "vstoys.dot-repeat.repeatExit",
+        "key": "escape",
+        "mac": "escape",
+        "args": {
+          "contextId": "da-smart-select-repeat"
+        },
+        "when": "da-smart-select-repeat == true"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "alt+a",
+        "mac": "alt+a",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.expand"
+        },
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "up",
+        "mac": "up",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.expand"
+        },
+        "when": "editorTextFocus && da-smart-select-repeat == true"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "down",
+        "mac": "down",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.shrink"
+        },
+        "when": "editorTextFocus && da-smart-select-repeat == true"
+      }
+    ]
+  }
+}

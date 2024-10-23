@@ -6,3 +6,4 @@ node_modules
 *.txt
 *.ts-backup
 *.stackdump
+material-icons.json

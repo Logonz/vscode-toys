@@ -23,13 +23,127 @@
   ],
   "contributes": {
     "commands": [
+      {
+        "command": "vstoys.smart-open.openSmart",
+        "title": "VsToys: SmartOpen"
+      },
+      {
+        "command": "vstoys.git.stageFile",
+        "title": "VsToys - Git: Stage File"
+      },
+      {
+        "command": "vstoys.git.stageHunk",
+        "title": "VsToys - Git: Stage Hunk at Selection"
+      },
+      {
+        "command": "vstoys.double-action.execute",
+        "title": "VsToys - DoubleAction: Execute"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "title": "VsToys - DotRepeat: repeatExecute"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExit",
+        "title": "VsToys - DotRepeat: repeatExit"
+      }
     ],
     "configuration": {
       "title": "Visual Studio Code Toys - Configuration",
       "properties": {
+        "vstoys.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Global enable/disable for the VSCode Toys"
+        },
+        "vstoys.smart-open.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Smart Open module in VSCode Toys"
+        },
+        "vstoys.git.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Git module in VSCode Toys"
+        },
+        "vstoys.double-action.timeoutPress": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the extension will wait for a timeout to execute the single press command rather than executing it immediately and if within the timeout only execute the double press, the default behavior will execute the single press command immediately and the double press command after the double press threshold"
+        },
+        "vstoys.double-action.singlePressCommand": {
+          "type": "string",
+          "default": "findJump.activate",
+          "description": "Command to execute when single pressing the key"
+        },
+        "vstoys.double-action.preDoublePressCommand": {
+          "type": "string",
+          "default": "findJump.activateWithSelection",
+          "description": "Command to execute before executing the double press command (I personally use this to exit a previos command)"
+        },
+        "vstoys.double-action.doublePressCommand": {
+          "type": "string",
+          "default": "findJump.activateWithSelection",
+          "description": "Command to execute when double pressing the key"
+        },
+        "vstoys.double-action.doublePressThreshold": {
+          "type": "number",
+          "default": 800,
+          "description": "Threshold in milliseconds to consider a double press, it resets the internal boolean after this time"
+        },
+        "vstoys.dot-repeat.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Dot-Repeat module in VSCode Toys"
+        }
       }
     },
     "keybindings": [
+      {
+        "command": "vstoys.double-action.execute",
+        "key": "f21",
+        "mac": "f21",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExit",
+        "key": "escape",
+        "mac": "escape",
+        "args": {
+          "contextId": "da-smart-select-repeat"
+        },
+        "when": "da-smart-select-repeat == true"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "alt+a",
+        "mac": "alt+a",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.expand"
+        },
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "up",
+        "mac": "up",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.expand"
+        },
+        "when": "editorTextFocus && da-smart-select-repeat == true"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "down",
+        "mac": "down",
+        "args": {
+          "contextId": "da-smart-select-repeat",
+          "command": "editor.action.smartSelect.shrink"
+        },
+        "when": "editorTextFocus && da-smart-select-repeat == true"
+      }
     ]
   },
   "scripts": {

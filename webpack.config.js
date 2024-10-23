@@ -15,6 +15,34 @@ const extensionDir = path.join(
 
 console.log("Node Env: ", process.env.NODE_ENV);
 
+console.log("Starting to inject package.json files");
+const fs = require("fs");
+const JSONC = require("jsonc").jsonc;
+// Read the main package.json
+let packageJson = JSONC.parse(fs.readFileSync("package.json", "utf8"));
+// Clear out configurations, keybinds and commands
+packageJson.contributes.commands = [];
+packageJson.contributes.configuration.properties = {};
+packageJson.contributes.keybindings = [];
+
+// Get all files called "inject-package.json" under the src folder
+const injectFiles = require("glob").sync("src/**/.*-package.jsonc");
+// Recursively inject the files into the package.json
+for (const file of injectFiles) {
+  console.log("Injecting file: ", file);
+  // Read the inject file content
+  const injectContent = JSONC.parse(fs.readFileSync(file, "utf8"));
+
+  // Deep merge the inject content into package.json
+  const merged = require("webpack-merge").merge(packageJson, injectContent);
+
+  // Write back to package.json
+  fs.writeFileSync("package.json", JSON.stringify(merged, null, 2));
+
+  // Read the main package.json
+  packageJson = JSONC.parse(fs.readFileSync("package.json", "utf8"));
+}
+
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 
@@ -54,8 +82,7 @@ const extensionConfig = {
     ],
   },
   // devtool: "nosources-source-map",
-  devtool:
-    process.env.NODE_ENV === "production" ? "source-map" : "inline-source-map",
+  devtool: process.env.NODE_ENV === "production" ? "source-map" : "inline-source-map",
   infrastructureLogging: {
     level: "log", // enables logging required for problem matchers
   },
@@ -78,11 +105,28 @@ const extensionConfig = {
       : {
           apply: (compiler) => {
             compiler.hooks.afterEmit.tap("AfterEmitPlugin", (compilation) => {
+              // const JSONC = require("jsonc").jsonc;
+              // // Get all files called "inject-package.json" under the src folder
+              // const injectFiles = require("glob").sync("src/**/.*-package.jsonc");
+              // // Recursively inject the files into the package.json
+              // for (const file of injectFiles) {
+              //   console.log("Injecting file: ", file);
+              //   // Read the inject file content
+              //   const injectContent = JSONC.parse(fs.readFileSync(file, "utf8"));
+              //   // Read the main package.json
+              //   const packageJson = JSONC.parse(fs.readFileSync("package.json", "utf8"));
+
+              //   // Deep merge the inject content into package.json
+              //   const merged = require("webpack-merge").merge(packageJson, injectContent);
+
+              //   // Write back to package.json
+              //   fs.writeFileSync("package.json", JSON.stringify(merged, null, 2));
+              // }
               return;
+              const fs = require("fs");
               console.log("Compilation finished");
               console.log("In Development mode, Copying files");
               // Copy package.json to dist folder
-              const fs = require("fs");
               fs.copyFileSync(
                 "package.json",
                 path.join(

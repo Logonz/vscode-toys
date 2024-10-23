@@ -1,0 +1,15 @@
+{
+  "contributes": {
+    "commands": [
+      // Insert your commands here
+    ],
+    "configuration": {
+      "properties": {
+        // Insert your configuration properties here
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+    ]
+  }
+}
