@@ -1,8 +1,8 @@
 {
-  "name": "double-action",
-  "displayName": "Double Action",
-  "description": "Double Action is a Visual Studio Code extension that allows you to bind two commands to a single key, one for a single press and another for a double press.",
-  "version": "1.0.2",
+  "name": "vstoys",
+  "displayName": "VsToys",
+  "description": "VsCode Toys is a collection of utilities for Visual Studio Code.",
+  "version": "0.0.5",
   "publisher": "Logonz",
   "icon": "icon.jpg",
   "license": "MIT",
@@ -16,115 +16,25 @@
   "main": "./dist/extension.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Logonz/vscode-double-action.git"
+    "url": "https://github.com/Logonz/vscode-toys.git"
   },
   "activationEvents": [
     "onStartupFinished"
   ],
   "contributes": {
     "commands": [
-      {
-        "command": "double-action.execute",
-        "title": "Double Action: Execute"
-      },
-      {
-        "command": "double-action.repeatExecute",
-        "title": "Double Action: repeatExecute"
-      },
-      {
-        "command": "double-action.repeatExit",
-        "title": "Double Action: repeatExit"
-      },
-      {
-        "command": "double-action.SmartOpen",
-        "title": "Double Action: SmartOpen"
-      },
-      {
-        "command": "double-action.stageHunk",
-        "title": "Double Action: Stage Hunk at Selection"
-      }
-    ],
-    "keybindings": [
-      {
-        "command": "double-action.execute",
-        "key": "f21",
-        "mac": "f21",
-        "when": "editorTextFocus"
-      },
-      {
-        "command": "double-action.repeatExit",
-        "key": "escape",
-        "mac": "escape",
-        "args": {
-          "contextId": "da-smart-select-repeat"
-        },
-        "when": "da-smart-select-repeat == true"
-      },
-      {
-        "command": "double-action.repeatExecute",
-        "key": "alt+a",
-        "mac": "alt+a",
-        "args": {
-          "contextId": "da-smart-select-repeat",
-          "command": "editor.action.smartSelect.expand"
-        },
-        "when": "editorTextFocus"
-      },
-      {
-        "command": "double-action.repeatExecute",
-        "key": "up",
-        "mac": "up",
-        "args": {
-          "contextId": "da-smart-select-repeat",
-          "command": "editor.action.smartSelect.expand"
-        },
-        "when": "editorTextFocus && da-smart-select-repeat == true"
-      },
-      {
-        "command": "double-action.repeatExecute",
-        "key": "down",
-        "mac": "down",
-        "args": {
-          "contextId": "da-smart-select-repeat",
-          "command": "editor.action.smartSelect.shrink"
-        },
-        "when": "editorTextFocus && da-smart-select-repeat == true"
-      }
     ],
     "configuration": {
-      "title": "Double Action Configuration",
+      "title": "Visual Studio Code Toys - Configuration",
       "properties": {
-        "double-action.timeoutPress": {
-          "type": "boolean",
-          "default": false,
-          "description": "If true, the extension will wait for a timeout to execute the single press command rather than executing it immediately and if within the timeout only execute the double press, the default behavior will execute the single press command immediately and the double press command after the double press threshold"
-        },
-        "double-action.singlePressCommand": {
-          "type": "string",
-          "default": "findJump.activate",
-          "description": "Command to execute when single pressing the key"
-        },
-        "double-action.preDoublePressCommand": {
-          "type": "string",
-          "default": "findJump.activateWithSelection",
-          "description": "Command to execute before executing the double press command (I personally use this to exit a previos command)"
-        },
-        "double-action.doublePressCommand": {
-          "type": "string",
-          "default": "findJump.activateWithSelection",
-          "description": "Command to execute when double pressing the key"
-        },
-        "double-action.doublePressThreshold": {
-          "type": "number",
-          "default": 800,
-          "description": "Threshold in milliseconds to consider a double press, it resets the internal boolean after this time"
-        }
       }
-    }
+    },
+    "keybindings": [
+    ]
   },
   "scripts": {
-    "ext": "vsce package -o vscode-double-action.vsix && code --install-extension vscode-double-action.vsix",
-    "vsix": "vsce package -o vscode-double-action.vsix",
+    "ext": "vsce package -o vscode-toys.vsix && code --install-extension vscode-toys.vsix",
+    "vsix": "vsce package -o vscode-toys.vsix",
     "vscode:prepublish": "npm run package",
     "compile": "webpack --node-env development",
     "tcompile": "tsc -p ./",
@@ -150,11 +60,13 @@
     "copy-webpack-plugin": "^12.0.2",
     "cross-env": "^7.0.3",
     "eslint": "^9.11.1",
+    "jsonc": "^2.0.0",
     "ts-loader": "^9.5.1",
     "tsc-watch": "^6.2.0",
     "typescript": "^5.6.2",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "webpack-merge": "^6.0.1"
   },
   "dependencies": {
     "@hediet/node-reload": "^0.8.0",
