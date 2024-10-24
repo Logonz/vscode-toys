@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
 import { printChannelOutput } from "../extension";
+import deindent from "deindent";
 
 const iconDefinitions = new Map<string, vscode.Uri>();
 const iconFileNames = new Map<string, vscode.Uri>();
