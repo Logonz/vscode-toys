@@ -20,7 +20,8 @@ export function LoadIcons() {
 
   for (let index = 0; index < vscode.extensions.all.length; index++) {
     const ext = vscode.extensions.all[index];
-    if (ext.id.includes(configuration.workbench.iconTheme)) {
+    const iconThemes = ext.packageJSON?.contributes?.iconThemes;
+    if (ext.id.includes(configuration.workbench.iconTheme) || (iconThemes && iconThemes.length > 0 && iconThemes[0]?.id?.includes(configuration.workbench.iconTheme))) {
       // Print extensions, this contains packageJSON and the path to the extension
       console.log(ext);
       iconTheme = ext;
@@ -42,13 +43,28 @@ export function LoadIcons() {
       const iconJSONContent = fs.readFileSync(iconJSONPath, "utf8");
       const iconJSON = JSON.parse(iconJSONContent);
 
+      let warnUserThatIconPackIsNotSupported = false;
       // Example: Iterate through icon definitions
       if (iconJSON.iconDefinitions) {
         Object.entries(iconJSON.iconDefinitions).forEach(([key, value]: any) => {
           // console.log(`Icon: ${key}`, path.join(path.dirname(iconJSONPath), value.iconPath));
           // console.log(`Icon: ${key}`, vscode.Uri.file(path.join(path.dirname(iconJSONPath), value.iconPath)));
+          if (value.iconPath) {
           iconDefinitions.set(key, vscode.Uri.file(path.join(path.dirname(iconJSONPath), value.iconPath)));
+            // console.log(value.iconPath);
+          } else if (value.fontCharacter) {
+            warnUserThatIconPackIsNotSupported = true;
+            return;
+          }
         });
+      }
+      if (warnUserThatIconPackIsNotSupported) {
+        vscode.window.showErrorMessage(deindent`Icon packs that use fonts rather than SVGs are not supported (e.g. vscode-seti which is default)
+          
+          Use something like "Material Icon Theme" or "vscode-icons" instead.
+          
+          See issue: https://github.com/microsoft/vscode/issues/59826 for more information
+          `);
       }
       if (iconJSON.fileExtensions) {
         Object.entries(iconJSON.fileExtensions).forEach(([key, value]: any) => {
