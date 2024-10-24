@@ -15,10 +15,7 @@ import {
   // initializeMetadata,
   updateFileMetadata,
 } from "./metadata";
-import { 
-  calculateCompositeScore,
-  calculateRecencyScore,
-} from "./score";
+import { calculateCompositeScore, calculateRecencyScore } from "./score";
 import { CustomEditorLabelService, ICustomEditorLabelPatterns } from "../helpers/customEditorLabelService";
 
 // Own interface extending QuickPickItem
@@ -53,12 +50,7 @@ function getAllFileIcons(files: vscode.Uri[]) {
 
 function initalizeListener(context: vscode.ExtensionContext) {
   // File watchers
-  const watcher = vscode.workspace.createFileSystemWatcher(
-    "**/*",
-    false,
-    false,
-    false
-  );
+  const watcher = vscode.workspace.createFileSystemWatcher("**/*", false, false, false);
 
   // TODO: Make these just scan the current file and not all files
   const debouncedOnDidCreate = debounce(async (uri: vscode.Uri) => {
@@ -124,6 +116,11 @@ export async function InitializeFind(context: vscode.ExtensionContext) {
   quickPickObject.matchOnDetail = false;
   // quickPickObject.items = filteredItems;
 
+  // Only a proposed API does not exist yet...
+  // https://vscode.dev/github/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.quickPickSortByLabel.d.ts
+  // https://github.com/microsoft/vscode/issues/73904
+  (quickPickObject as any).sortByLabel = false;
+
   // * Update items as the user types
   const changeD = quickPickObject.onDidChangeValue(async (value) => {
     const scores = await GenerateItemList(value, files);
@@ -172,21 +169,15 @@ export async function SpawnQuickPick() {
  * @param num - The number to be mapped from the first range to the second range.
  * @returns The number mapped from the first range to the second range.
  */
-function mapNumberRange(
-  r1l: number,
-  r1h: number,
-  r2l: number,
-  r2h: number,
-  num: number
-): number {
+function mapNumberRange(r1l: number, r1h: number, r2l: number, r2h: number, num: number): number {
   const mappedValue = r2l + ((num - r1l) * (r2h - r2l)) / (r1h - r1l);
   return isNaN(mappedValue) ? 0 : mappedValue;
 }
 
-async function GenerateItemList(
-  needle: string,
-  files: vscode.Uri[]
-): Promise<FileQuickPickItem[]> {
+async function GenerateItemList(needle: string, files: vscode.Uri[]): Promise<FileQuickPickItem[]> {
+  // ! Remove when proposed API is implemented.
+  // https://vscode.dev/github/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.quickPickSortByLabel.d.ts
+  // https://github.com/microsoft/vscode/issues/73904
   // Due to the bug that is sorting in quick pick, it basically only works either with 0 or 2 characters
   // TODO: When the bug is fixed and we can do our own sorting, we can remove this (https://github.com/microsoft/vscode/issues/73904)
   if (needle.length === 1) {
@@ -208,12 +199,15 @@ async function GenerateItemList(
   // Split needle into characters
   const needleParts = needle.toLowerCase().split("");
 
-
-  let internalFiles: { uri: vscode.Uri, customLabel: string, relativePath: string, fsPath: string}[] = [];
+  let internalFiles: { uri: vscode.Uri; customLabel: string; relativePath: string; fsPath: string }[] = [];
   // Check if custom labels are enabled
-  const customLabelsEnabled: boolean | undefined = vscode.workspace.getConfiguration("workbench").get<boolean>("editor.customLabels.enabled");
+  const customLabelsEnabled: boolean | undefined = vscode.workspace
+    .getConfiguration("workbench")
+    .get<boolean>("editor.customLabels.enabled");
   if (customLabelsEnabled && customLabelsEnabled === true) {
-    const customLabelsPatterns: ICustomEditorLabelPatterns | undefined = vscode.workspace.getConfiguration("workbench").get<ICustomEditorLabelPatterns>("editor.customLabels.patterns");
+    const customLabelsPatterns: ICustomEditorLabelPatterns | undefined = vscode.workspace
+      .getConfiguration("workbench")
+      .get<ICustomEditorLabelPatterns>("editor.customLabels.patterns");
     if (customLabelsPatterns) {
       const labelService = new CustomEditorLabelService(customLabelsPatterns);
       files.forEach((file) => {
@@ -254,10 +248,7 @@ async function GenerateItemList(
     .asRelativePath(currentActiveEditor?.document.uri.fsPath || "")
     .split("/");
   console.log(activeEditorPathParts);
-  printChannelOutput(
-    `Number of parts of active: ${activeEditorPathParts?.length}`,
-    false
-  );
+  printChannelOutput(`Number of parts of active: ${activeEditorPathParts?.length}`, false);
 
   // First, compute the scores for all files
   const fileScores = internalFiles.map((file): FileQuickPickItem => {
@@ -271,12 +262,8 @@ async function GenerateItemList(
     // Calculate the close score based on path overlap with the active editor
     let closeScore = 0;
     const fileParts = vscode.workspace.asRelativePath(file.uri).split("/");
-    const commonParts = fileParts.filter((part) =>
-      activeEditorPathParts.includes(part)
-    );
-    const uncommonParts = fileParts.filter(
-      (part) => !activeEditorPathParts.includes(part)
-    );
+    const commonParts = fileParts.filter((part) => activeEditorPathParts.includes(part));
+    const uncommonParts = fileParts.filter((part) => !activeEditorPathParts.includes(part));
 
     // TODO: Should we subtract the common parts from the total parts?
     closeScore = Math.max(0, commonParts.length - uncommonParts.length);
@@ -291,16 +278,8 @@ async function GenerateItemList(
       finalScore: 0,
     };
   });
-  const minScore = Math.min(
-    ...fileScores.map((fs) =>
-      fs.rawScore === Number.NEGATIVE_INFINITY ? 0 : fs.rawScore
-    )
-  );
-  const maxScore = Math.max(
-    ...fileScores.map((fs) =>
-      fs.rawScore === Number.POSITIVE_INFINITY ? 0 : fs.rawScore
-    )
-  );
+  const minScore = Math.min(...fileScores.map((fs) => (fs.rawScore === Number.NEGATIVE_INFINITY ? 0 : fs.rawScore)));
+  const maxScore = Math.max(...fileScores.map((fs) => (fs.rawScore === Number.POSITIVE_INFINITY ? 0 : fs.rawScore)));
   const minRecencyScore = Math.min(...fileScores.map((fs) => fs.recencyScore));
   const maxRecencyScore = Math.max(...fileScores.map((fs) => fs.recencyScore));
 
@@ -323,16 +302,6 @@ async function GenerateItemList(
       fileScores
         .filter((fs) => hasMatch(needle, fs.relativePath))
         .map(async (fs): Promise<FileQuickPickItem> => {
-          // Get the icon for the file type
-          // const normalizedScore = Math.round(fs.rawScore - minScore);
-          // console.log("FS1:", fs, normalizedScore);
-          // const encodedScore = encodeScore(
-          //   normalizedScore,
-          //   // Math.max(minLength, 4)
-          //   minLength
-          // );
-          // console.log("ICON1", filesToIcon.get(fs.filePath), fs.filePath);
-          // console.log("ENC:", encodedScore);
           const fileMeta = metadata[fs.filePath];
           // const lastOpened = fileMeta ? fileMeta.lastOpened : 0;
           const openCount = fileMeta ? fileMeta.openCount : 0;
@@ -378,23 +347,11 @@ async function GenerateItemList(
           // printChannelOutput(`Final Score: ${finalScore}`, true);
 
           let descriptions: string[] = [];
-          descriptions.push(
-            `${fs.relativePath} - (fnl:${finalScore.toFixed(2)})=`
-          );
-          descriptions.push(
-            `(raw:${(fs.rawScore * scoreWeights.matchQuality).toFixed(2)})`
-          );
-          descriptions.push(
-            `(rec:${(recencyScoreMapped * scoreWeights.recency).toFixed(2)})`
-          );
-          descriptions.push(
-            `(frq:${(frequencyScoreMapped * scoreWeights.frequency).toFixed(
-              2
-            )})`
-          );
-          descriptions.push(
-            `(cls:${(closeScoreMapped * scoreWeights.close).toFixed(2)})`
-          );
+          descriptions.push(`${fs.relativePath} - (fnl:${finalScore.toFixed(2)})=`);
+          descriptions.push(`(raw:${(fs.rawScore * scoreWeights.matchQuality).toFixed(2)})`);
+          descriptions.push(`(rec:${(recencyScoreMapped * scoreWeights.recency).toFixed(2)})`);
+          descriptions.push(`(frq:${(frequencyScoreMapped * scoreWeights.frequency).toFixed(2)})`);
+          descriptions.push(`(cls:${(closeScoreMapped * scoreWeights.close).toFixed(2)})`);
 
           const description = descriptions
             .map((desc) => {
@@ -405,25 +362,11 @@ async function GenerateItemList(
             .join("");
 
           return {
-            // label: fs.relativePath,
-            // label: `${encodedScore} ${fs.relativePath}`,
-            // label: `${encodedScore} ${path.basename(fs.filePath)}`,
             label: fs.label,
-            // description: `${fs.relativePath} - ${finalScore.toFixed(2)}=(raw:${(
-            //   fs.rawScore * scoreWeights.matchQuality
-            // ).toFixed(2)})(rec:${(
-            //   recencyScoreMapped * scoreWeights.recency
-            // ).toFixed(2)})(frq:${(
-            //   frequencyScoreMapped * scoreWeights.frequency
-            // ).toFixed(2)})(cls:${(
-            //   closeScoreMapped * scoreWeights.close
-            // ).toFixed(2)})`,
             description: description,
-            // description: fs.relativePath,
             filePath: fs.filePath,
             relativePath: fs.relativePath,
-            iconPath:
-              filesToIcon.get(fs.filePath) || new vscode.ThemeIcon("file"), // Apply the icon as needed
+            iconPath: filesToIcon.get(fs.filePath) || new vscode.ThemeIcon("file"), // Apply the icon as needed
             rawScore: fs.rawScore,
             recencyScore: recencyScoreMapped,
             frequencyScore: frequencyScoreMapped,
@@ -451,29 +394,10 @@ async function GenerateItemList(
       })
     );
 
-  // This code maps the scores to a range of 0 to maxScoreValue
-  // TODO: Validate that this is working correctly
-  // const normalizedScores = filteredItems.map((item) =>
-  //   Math.round(item.rawScore - minScore)
-  // );
-  // const maxNormalizedScore = Math.max(...normalizedScores);
-
-  // // Loop through filteredItems and add inverted encoded score to the label
-  // for (let i = 0; i < filteredItems.length; i++) {
-  //   const item = filteredItems[i];
-  //   const normalizedScore = normalizedScores[i];
-  //   const invertedScore = maxNormalizedScore - normalizedScore;
-  //   // const encodedScore = encodeScore(invertedScore, Math.max(minLength, 4));
-  //   const encodedScore = encodeScore(invertedScore, minLength);
-  //   filteredItems[i].label = `${encodedScore} ${item.label}`;
-  // }
-  // const scoreLengths = filteredItems.map((item) =>
-  //   item.rawScore.toString().length
-  // );
-  // const maxLength = Math.max(...scoreLengths);
-  // const maxLength = Math.max(filteredItems.length.toString().length + 1, 2);
-
-  // console.log("Filtered Items before:", filteredItems);
+  // ! Remove when proposed API is implemented.
+  // https://vscode.dev/github/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.quickPickSortByLabel.d.ts
+  // https://github.com/microsoft/vscode/issues/73904
+  // if((quickPickObject as any).sortByLabel !== false) {
   const maxLength = filteredItems.length.toString().length;
   for (let i = 0; i < filteredItems.length; i++) {
     const item = filteredItems[i];
@@ -487,24 +411,7 @@ async function GenerateItemList(
       filteredItems[i].label = `${i} ${item.label}`;
     }
   }
-  // Readd the current file to the list
-  // filteredItems.push({
-  //   label: `${"9".repeat(maxLength)} ${path.basename(
-  //     currentActiveEditor?.document.uri.fsPath || ""
-  //   )}`,
-  //   description: "Current file",
-  //   filePath: currentActiveEditor?.document.uri.fsPath || "",
-  //   relativePath: vscode.workspace.asRelativePath(
-  //     currentActiveEditor?.document.uri.fsPath || ""
-  //   ),
-  //   iconPath: filesToIcon.get(currentActiveEditor?.document.uri.fsPath || ""),
-  //   rawScore: 0,
-  //   recencyScore: 0,
-  //   frequencyScore: 0,
-  //   closeScore: 0,
-  //   finalScore: 0,
-  // });
-  // console.log("Filtered Items after:", filteredItems);
+  // }
 
   return filteredItems;
 }
@@ -616,9 +523,7 @@ function debounce(func: Function, delay: number) {
   };
 }
 
-async function getAllTextDocumentsInWorkspace(): Promise<
-  vscode.TextDocument[]
-> {
+async function getAllTextDocumentsInWorkspace(): Promise<vscode.TextDocument[]> {
   if (!vscode.workspace.workspaceFolders) {
     vscode.window.showInformationMessage("No workspace is open.");
     return [];

@@ -17,4 +17,8 @@
       // Insert your keybindings here
     ]
   }
+  // Use this to enable proposed API features
+  // "enabledApiProposals": [
+  //   "quickPickSortByLabel"
+  // ]
 }
