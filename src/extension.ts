@@ -8,6 +8,7 @@ import { activateDoubleAction } from "./double-action/main";
 import { activateJump } from "./jump/main";
 import { activateGit } from "./git/main";
 import { activateCopyHighlight } from "./copy-highlight/main";
+import { activateClearLine } from "./clear-line/main";
 
 try {
   require("./debug");
@@ -21,6 +22,12 @@ let vsToys: {
   activator: (name: string, context: vscode.ExtensionContext) => void;
   deactivator: () => void;
 }[] = [
+  {
+    name: "Clear Line",
+    moduleContext: "clear-line",
+    activator: activateClearLine,
+    deactivator: () => {},
+  },
   {
     name: "Copy Highlight",
     moduleContext: "copy-highlight",
@@ -118,6 +125,7 @@ export function deactivate() {
 export function createOutputChannel(name: string): (content: string, reveal?: boolean) => void {
   const outputChan = vscode.window.createOutputChannel(`VSCode Toys - ${name}`);
   return function (content: string, reveal = false): void {
+    console.log(content);
     outputChan.appendLine(content);
     if (reveal) {
       outputChan.show(true);

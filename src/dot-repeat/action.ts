@@ -26,7 +26,7 @@ export class ActionContext {
   ) {
     printChannelOutput(
       `  Creating context: ${contextId} timeout: ${timeoutSeconds}`,
-      true
+      false
     );
     this.contextId = contextId;
     this.timeoutSeconds = timeoutSeconds;
@@ -43,7 +43,7 @@ export class ActionContext {
    * Activates the action context, creating and showing a status bar item, executing the provided command, and starting the repeat timeout.
    * @param command - The command to execute when the action context is activated.
    */
-  activate(command: string) {
+  activate(command: string | undefined) {
     if (this.isActive) {
       // Clear existing timeouts
       this.startRepeatTimeout();
@@ -56,13 +56,16 @@ export class ActionContext {
       this.statusBarItem.text = `░ ${this.contextId} ░`;
       this.statusBarItem.show();
     }
-
-    printChannelOutput(`  Activating context: ${this.contextId}`, true);
-    vscode.commands.executeCommand("setContext", this.contextId, true);
+    if (this.isActive === false) {
+      printChannelOutput(`  Activating context: ${this.contextId}`, false);
+      vscode.commands.executeCommand("setContext", this.contextId, true);
+    }
     this.isActive = true;
 
     // Execute the command
-    vscode.commands.executeCommand(command);
+    if (command && command.length > 0) {
+      vscode.commands.executeCommand(command);
+    }
 
     // Start the repeat timeout
     this.startRepeatTimeout();
@@ -98,7 +101,7 @@ export class ActionContext {
   deactivate() {
     if (!this.isActive) return;
 
-    printChannelOutput(`  Deactivating context: ${this.contextId}`, true);
+    printChannelOutput(`  Deactivating context: ${this.contextId}`, false);
     vscode.commands.executeCommand("setContext", this.contextId, false);
     this.isActive = false;
 

@@ -7,7 +7,7 @@ import { ActionContext } from "./action";
 
 export interface RepeatInput extends RepeatExit {
   contextId: string;
-  command: string;
+  command?: string;
   timeoutSeconds?: number;
 }
 

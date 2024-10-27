@@ -1,0 +1,29 @@
+{
+  "contributes": {
+    "commands": [
+      // Insert your commands here
+      {
+        "command": "vstoys.clear-line.clearLines",
+        "title": "VsToys - Clear Line: Clear Lines"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.clear-line.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Clear Line module in VSCode Toys"
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+      {
+        "key": "d c",
+        "command": "vstoys.clear-line.clearLines",
+        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active"
+      }
+    ]
+  }
+}
