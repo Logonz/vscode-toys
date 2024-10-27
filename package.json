@@ -54,6 +54,10 @@
       {
         "command": "vstoys.copy-highlight.copy",
         "title": "VsToys - Copy Highlight: Copy"
+      },
+      {
+        "command": "vstoys.clear-line.clearLines",
+        "title": "VsToys - Clear Line: Clear Lines"
       }
     ],
     "configuration": {
@@ -68,6 +72,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable the Smart Open module in VSCode Toys"
+        },
+        "vstoys.smart-open.maxWorkspaceFiles": {
+          "type": "number",
+          "default": 5000,
+          "description": "Maximum number of files to index in the workspace, tip is to use gitignore to exclude files"
         },
         "vstoys.jump.enabled": {
           "type": "boolean",
@@ -132,6 +141,11 @@
           "type": "number",
           "default": 100,
           "description": "Timeout duration in milliseconds"
+        },
+        "vstoys.clear-line.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Clear Line module in VSCode Toys"
         }
       }
     },
@@ -149,6 +163,14 @@
         "when": "editorTextFocus && vstoys.double-action.active"
       },
       {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "f20",
+        "mac": "f20",
+        "args": {
+          "contextId": "hyper-layer-active"
+        }
+      },
+      {
         "command": "vstoys.dot-repeat.repeatExit",
         "key": "escape",
         "mac": "escape",
@@ -162,65 +184,63 @@
         "key": "alt+a",
         "mac": "alt+a",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus && vstoys.dot-repeat.active"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExit",
-        "key": "escape",
-        "mac": "escape",
-        "args": {
-          "contextId": "da-smart-select-repeat"
-        },
-        "when": "da-smart-select-repeat"
+        "when": "editorTextFocus"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
         "key": "up",
         "mac": "up",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "repeat": true,
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus && da-smart-select-repeat"
+        "when": "editorTextFocus && repeat-smartselect"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
         "key": "down",
         "mac": "down",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "repeat": true,
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.shrink"
         },
-        "when": "editorTextFocus && da-smart-select-repeat"
+        "when": "editorTextFocus && repeat-smartselect"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
         "key": "a",
         "mac": "a",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus && da-smart-select-repeat"
+        "when": "editorTextFocus && repeat-smartselect"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
         "key": "shift+a",
         "mac": "shift+a",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.shrink"
         },
-        "when": "editorTextFocus && da-smart-select-repeat"
+        "when": "editorTextFocus && repeat-smartselect"
       },
       {
         "command": "vstoys.copy-highlight.copy",
         "key": "ctrl+c",
         "mac": "cmd+c",
         "when": "editorTextFocus && vstoys.copy-highlight.active"
+      },
+      {
+        "key": "d c",
+        "command": "vstoys.clear-line.clearLines",
+        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active"
       }
     ]
   },

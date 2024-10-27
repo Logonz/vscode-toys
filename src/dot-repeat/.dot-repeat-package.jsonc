@@ -1,8 +1,5 @@
 {
-  "tags": [
-    "dot-repeat",
-    "motion"
-  ],
+  "tags": ["dot-repeat", "motion"],
   "contributes": {
     "commands": [
       // Insert your commands here
@@ -27,6 +24,15 @@
     },
     "keybindings": [
       // Insert your keybindings here
+      // ? Hyper Layer initializer
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
+        "mac": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
+        "args": {
+          "contextId": "hyper-layer-active"
+        }
+      },
       // ! Global Exit
       // ? Will exit all and any active repeat contexts
       {
@@ -39,28 +45,17 @@
         // This can never be true unless vscode.dot-repeat.active is true, so it's safe to exclude it
         "when": "vstoys.dot-repeat.global"
       },
-      // ! Smart Select
+      // ! Expand/Shrink Smart Select repeat action
       // ? Initializer
       {
         "command": "vstoys.dot-repeat.repeatExecute",
         "key": "alt+a",
         "mac": "alt+a",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus && vstoys.dot-repeat.active"
-      },
-      // ? Exit
-      {
-        "command": "vstoys.dot-repeat.repeatExit",
-        "key": "escape",
-        "mac": "escape",
-        "args": {
-          "contextId": "da-smart-select-repeat"
-        },
-        // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
-        "when": "da-smart-select-repeat"
+        "when": "editorTextFocus"
       },
       // ? Repeaters
       //   * Expand
@@ -69,11 +64,11 @@
         "key": "up",
         "mac": "up",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "repeat": true,
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.expand"
         },
-        // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
-        "when": "editorTextFocus && da-smart-select-repeat"
+        "when": "editorTextFocus && repeat-smartselect"
       },
       //   * Shrink
       {
@@ -81,11 +76,11 @@
         "key": "down",
         "mac": "down",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "repeat": true,
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.shrink"
         },
-        // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
-        "when": "editorTextFocus && da-smart-select-repeat"
+        "when": "editorTextFocus && repeat-smartselect"
       },
       //   * Expand
       {
@@ -93,11 +88,11 @@
         "key": "a",
         "mac": "a",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.expand"
         },
         // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
-        "when": "editorTextFocus && da-smart-select-repeat"
+        "when": "editorTextFocus && repeat-smartselect"
       },
       //   * Shrink
       {
@@ -105,11 +100,11 @@
         "key": "shift+a",
         "mac": "shift+a",
         "args": {
-          "contextId": "da-smart-select-repeat",
+          "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.shrink"
         },
         // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
-        "when": "editorTextFocus && da-smart-select-repeat"
+        "when": "editorTextFocus && repeat-smartselect"
       }
       // ? End
     ]
