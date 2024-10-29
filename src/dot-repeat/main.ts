@@ -35,10 +35,22 @@ export function activateDotRepeat(name: string, context: vscode.ExtensionContext
   
   function createContext(contextId: string, timeoutSeconds: number = 3) {
     // Create the context
-    const newContext = new ActionContext(contextId, timeoutSeconds, deactivateContext);
+    const newContext = new ActionContext(contextId, timeoutSeconds, deactivateContext, activateContext);
     activeContexts.set(contextId, newContext);
     vscode.commands.executeCommand("setContext", globalContextId, false);
     return newContext;
+  }
+
+  function activateContext(contextId: string) {
+    // Activates the global context which is used for repeatExit command for example
+    printDotRepeatOutput(
+      "  Activating global context (vstoys.dot-repeat.global)",
+    );
+    vscode.commands.executeCommand(
+      "setContext",
+      "vstoys.dot-repeat.global",
+      true
+    );
   }
 
   function deactivateContext(contextId: string) {
@@ -63,6 +75,7 @@ export function activateDotRepeat(name: string, context: vscode.ExtensionContext
       vscode.commands.executeCommand(
         "setContext",
         "vstoys.dot-repeat.global",
+        false
       );
     }
   }
