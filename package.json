@@ -33,11 +33,11 @@
       },
       {
         "command": "vstoys.git.stageFile",
-        "title": "VsToys - Git: Stage File"
+        "title": "Git: Stage File - (VsToys)"
       },
       {
         "command": "vstoys.git.stageHunk",
-        "title": "VsToys - Git: Stage Hunk at Selection"
+        "title": "Git: Stage Hunk at Selection - (VsToys)"
       },
       {
         "command": "vstoys.double-action.execute",
@@ -157,6 +157,16 @@
         "when": "vstoys.smart-open.active"
       },
       {
+        "key": "alt+s f",
+        "command": "vstoys.git.stageFile",
+        "when": "editorTextFocus && vstoys.git.active"
+      },
+      {
+        "key": "alt+s h",
+        "command": "vstoys.git.stageHunk",
+        "when": "editorTextFocus && vstoys.git.active"
+      },
+      {
         "command": "vstoys.double-action.execute",
         "key": "f21",
         "mac": "f21",
@@ -168,7 +178,8 @@
         "mac": "f20",
         "args": {
           "contextId": "hyper-layer-active"
-        }
+        },
+        "when": "vstoys.dot-repeat.active"
       },
       {
         "command": "vstoys.dot-repeat.repeatExit",
@@ -187,7 +198,7 @@
           "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && vstoys.dot-repeat.active"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
@@ -232,6 +243,46 @@
         "when": "editorTextFocus && repeat-smartselect"
       },
       {
+        "key": "d d",
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "args": {
+          "timeoutSeconds": 1,
+          "contextId": "repeat-delete",
+          "command": "editor.action.deleteLines"
+        },
+        "when": "editorTextFocus && hyper-layer-active && !repeat-delete"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "d",
+        "mac": "d",
+        "args": {
+          "contextId": "repeat-delete",
+          "command": "editor.action.deleteLines"
+        },
+        "when": "editorTextFocus && repeat-delete"
+      },
+      {
+        "key": "d c",
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "args": {
+          "timeoutSeconds": 1,
+          "contextId": "repeat-delete",
+          "command": "vstoys.clear-line.clearLines"
+        },
+        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active && !repeat-delete"
+      },
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "c",
+        "mac": "c",
+        "args": {
+          "contextId": "repeat-delete",
+          "command": "vstoys.clear-line.clearLines"
+        },
+        "when": "editorTextFocus && repeat-delete && vstoys.clear-line.active"
+      },
+      {
         "command": "vstoys.copy-highlight.copy",
         "key": "ctrl+c",
         "mac": "cmd+c",
@@ -240,7 +291,7 @@
       {
         "key": "d c",
         "command": "vstoys.clear-line.clearLines",
-        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active"
+        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active && !vstoys.dot-repeat.active"
       }
     ]
   },

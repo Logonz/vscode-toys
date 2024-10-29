@@ -31,7 +31,8 @@
         "mac": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
         "args": {
           "contextId": "hyper-layer-active"
-        }
+        },
+        "when": "vstoys.dot-repeat.active"
       },
       // ! Global Exit
       // ? Will exit all and any active repeat contexts
@@ -55,7 +56,7 @@
           "contextId": "repeat-smartselect",
           "command": "editor.action.smartSelect.expand"
         },
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && vstoys.dot-repeat.active"
       },
       // ? Repeaters
       //   * Expand
@@ -105,6 +106,57 @@
         },
         // This can never be true unless vscode.dot-repeat.active was true from the start, so it's safe to exclude it
         "when": "editorTextFocus && repeat-smartselect"
+      },
+      // ? End
+      // ? ////////////////////////////////////////////
+      // ? // BELOW ARE HYPER-LAYER SPECIFIC ACTIONS //
+      // ? ////////////////////////////////////////////
+      // ! Delete Lines repeat action
+      // ? Initializer
+      {
+        "key": "d d",
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "args": {
+          "timeoutSeconds": 1,
+          "contextId": "repeat-delete",
+          "command": "editor.action.deleteLines"
+        },
+        "when": "editorTextFocus && hyper-layer-active && !repeat-delete"
+      },
+      // ? Repeaters
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "d",
+        "mac": "d",
+        "args": {
+          "contextId": "repeat-delete",
+          "command": "editor.action.deleteLines"
+        },
+        "when": "editorTextFocus && repeat-delete"
+      },
+      // ? End
+      // ! Clear Line repeat action
+      // ? Initializer
+      {
+        "key": "d c",
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "args": {
+          "timeoutSeconds": 1,
+          "contextId": "repeat-delete",
+          "command": "vstoys.clear-line.clearLines"
+        },
+        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active && !repeat-delete"
+      },
+      // ? Repeaters
+      {
+        "command": "vstoys.dot-repeat.repeatExecute",
+        "key": "c",
+        "mac": "c",
+        "args": {
+          "contextId": "repeat-delete",
+          "command": "vstoys.clear-line.clearLines"
+        },
+        "when": "editorTextFocus && repeat-delete && vstoys.clear-line.active"
       }
       // ? End
     ]
