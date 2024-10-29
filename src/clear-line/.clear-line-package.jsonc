@@ -22,7 +22,8 @@
       {
         "key": "d c",
         "command": "vstoys.clear-line.clearLines",
-        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active"
+        // If dot-repeat is active, the command will be bound in the dot-repeat package
+        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active && !vstoys.dot-repeat.active"
       }
     ]
   }

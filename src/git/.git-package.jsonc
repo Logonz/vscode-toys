@@ -4,11 +4,11 @@
       // Insert your commands here
       {
         "command": "vstoys.git.stageFile",
-        "title": "VsToys - Git: Stage File"
+        "title": "Git: Stage File - (VsToys)"
       },
       {
         "command": "vstoys.git.stageHunk",
-        "title": "VsToys - Git: Stage Hunk at Selection"
+        "title": "Git: Stage Hunk at Selection - (VsToys)"
       }
     ],
     "configuration": {
@@ -23,7 +23,16 @@
     },
     "keybindings": [
       // Insert your keybindings here
-      // TODO: Good keybindings
+      {
+        "key": "alt+s f",
+        "command": "vstoys.git.stageFile",
+        "when": "editorTextFocus && vstoys.git.active"
+      },
+      {
+        "key": "alt+s h",
+        "command": "vstoys.git.stageHunk",
+        "when": "editorTextFocus && vstoys.git.active"
+      }
     ]
   }
 }
