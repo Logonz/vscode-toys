@@ -30,6 +30,8 @@ export function LoadIcons() {
     }
   }
 
+  console.log("IconTheme", iconTheme);
+
   if (iconTheme) {
     const iconContributions = iconTheme.packageJSON.contributes.iconThemes[0];
     const iconExtPath = iconTheme.extensionUri.fsPath;
@@ -51,7 +53,7 @@ export function LoadIcons() {
           // console.log(`Icon: ${key}`, path.join(path.dirname(iconJSONPath), value.iconPath));
           // console.log(`Icon: ${key}`, vscode.Uri.file(path.join(path.dirname(iconJSONPath), value.iconPath)));
           if (value.iconPath) {
-          iconDefinitions.set(key, vscode.Uri.file(path.join(path.dirname(iconJSONPath), value.iconPath)));
+            iconDefinitions.set(key, vscode.Uri.file(path.join(path.dirname(iconJSONPath), value.iconPath)));
             // console.log(value.iconPath);
           } else if (value.fontCharacter) {
             warnUserThatIconPackIsNotSupported = true;

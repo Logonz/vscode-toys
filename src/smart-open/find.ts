@@ -8,7 +8,7 @@ import fs from "fs";
 import ignore from "ignore";
 
 import { GetIconForFile, LoadIcons } from "./icons";
-import { getExtensionContext, printChannelOutput } from "../extension";
+import { getExtensionContext } from "../extension";
 import {
   MAX_FREQUENCY_SCORE,
   getFileMetadata,
@@ -16,7 +16,8 @@ import {
   updateFileMetadata,
 } from "./metadata";
 import { calculateCompositeScore, calculateRecencyScore } from "./score";
-import { CustomEditorLabelService, ICustomEditorLabelPatterns } from "../helpers/customEditorLabelService";
+import { CustomEditorLabelService, GetMaxWorkspaceFiles, ICustomEditorLabelPatterns } from "../helpers/customEditorLabelService";
+import { printSmartOpenOutput } from "./main";
 
 // Own interface extending QuickPickItem
 export interface FileQuickPickItem extends vscode.QuickPickItem {
@@ -33,18 +34,32 @@ const filesToIcon = new Map<string, vscode.Uri>();
 // All files in the workspace
 let files: vscode.Uri[] = [];
 
-function getAllFileIcons(files: vscode.Uri[]) {
-  printChannelOutput(`Getting all file icons`, false);
+async function getAllFileIcons(files: vscode.Uri[]) {
+  printSmartOpenOutput(`Getting all file icons count: ${files.length}`, false);
+  const parsedFileExtensions: string[] = [];
+  const extToIcon = new Map<string, vscode.Uri>();
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    // GetIconForFile(vscode.Uri.file(file)).then((icon) => {
-    GetIconForFile(file).then((icon) => {
-      // const icon = iconDefinitions.get(ext) || vscode.ThemeIcon.File;
-      // printChannelOutput(`Icon: ${icon}`, true);
+    // TODO: look this over in terms of performance
+    // When you have TONS of files, this will be slow, use ~ to test
+    const fileExtension = path.extname(file.fsPath).toLowerCase();
+    if (parsedFileExtensions.includes(fileExtension)) {
+      const icon = extToIcon.get(fileExtension);
       if (icon) {
         filesToIcon.set(file.fsPath, icon);
       }
-    });
+      continue;
+    }
+    // GetIconForFile(vscode.Uri.file(file)).then((icon) => {
+    const icon = await GetIconForFile(file); //.then((icon) => {
+    if (icon) {
+      filesToIcon.set(file.fsPath, icon);
+      extToIcon.set(fileExtension, icon);
+    }
+    if (!parsedFileExtensions.includes(fileExtension)) {
+      parsedFileExtensions.push(fileExtension);
+    }
+    // });
   }
 }
 
@@ -54,19 +69,19 @@ function initalizeListener(context: vscode.ExtensionContext) {
 
   // TODO: Make these just scan the current file and not all files
   const debouncedOnDidCreate = debounce(async (uri: vscode.Uri) => {
-    printChannelOutput(`On File Create : URI: ${uri}`);
+    printSmartOpenOutput(`On File Create : URI: ${uri}`);
     console.log(`On File Create : URI: ${uri}`);
     if (uri.path.includes("/.git/")) {
       return;
     }
     // initializeMetadata(DAcontext, uri.fsPath);
     files = await GetAllFilesInWorkspace();
-    getAllFileIcons(files);
+    await getAllFileIcons(files);
   }, debounceDelay);
 
   // TODO: Make these just scan the current file and not all files
   // const debouncedOnDidChange = debounce(async (uri: vscode.Uri) => {
-  //   printChannelOutput(`On File Change : URI: ${uri}`);
+  //   printJumpOutput(`On File Change : URI: ${uri}`);
   //   getAllFileIcons(
   //     (await GetAllFilesInWorkspace()).map((file) => vscode.Uri.file(file))
   //   );
@@ -82,7 +97,7 @@ function initalizeListener(context: vscode.ExtensionContext) {
     }
     // We use a timeout to make sure the file is deleted after the debounce delay
     setTimeout(() => {
-      printChannelOutput(`On File Delete : URI: ${uri}`);
+      printSmartOpenOutput(`On File Delete : URI: ${uri}`);
       filesToIcon.delete(uri.fsPath);
     }, debounceDelay + 50);
   });
@@ -105,13 +120,13 @@ export async function InitializeFind(context: vscode.ExtensionContext) {
   // });
 
   // * Get all files in the workspace
-  getAllFileIcons(files);
+  await getAllFileIcons(files);
 
   // * Initialize the listener
   initalizeListener(context);
 
   // * Intialize the quick pick
-  quickPickObject.placeholder = "Type to search files...";
+  quickPickObject.placeholder = "Search files by name...";
   quickPickObject.matchOnDescription = false;
   quickPickObject.matchOnDetail = false;
   // quickPickObject.items = filteredItems;
@@ -121,8 +136,22 @@ export async function InitializeFind(context: vscode.ExtensionContext) {
   // https://github.com/microsoft/vscode/issues/73904
   (quickPickObject as any).sortByLabel = false;
 
+  const QUICK_COMMANDS: Record<string, string> = {
+    '>': 'workbench.action.showCommands', // If the user types >, show the command palette
+    '%': 'workbench.action.quickTextSearch', // If the user types %, show quick text search
+    '#': 'workbench.action.showAllSymbols', // If the user types #, go to symbol workspace
+    '@': 'workbench.action.gotoSymbol', // If the user types @, go to symbol in file
+    ':': 'workbench.action.gotoLine' // If the user types :, go to line
+  };
+
   // * Update items as the user types
-  const changeD = quickPickObject.onDidChangeValue(async (value) => {
+  const changeD = quickPickObject.onDidChangeValue(async (value: string) => {
+    // If the user types a quick command, execute it
+    if (QUICK_COMMANDS[value]) {
+      quickPickObject.hide();
+      vscode.commands.executeCommand(QUICK_COMMANDS[value]);
+      return;
+    }
     const scores = await GenerateItemList(value, files);
 
     quickPickObject.items = scores;
@@ -154,7 +183,27 @@ export async function InitializeFind(context: vscode.ExtensionContext) {
 }
 
 export async function SpawnQuickPick() {
-  quickPickObject.items = await GenerateItemList("", files);
+  const maxFiles = GetMaxWorkspaceFiles();
+  console.log(files.length, maxFiles);
+  if (files.length <= maxFiles) {
+    quickPickObject.items = await GenerateItemList("", files);
+  } else {
+    quickPickObject.placeholder = "Too many files to parse";
+    quickPickObject.items = [
+      {
+        label: "Please increase the maxWorkspaceFiles setting",
+        description: `Files: ${files.length} <= ${maxFiles}`,
+        filePath: "",
+        relativePath: "disabled",
+        iconPath: new vscode.ThemeIcon("warning"),
+        rawScore: 0,
+        recencyScore: 0,
+        frequencyScore: 0,
+        closeScore: 0,
+        finalScore: 0,
+      },
+    ];
+  }
   // Show the quick pick
   quickPickObject.show();
 }
@@ -227,7 +276,7 @@ async function GenerateItemList(needle: string, files: vscode.Uri[]): Promise<Fi
           }
         }
         if (addFile) {
-          console.log("Adding file:", fileObject);
+          // console.log("Adding file:", fileObject);
           internalFiles.push(fileObject);
         }
       });
@@ -247,8 +296,8 @@ async function GenerateItemList(needle: string, files: vscode.Uri[]): Promise<Fi
   const activeEditorPathParts = vscode.workspace
     .asRelativePath(currentActiveEditor?.document.uri.fsPath || "")
     .split("/");
-  console.log(activeEditorPathParts);
-  printChannelOutput(`Number of parts of active: ${activeEditorPathParts?.length}`, false);
+  // console.log(activeEditorPathParts);
+  printSmartOpenOutput(`Number of parts of active: ${activeEditorPathParts?.length}`, false);
 
   // First, compute the scores for all files
   const fileScores = internalFiles.map((file): FileQuickPickItem => {
@@ -286,10 +335,10 @@ async function GenerateItemList(needle: string, files: vscode.Uri[]): Promise<Fi
   // const maxScoreValue = Math.round(maxScore - minScore);
   // const minLength = Math.ceil(Math.log(maxScoreValue + 1) / Math.log(base));
 
-  // printChannelOutput(`Min score:, ${minScore}`, true);
-  // printChannelOutput(`Max score:, ${maxScore}`, true);
-  // printChannelOutput(`Max score value:, ${maxScoreValue}`, true);
-  // printChannelOutput(`Min length:, ${minLength}`, true);
+  // printJumpOutput(`Min score:, ${minScore}`, true);
+  // printJumpOutput(`Max score:, ${maxScore}`, true);
+  // printJumpOutput(`Max score value:, ${maxScoreValue}`, true);
+  // printJumpOutput(`Min length:, ${minLength}`, true);
 
   const scoreWeights = {
     matchQuality: 0.5,
@@ -340,11 +389,11 @@ async function GenerateItemList(needle: string, files: vscode.Uri[]): Promise<Fi
             // Penalize the current file by 10%
             finalScore = finalScore * 0.9;
           }
-          // printChannelOutput(`File: ${fs.relativePath}`, true);
-          // printChannelOutput(`Open count: ${openCount}`, true);
-          // printChannelOutput(`Recency Mapped: ${recencyScoreMapped}`, true);
-          // printChannelOutput(`Frequency Mapped: ${frequencyScoreMapped}`, true);
-          // printChannelOutput(`Final Score: ${finalScore}`, true);
+          // printJumpOutput(`File: ${fs.relativePath}`, true);
+          // printJumpOutput(`Open count: ${openCount}`, true);
+          // printJumpOutput(`Recency Mapped: ${recencyScoreMapped}`, true);
+          // printJumpOutput(`Frequency Mapped: ${frequencyScoreMapped}`, true);
+          // printJumpOutput(`Final Score: ${finalScore}`, true);
 
           let descriptions: string[] = [];
           descriptions.push(`${fs.relativePath} - (fnl:${finalScore.toFixed(2)})=`);
@@ -416,6 +465,26 @@ async function GenerateItemList(needle: string, files: vscode.Uri[]): Promise<Fi
   return filteredItems;
 }
 
+function loadGitignore(folderPath: string): ReturnType<typeof ignore> {
+  const ig = ignore();
+  const gitignorePath = path.join(folderPath, ".gitignore");
+
+  if (fs.existsSync(gitignorePath)) {
+    const gitignoreContent = fs.readFileSync(gitignorePath, "utf8");
+    ig.add(gitignoreContent);
+  }
+
+  return ig;
+}
+
+function passesGitignoreCheck(filePath: string, folderPath: string, ig: ReturnType<typeof ignore> | undefined): boolean {
+  if (ig === undefined) {
+    ig = loadGitignore(folderPath);
+  }
+  const relativePath = path.relative(folderPath, filePath);
+  return !ig.ignores(relativePath);
+}
+
 export async function GetAllFilesInWorkspace(): Promise<vscode.Uri[]> {
   if (!vscode.workspace.workspaceFolders) {
     vscode.window.showInformationMessage("No workspace is open.");
@@ -427,21 +496,11 @@ export async function GetAllFilesInWorkspace(): Promise<vscode.Uri[]> {
   for (const workspaceFolder of vscode.workspace.workspaceFolders) {
     const folderPath = workspaceFolder.uri.fsPath;
     const pattern = new vscode.RelativePattern(folderPath, "**/*");
+    const ig = loadGitignore(folderPath);
 
-    // Load and parse .gitignore
-    const gitignorePath = path.join(folderPath, ".gitignore");
-    const ig = ignore();
-    if (fs.existsSync(gitignorePath)) {
-      const gitignoreContent = fs.readFileSync(gitignorePath, "utf8");
-      ig.add(gitignoreContent);
-    }
-
-    // Get all files in the workspace folder
     const files = await vscode.workspace.findFiles(pattern);
     files.forEach((file) => {
-      const relativePath = path.relative(folderPath, file.fsPath);
-      // Apply .gitignore filtering
-      if (!ig.ignores(relativePath)) {
+      if (passesGitignoreCheck(file.fsPath, folderPath, ig)) {
         allFiles.push(file);
       }
     });
