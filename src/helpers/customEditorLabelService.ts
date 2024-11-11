@@ -27,6 +27,11 @@ export function GetCustomLabelPatterns(): ICustomEditorLabelPatterns {
   return customLabelPatterns;
 }
 
+let maxWorkspaceFiles: number = 5000;
+export function GetMaxWorkspaceFiles(): number {
+  return maxWorkspaceFiles;
+}
+
 let customEditorLabelService: CustomEditorLabelService | undefined;
 export function updateCustomLabelConfiguration(): void {
   // * Get if custom labels are enabled
@@ -48,6 +53,15 @@ export function updateCustomLabelConfiguration(): void {
     customLabelPatterns = customLabelsPatterns;
     // * Update the custom editor label service
     customEditorLabelService = new CustomEditorLabelService(customLabelPatterns);
+  }
+
+  // * Get the max workspace files
+  const maxFiles: number | undefined = vscode.workspace
+    .getConfiguration("vstoys")
+    .get<number>("smart-open.maxWorkspaceFiles");
+  console.log("Max Files: ", maxFiles);
+  if (maxFiles !== undefined) {
+    maxWorkspaceFiles = maxFiles;
   }
 }
 

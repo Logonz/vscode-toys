@@ -11,11 +11,11 @@ import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelServ
  * @param content The content to be printed.
  * @param reveal Whether the output channel should be revealed.
  */
-export let printJumpOutput: (content: string, reveal?: boolean) => void;
+export let printSmartOpenOutput: (content: string, reveal?: boolean) => void;
 
 export function activateSmartOpen(name: string, context: vscode.ExtensionContext) {
-  printJumpOutput = createOutputChannel(`${name}`);
-  printJumpOutput(`${name} activating`);
+  printSmartOpenOutput = createOutputChannel(`${name}`);
+  printSmartOpenOutput(`${name} activating`);
   InitializeFind(context);
 
   context.subscriptions.push(
@@ -25,12 +25,15 @@ export function activateSmartOpen(name: string, context: vscode.ExtensionContext
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (
         event.affectsConfiguration("workbench.editor.customLabels.enabled") ||
-        event.affectsConfiguration("workbench.editor.customLabels.patterns")
+        event.affectsConfiguration("workbench.editor.customLabels.patterns") ||
+        event.affectsConfiguration("vstoys.smart-open.maxWorkspaceFiles")
       ) {
         updateCustomLabelConfiguration();
       }
     })
   );
-
-  printJumpOutput(`${name} activated`, false);
+  // Initialize the custom editor label service
+  updateCustomLabelConfiguration();
+  
+  printSmartOpenOutput(`${name} activated`, false);
 }
