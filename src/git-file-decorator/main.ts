@@ -14,6 +14,8 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
   private enabled: boolean = true;
   private refreshInterval: number = 5000;
   private targetBranch: string = "main";
+  private enableColor: boolean = true;
+  private enableBadge: boolean = true;
 
   readonly onDidChangeFileDecorations: vscode.Event<vscode.Uri | vscode.Uri[]> = this._onDidChangeFileDecorations.event;
 
@@ -80,6 +82,8 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
     this.enabled = config.get("enabled", true);
     this.refreshInterval = config.get("refreshInterval", 5000);
     this.targetBranch = config.get("targetBranch", "main");
+    this.enableColor = config.get("enableColor", true);
+    this.enableBadge = config.get("enableBadge", true);
   }
 
   private isEnabled(): boolean {
@@ -185,8 +189,8 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
       ) {
         console.log(`[vstoys] File ${filePath} differs from ${this.targetBranch} and has no unstaged changes, applying decoration.`);
         return {
-          color: new vscode.ThemeColor("button.foreground"),
-          badge: "C",
+          color: this.enableColor ? new vscode.ThemeColor("button.foreground") : undefined,
+          badge: this.enableBadge ? "C" : undefined,
           tooltip: `Changed (differs from ${this.targetBranch})`,
         };
       }
