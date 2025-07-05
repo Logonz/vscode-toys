@@ -1,0 +1,3 @@
+# Instead of showing all the different jump places for every line, we can instead show lines to jump to and when the user clicks on them, we can show the different places to jump to. This way, we can reduce the amount of information shown to the user at once and make it easier to navigate the code.
+
+If a line has multiple places to jump to we can highlight the line and when the user clicks on it, we can show the different places to jump to. Removing the highlighting will hide the different places to jump to.

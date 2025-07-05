@@ -32,6 +32,10 @@
         "title": "VsToys: SmartOpen"
       },
       {
+        "command": "vstoys.jump.jumpAI",
+        "title": "VsToys - Jump: Jump AI"
+      },
+      {
         "command": "vstoys.git.stageFile",
         "title": "Git: Stage File - (VsToys)"
       },
@@ -155,6 +159,11 @@
         "key": "ctrl+p",
         "mac": "ctrl+p",
         "when": "vstoys.smart-open.active"
+      },
+      {
+        "key": "alt+s s",
+        "command": "vstoys.jump.jumpAI",
+        "when": "editorTextFocus && vstoys.jump.active"
       },
       {
         "key": "alt+s f",
@@ -338,6 +347,7 @@
     "deindent": "^0.1.0",
     "ignore": "^6.0.2",
     "minimatch": "^10.0.1",
+    "openai": "^4.68.4",
     "parse-diff": "^0.11.1",
     "tmp": "^0.2.3"
   }

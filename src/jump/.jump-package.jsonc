@@ -2,6 +2,10 @@
   "contributes": {
     "commands": [
       // Insert your commands here
+      {
+        "command": "vstoys.jump.jumpAI",
+        "title": "VsToys - Jump: Jump AI"
+      }
     ],
     "configuration": {
       "properties": {
@@ -15,6 +19,11 @@
     },
     "keybindings": [
       // Insert your keybindings here
+      {
+        "key": "alt+s s",
+        "command": "vstoys.jump.jumpAI",
+        "when": "editorTextFocus && vstoys.jump.active"
+      }
     ]
   }
 }
