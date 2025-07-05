@@ -4,7 +4,7 @@
   "description": "VsCode Toys is a collection of utilities for Visual Studio Code.",
   "version": "0.0.5",
   "publisher": "Logonz",
-  "icon": "VsCodeToys-icon.png",
+  "icon": "VsCodeToys-icon-512x512.png",
   "license": "MIT",
   "engines": {
     "vscode": "^1.89.1"
@@ -28,8 +28,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "vstoys.smart-open.openSmart",
-        "title": "VsToys: SmartOpen"
+        "command": "vstoys.git.fileDecorator.refresh",
+        "title": "File Decorator: Refresh Decorations - (VsToys)"
       },
       {
         "command": "vstoys.git.stageFile",
@@ -38,10 +38,6 @@
       {
         "command": "vstoys.git.stageHunk",
         "title": "Git: Stage Hunk at Selection - (VsToys)"
-      },
-      {
-        "command": "vstoys.double-action.execute",
-        "title": "VsToys - DoubleAction: Execute"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
@@ -61,62 +57,34 @@
       }
     ],
     "configuration": {
-      "title": "VsToys - Configuration",
+      "title": "VsToys",
       "properties": {
         "vstoys.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Global enable/disable for the VSCode Toys"
+          "description": "Global enable/disable for the VSCode Toys",
+          "order": 0
         },
-        "vstoys.smart-open.enabled": {
+        "vstoys.git.fileDecorator.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Smart Open module in VSCode Toys"
+          "description": "Enable the File Decorator module in VSCode Toys"
         },
-        "vstoys.smart-open.maxWorkspaceFiles": {
+        "vstoys.git.fileDecorator.refreshInterval": {
           "type": "number",
           "default": 5000,
-          "description": "Maximum number of files to index in the workspace, tip is to use gitignore to exclude files"
+          "description": "Interval in milliseconds for refreshing file decorations (minimum 1000ms)"
         },
-        "vstoys.jump.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable the Jump module in VSCode Toys"
+        "vstoys.git.fileDecorator.targetBranch": {
+          "type": "string",
+          "default": "main",
+          "description": "Target branch for Git diff comparisons",
+          "ignoreSync": true
         },
         "vstoys.git.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable the Git module in VSCode Toys"
-        },
-        "vstoys.double-action.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable the Double Action module in VSCode Toys"
-        },
-        "vstoys.double-action.timeoutPress": {
-          "type": "boolean",
-          "default": false,
-          "description": "If true, the extension will wait for a timeout to execute the single press command rather than executing it immediately and if within the timeout only execute the double press, the default behavior will execute the single press command immediately and the double press command after the double press threshold"
-        },
-        "vstoys.double-action.singlePressCommand": {
-          "type": "string",
-          "default": "findJump.activate",
-          "description": "Command to execute when single pressing the key"
-        },
-        "vstoys.double-action.preDoublePressCommand": {
-          "type": "string",
-          "default": "findJump.activateWithSelection",
-          "description": "Command to execute before executing the double press command (I personally use this to exit a previos command)"
-        },
-        "vstoys.double-action.doublePressCommand": {
-          "type": "string",
-          "default": "findJump.activateWithSelection",
-          "description": "Command to execute when double pressing the key"
-        },
-        "vstoys.double-action.doublePressThreshold": {
-          "type": "number",
-          "default": 800,
-          "description": "Threshold in milliseconds to consider a double press, it resets the internal boolean after this time"
         },
         "vstoys.dot-repeat.enabled": {
           "type": "boolean",
@@ -151,12 +119,6 @@
     },
     "keybindings": [
       {
-        "command": "vstoys.smart-open.openSmart",
-        "key": "ctrl+p",
-        "mac": "ctrl+p",
-        "when": "vstoys.smart-open.active"
-      },
-      {
         "key": "alt+s f",
         "command": "vstoys.git.stageFile",
         "when": "editorTextFocus && vstoys.git.active"
@@ -165,12 +127,6 @@
         "key": "alt+s h",
         "command": "vstoys.git.stageHunk",
         "when": "editorTextFocus && vstoys.git.active"
-      },
-      {
-        "command": "vstoys.double-action.execute",
-        "key": "f21",
-        "mac": "f21",
-        "when": "editorTextFocus && vstoys.double-action.active"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
@@ -292,6 +248,12 @@
         "key": "d c",
         "command": "vstoys.clear-line.clearLines",
         "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active && !vstoys.dot-repeat.active"
+      }
+    ],
+    "fileDecorations": [
+      {
+        "id": "fileExplorerDecorator",
+        "label": "File Explorer Decorator"
       }
     ]
   },

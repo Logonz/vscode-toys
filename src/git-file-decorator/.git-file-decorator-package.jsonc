@@ -1,0 +1,30 @@
+{
+  "contributes": {
+    "commands": [
+      {
+        "command": "vstoys.git.fileDecorator.refresh",
+        "title": "File Decorator: Refresh Decorations - (VsToys)"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        "vstoys.git.fileDecorator.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the File Decorator module in VSCode Toys"
+        },
+        "vstoys.git.fileDecorator.refreshInterval": {
+          "type": "number",
+          "default": 5000,
+          "description": "Interval in milliseconds for refreshing file decorations (minimum 1000ms)"
+        },
+        "vstoys.git.fileDecorator.targetBranch": {
+          "type": "string",
+          "default": "main",
+          "description": "Target branch for Git diff comparisons",
+          "ignoreSync": true
+        }
+      }
+    }
+  }
+}
