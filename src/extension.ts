@@ -1,14 +1,11 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import { InlineInput } from "./dot-repeat/inlineInput";
-import { activateSmartOpen } from "./smart-open/main";
 import { activateDotRepeat } from "./dot-repeat/main";
-import { activateDoubleAction } from "./double-action/main";
-import { activateJump } from "./jump/main";
 import { activateGit } from "./git/main";
 import { activateCopyHighlight } from "./copy-highlight/main";
 import { activateClearLine } from "./clear-line/main";
+import { activateFileDecorator } from "./git-file-decorator/main";
 
 try {
   require("./debug");
@@ -41,27 +38,15 @@ let vsToys: {
     deactivator: () => {},
   },
   {
-    name: "Double Action",
-    moduleContext: "double-action",
-    activator: activateDoubleAction,
-    deactivator: () => {},
-  },
-  {
     name: "Git",
     moduleContext: "git",
     activator: activateGit,
     deactivator: () => {},
   },
   {
-    name: "Jump",
-    moduleContext: "jump",
-    activator: activateJump,
-    deactivator: () => {},
-  },
-  {
-    name: "Smart Open",
-    moduleContext: "smart-open",
-    activator: activateSmartOpen,
+    name: "File Decorator",
+    moduleContext: "file-decorator",
+    activator: (name, context) => activateFileDecorator(name, context),
     deactivator: () => {},
   },
 ];
