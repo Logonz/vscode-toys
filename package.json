@@ -2,7 +2,7 @@
   "name": "vstoys",
   "displayName": "VsToys",
   "description": "VsCode Toys is a collection of utilities for Visual Studio Code.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "Logonz",
   "icon": "VsCodeToys-icon-512x512.png",
   "license": "MIT",
