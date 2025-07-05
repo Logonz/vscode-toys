@@ -14,21 +14,25 @@
         "vstoys.copy-highlight.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Copy Highlight module in VSCode Toys"
+          "description": "Enable the Copy Highlight module in VSCode Toys",
+          "order": 2000
         },
         "vstoys.copy-highlight.foregroundColor": {
           "type": "string",
-          "description": "Foreground color for the copy highlighting"
+          "description": "Foreground color for the copy highlighting",
+          "order": 2001
         },
         "vstoys.copy-highlight.backgroundColor": {
           "type": "string",
           "default": "editor.wordHighlightBackground",
-          "description": "Background color for the copy highlighting\nFor more information about color check out https://code.visualstudio.com/api/references/theme-color for more available colors\nrgba(R, G, B, A) is also supported"
+          "description": "Background color for the copy highlighting\nFor more information about color check out https://code.visualstudio.com/api/references/theme-color for more available colors\nrgba(R, G, B, A) is also supported",
+          "order": 2002
         },
         "vstoys.copy-highlight.timeout": {
           "type": "number",
           "default": 100,
-          "description": "Timeout duration in milliseconds"
+          "description": "Timeout duration in milliseconds",
+          "order": 2003
         }
       }
     },

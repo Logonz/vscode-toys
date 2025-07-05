@@ -13,7 +13,8 @@
         "vstoys.clear-line.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Clear Line module in VSCode Toys"
+          "description": "Enable the Clear Line module in VSCode Toys",
+          "order": 1000
         }
       }
     },

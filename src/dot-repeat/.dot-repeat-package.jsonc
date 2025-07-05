@@ -18,7 +18,8 @@
         "vstoys.dot-repeat.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Dot-Repeat module in VSCode Toys"
+          "description": "Enable the Dot-Repeat module in VSCode Toys",
+          "order": 3000
         }
       }
     },
