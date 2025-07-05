@@ -63,57 +63,79 @@
           "type": "boolean",
           "default": true,
           "description": "Global enable/disable for the VSCode Toys",
-          "order": 0
+          "order": 100
         },
         "vstoys.git.fileDecorator.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the File Decorator module in VSCode Toys"
+          "description": "Enable the File Decorator module in VSCode Toys",
+          "order": 5000
         },
         "vstoys.git.fileDecorator.refreshInterval": {
           "type": "number",
           "default": 5000,
-          "description": "Interval in milliseconds for refreshing file decorations (minimum 1000ms)"
+          "description": "Interval in milliseconds for refreshing file decorations (minimum 1000ms)",
+          "order": 5001
         },
         "vstoys.git.fileDecorator.targetBranch": {
           "type": "string",
           "default": "main",
           "description": "Target branch for Git diff comparisons",
-          "ignoreSync": true
+          "ignoreSync": true,
+          "order": 5002
+        },
+        "vstoys.git.fileDecorator.enableBadge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable badge for file decorations",
+          "order": 5003
+        },
+        "vstoys.git.fileDecorator.enableColor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable color for file decorations",
+          "order": 5004
         },
         "vstoys.git.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Git module in VSCode Toys"
+          "description": "Enable the Git module in VSCode Toys",
+          "order": 4000
         },
         "vstoys.dot-repeat.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Dot-Repeat module in VSCode Toys"
+          "description": "Enable the Dot-Repeat module in VSCode Toys",
+          "order": 3000
         },
         "vstoys.copy-highlight.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Copy Highlight module in VSCode Toys"
+          "description": "Enable the Copy Highlight module in VSCode Toys",
+          "order": 2000
         },
         "vstoys.copy-highlight.foregroundColor": {
           "type": "string",
-          "description": "Foreground color for the copy highlighting"
+          "description": "Foreground color for the copy highlighting",
+          "order": 2001
         },
         "vstoys.copy-highlight.backgroundColor": {
           "type": "string",
           "default": "editor.wordHighlightBackground",
-          "description": "Background color for the copy highlighting\nFor more information about color check out https://code.visualstudio.com/api/references/theme-color for more available colors\nrgba(R, G, B, A) is also supported"
+          "description": "Background color for the copy highlighting\nFor more information about color check out https://code.visualstudio.com/api/references/theme-color for more available colors\nrgba(R, G, B, A) is also supported",
+          "order": 2002
         },
         "vstoys.copy-highlight.timeout": {
           "type": "number",
           "default": 100,
-          "description": "Timeout duration in milliseconds"
+          "description": "Timeout duration in milliseconds",
+          "order": 2003
         },
         "vstoys.clear-line.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Clear Line module in VSCode Toys"
+          "description": "Enable the Clear Line module in VSCode Toys",
+          "order": 1000
         }
       }
     },

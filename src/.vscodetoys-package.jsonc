@@ -10,7 +10,7 @@
           "type": "boolean",
           "default": true,
           "description": "Global enable/disable for the VSCode Toys",
-          "order": 0 // Always at the top
+          "order": 100 // Always at the top
         }
       }
     },

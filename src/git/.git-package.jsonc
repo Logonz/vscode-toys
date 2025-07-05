@@ -17,7 +17,8 @@
         "vstoys.git.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Git module in VSCode Toys"
+          "description": "Enable the Git module in VSCode Toys",
+          "order": 4000
         }
       }
     },

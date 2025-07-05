@@ -11,18 +11,33 @@
         "vstoys.git.fileDecorator.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the File Decorator module in VSCode Toys"
+          "description": "Enable the File Decorator module in VSCode Toys",
+          "order": 5000
+        },
+        "vstoys.git.fileDecorator.enableBadge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable badge for file decorations",
+          "order": 5001
+        },
+        "vstoys.git.fileDecorator.enableColor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable color for file decorations",
+          "order": 5002
         },
         "vstoys.git.fileDecorator.refreshInterval": {
           "type": "number",
           "default": 5000,
-          "description": "Interval in milliseconds for refreshing file decorations (minimum 1000ms)"
+          "description": "Interval in milliseconds for refreshing file decorations (minimum 1000ms)",
+          "order": 5003
         },
         "vstoys.git.fileDecorator.targetBranch": {
           "type": "string",
           "default": "main",
           "description": "Target branch for Git diff comparisons",
-          "ignoreSync": true
+          "ignoreSync": true,
+          "order": 5004
         }
       }
     }
