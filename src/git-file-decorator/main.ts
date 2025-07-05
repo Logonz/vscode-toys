@@ -10,6 +10,11 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
   private gitDiffCache: string[] = [];
   private refreshTimeout: NodeJS.Timeout | undefined;
 
+  // Configuration
+  private enabled: boolean = true;
+  private refreshInterval: number = 5000;
+  private targetBranch: string = "main";
+
   readonly onDidChangeFileDecorations: vscode.Event<vscode.Uri | vscode.Uri[]> = this._onDidChangeFileDecorations.event;
 
   constructor() {
@@ -56,27 +61,52 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
       this.refresh();
     });
 
-    // Initialize cache
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration("vstoys.git.fileDecorator")) {
+        console.log(`[vstoys] File decorator configuration changed.`);
+        this.updateConfig();
+        this.refreshCache();
+        this.refresh();
+      }
+    });
+
+    this.updateConfig();
     this.refreshCache();
     this.schedulePeriodicRefresh();
   }
 
-  // Dynamically fetch configuration values in relevant methods
+  private updateConfig(): void {
+    const config = vscode.workspace.getConfiguration("vstoys.git.fileDecorator");
+    this.enabled = config.get("enabled", true);
+    this.refreshInterval = config.get("refreshInterval", 5000);
+    this.targetBranch = config.get("targetBranch", "main");
+  }
+
+  private isEnabled(): boolean {
+    return this.enabled;
+  }
+
   private schedulePeriodicRefresh() {
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
     }
-    const config = vscode.workspace.getConfiguration("vstoys.fileDecorator");
-    const interval = config.get("refreshInterval", 5000); // Fetch interval dynamically
-    console.log(`[vstoys] Scheduling periodic refresh every ${interval} ms`);
+    console.log(`[vstoys] Scheduling periodic refresh every ${this.refreshInterval} ms`);
     this.refreshTimeout = setTimeout(() => {
-      this.refreshCache();
-      this.refresh();
+      if (this.isEnabled()) {
+        this.refreshCache();
+        this.refresh();
+      }
       this.schedulePeriodicRefresh();
-    }, interval < 1000 ? 1000 : interval); // Ensure minimum interval of 1 second
+    }, this.refreshInterval < 1000 ? 1000 : this.refreshInterval); // Ensure minimum interval of 1 second
   }
 
   private refreshCache(): void {
+    if (!this.isEnabled()) {
+      console.log("[vstoys] File decorator is disabled. Not refreshing cache.");
+      this.gitStatusCache = [];
+      this.gitDiffCache = [];
+      return;
+    }
     try {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (!workspaceFolder) {
@@ -85,8 +115,6 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
       }
 
       const cwd = workspaceFolder.uri.fsPath;
-      const config = vscode.workspace.getConfiguration("vstoys.fileDecorator");
-      const targetBranch = config.get("targetBranch", "main"); // Fetch target branch dynamically
 
       // Cache Git status
       this.gitStatusCache = child_process
@@ -97,7 +125,7 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
 
       // Cache Git diff
       this.gitDiffCache = child_process
-        .execSync(`git diff ${targetBranch} --name-only`, { cwd })
+        .execSync(`git diff ${this.targetBranch} --name-only`, { cwd })
         .toString()
         .split("\n")
         .map((line) => line.trim());
@@ -113,6 +141,9 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
   }
 
   provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
+    if (!this.isEnabled()) {
+      return undefined;
+    }
     if (this.gitDiffCache.length === 0 && this.gitStatusCache.length === 0) {
       console.log(`[vstoys] No Git cache available, skipping decoration for ${uri.fsPath}, Are you in a Git repository and have git installed?`);
       return undefined;
@@ -136,11 +167,11 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
         this.gitDiffCache.includes(relativeFilePath) &&
         !this.gitStatusCache.some((statusLine) => statusLine.endsWith(relativeFilePath))
       ) {
-        console.log(`[vstoys] File ${filePath} differs from main and has no unstaged changes, applying decoration.`);
+        console.log(`[vstoys] File ${filePath} differs from ${this.targetBranch} and has no unstaged changes, applying decoration.`);
         return {
           color: new vscode.ThemeColor("button.foreground"),
           badge: "C",
-          tooltip: "Changed (differs from main)",
+          tooltip: `Changed (differs from ${this.targetBranch})`,
         };
       }
     } catch (error) {
