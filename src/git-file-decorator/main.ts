@@ -116,6 +116,22 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
 
       const cwd = workspaceFolder.uri.fsPath;
 
+      // Detect default branch if set to main or master
+      if (this.targetBranch === "main" || this.targetBranch === "master") {
+        try {
+          const branchOutput = child_process.execSync("git branch --list main master", { cwd }).toString();
+          if (branchOutput.includes("main")) {
+            this.targetBranch = "main";
+          } else if (branchOutput.includes("master")) {
+            this.targetBranch = "master";
+          }
+        } catch (e) {
+          // Fails if not in a git repo or git is not installed.
+          // We can ignore the error and use the default branch from the config.
+          console.log(`[vstoys] Could not detect default branch, using '${this.targetBranch}'.`);
+        }
+      }
+
       // Cache Git status
       this.gitStatusCache = child_process
         .execSync(`git status --porcelain`, { cwd })
