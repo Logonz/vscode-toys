@@ -1,0 +1,48 @@
+name: Release Extension
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+
+      - name: Build extension
+        run: npm run vscode:prepublish
+
+      - name: Get package version
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Package extension
+        id: package
+        run: |
+          vsce package -o vstoys-${{ steps.package-version.outputs.version }}.vsix
+          echo "vsix_path=vstoys-${{ steps.package-version.outputs.version }}.vsix" >> $GITHUB_OUTPUT
+
+      - name: Publish release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "${{ steps.package.outputs.vsix_path }}"
+          name: "Release version ${{ steps.package-version.outputs.version }}"
+          commit: "${{ github.sha }}"
+          tag: "v${{ steps.package-version.outputs.version }}"
+          allowUpdates: true
+          removeArtifacts: true
+          token: ${{ secrets.GITHUB_TOKEN }}
