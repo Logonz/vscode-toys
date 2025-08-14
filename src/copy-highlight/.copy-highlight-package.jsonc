@@ -4,7 +4,8 @@
       // Insert your commands here
       {
         "command": "vstoys.copy-highlight.copy",
-        "title": "VsToys - Copy Highlight: Copy"
+        "category": "VsToys",
+        "title": "Copy Highlight: Copy"
       }
     ],
     "configuration": {

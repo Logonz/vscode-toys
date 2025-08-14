@@ -5,11 +5,13 @@
       // Insert your commands here
       {
         "command": "vstoys.dot-repeat.repeatExecute",
-        "title": "VsToys - DotRepeat: repeatExecute"
+        "category": "VsToys",
+        "title": "DotRepeat: repeatExecute"
       },
       {
         "command": "vstoys.dot-repeat.repeatExit",
-        "title": "VsToys - DotRepeat: repeatExit"
+        "category": "VsToys",
+        "title": "DotRepeat: repeatExit"
       }
     ],
     "configuration": {

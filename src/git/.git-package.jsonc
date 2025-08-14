@@ -4,10 +4,12 @@
       // Insert your commands here
       {
         "command": "vstoys.git.stageFile",
+        "category": "VsToys",
         "title": "Git: Stage File - (VsToys)"
       },
       {
         "command": "vstoys.git.stageHunk",
+        "category": "VsToys",
         "title": "Git: Stage Hunk at Selection - (VsToys)"
       }
     ],
