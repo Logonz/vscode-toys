@@ -23,37 +23,59 @@
     "url": "https://github.com/Logonz/vscode-toys.git"
   },
   "activationEvents": [
-    "onStartupFinished"
+    "*"
   ],
   "contributes": {
     "commands": [
       {
+        "command": "vstoys.registers.showRegisterPastePicker",
+        "category": "VsToys",
+        "title": "Registers: Show Register Paste Picker"
+      },
+      {
+        "command": "vstoys.registers.showRegisterCopyPicker",
+        "category": "VsToys",
+        "title": "Registers: Show Register Copy Picker"
+      },
+      {
+        "command": "vstoys.registers.clearAllRegisters",
+        "category": "VsToys",
+        "title": "Registers: Clear All Registers"
+      },
+      {
         "command": "vstoys.git.fileDecorator.refresh",
+        "category": "VsToys",
         "title": "File Decorator: Refresh Decorations - (VsToys)"
       },
       {
         "command": "vstoys.git.stageFile",
+        "category": "VsToys",
         "title": "Git: Stage File - (VsToys)"
       },
       {
         "command": "vstoys.git.stageHunk",
+        "category": "VsToys",
         "title": "Git: Stage Hunk at Selection - (VsToys)"
       },
       {
         "command": "vstoys.dot-repeat.repeatExecute",
-        "title": "VsToys - DotRepeat: repeatExecute"
+        "category": "VsToys",
+        "title": "DotRepeat: repeatExecute"
       },
       {
         "command": "vstoys.dot-repeat.repeatExit",
-        "title": "VsToys - DotRepeat: repeatExit"
+        "category": "VsToys",
+        "title": "DotRepeat: repeatExit"
       },
       {
         "command": "vstoys.copy-highlight.copy",
-        "title": "VsToys - Copy Highlight: Copy"
+        "category": "VsToys",
+        "title": "Copy Highlight: Copy"
       },
       {
         "command": "vstoys.clear-line.clearLines",
-        "title": "VsToys - Clear Line: Clear Lines"
+        "category": "VsToys",
+        "title": "Clear Line: Clear Lines"
       }
     ],
     "configuration": {
@@ -64,6 +86,18 @@
           "default": true,
           "description": "Global enable/disable for the VSCode Toys",
           "order": 100
+        },
+        "vstoys.registers.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Registers module in VSCode Toys",
+          "order": 6000
+        },
+        "vstoys.registers.maxPreviewLength": {
+          "type": "number",
+          "default": 200,
+          "description": "Maximum preview length in quick pick menu for register contents",
+          "order": 6001
         },
         "vstoys.git.fileDecorator.enabled": {
           "type": "boolean",
@@ -280,8 +314,8 @@
     ]
   },
   "scripts": {
-    "ext": "vsce package -o vscode-toys.vsix && code --install-extension vscode-toys.vsix",
-    "vsix": "vsce package -o vscode-toys.vsix",
+    "ext": "vsce package --allow-star-activation -o vscode-toys.vsix && code --install-extension vscode-toys.vsix",
+    "vsix": "vsce package --allow-star-activation -o vscode-toys.vsix",
     "vscode:prepublish": "npm run package",
     "compile": "webpack --node-env development",
     "tcompile": "tsc -p ./",
