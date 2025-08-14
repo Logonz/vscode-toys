@@ -99,6 +99,12 @@
           "description": "Maximum preview length in quick pick menu for register contents",
           "order": 6001
         },
+        "vstoys.registers.showEmptyRegisters": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show all registers (including empty ones) in quick paste menu. When disabled, only shows registers with content.",
+          "order": 6002
+        },
         "vstoys.git.fileDecorator.enabled": {
           "type": "boolean",
           "default": true,
