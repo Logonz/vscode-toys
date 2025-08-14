@@ -9,6 +9,11 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
   private gitStatusCache: string[] = [];
   private gitDiffCache: string[] = [];
   private refreshTimeout: NodeJS.Timeout | undefined;
+  private additionalDelay: number = 0;
+
+  // Constants
+  private readonly MAX_BACKOFF_DELAY: number = 120000; // 2 minutes maximum delay
+  private readonly DELAY_INCREMENT: number = 10000; // 10 seconds added per failure
 
   // Configuration
   private enabled: boolean = true;
@@ -94,14 +99,23 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
     }
-    console.log(`[vstoys] Scheduling periodic refresh every ${this.refreshInterval} ms`);
+    const currentInterval = this.refreshInterval + this.additionalDelay;
+    const minInterval = Math.max(currentInterval, 1000); // Ensure minimum interval of 1 second
+    
+    if (this.additionalDelay > 0) {
+      console.log(`[vstoys] Scheduling periodic refresh every ${minInterval} ms (base: ${this.refreshInterval} + delay: ${this.additionalDelay})`);
+    }
+    // else {
+    //   console.log(`[vstoys] Scheduling periodic refresh every ${minInterval} ms`);
+    // }
+    
     this.refreshTimeout = setTimeout(() => {
       if (this.isEnabled()) {
         this.refreshCache();
         this.refresh();
       }
       this.schedulePeriodicRefresh();
-    }, this.refreshInterval < 1000 ? 1000 : this.refreshInterval); // Ensure minimum interval of 1 second
+    }, minInterval);
   }
 
   private refreshCache(): void {
@@ -151,11 +165,20 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
         .map((line) => line.trim());
 
       console.log(`[vstoys] Git cache refreshed.`);
+      
+      // Reset delay on successful refresh
+      this.additionalDelay = 0;
     } catch (error) {
       if (error instanceof Error && error.message.includes("not found")) {
         console.error(`[vstoys] Git is not installed or not found in PATH.`);
       } else {
         console.error(`[vstoys] Error refreshing Git cache:`, error);
+      }
+      
+      // Increase delay by increment on failure, cap at maximum delay
+      this.additionalDelay = Math.min(this.additionalDelay + this.DELAY_INCREMENT, this.MAX_BACKOFF_DELAY);
+      if (this.additionalDelay > 0) {
+        console.log(`[vstoys] Git cache refresh failed, increasing delay to ${this.additionalDelay / 1000} seconds.`);
       }
     }
   }
@@ -203,7 +226,7 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
   }
 
   refresh(uri?: vscode.Uri): void {
-    console.log(`[vstoys] Refreshing decorations.`);
+    // console.log(`[vstoys] Refreshing decorations.`);
     if (uri) {
       this._onDidChangeFileDecorations.fire(uri);
     } else {
