@@ -1,0 +1,87 @@
+{
+  "contributes": {
+    "commands": [
+      // {
+      //   "command": "vstoys.registers.copyToRegister1",
+      //   "category": "VsToys",
+      //   "title": "Registers: Copy to Register 1"
+      // },
+      // {
+      //   "command": "vstoys.registers.copyToRegister2",
+      //   "category": "VsToys",
+      //   "title": "Registers: Copy to Register 2"
+      // },
+      // {
+      //   "command": "vstoys.registers.copyToRegister3",
+      //   "category": "VsToys",
+      //   "title": "Registers: Copy to Register 3"
+      // },
+      // {
+      //   "command": "vstoys.registers.copyToRegister4",
+      //   "category": "VsToys",
+      //   "title": "Registers: Copy to Register 4"
+      // },
+      // {
+      //   "command": "vstoys.registers.copyToRegister5",
+      //   "category": "VsToys",
+      //   "title": "Registers: Copy to Register 5"
+      // },
+      // {
+      //   "command": "vstoys.registers.pasteFromRegister1",
+      //   "category": "VsToys",
+      //   "title": "Registers: Paste from Register 1"
+      // },
+      // {
+      //   "command": "vstoys.registers.pasteFromRegister2",
+      //   "category": "VsToys",
+      //   "title": "Registers: Paste from Register 2"
+      // },
+      // {
+      //   "command": "vstoys.registers.pasteFromRegister3",
+      //   "category": "VsToys",
+      //   "title": "Registers: Paste from Register 3"
+      // },
+      // {
+      //   "command": "vstoys.registers.pasteFromRegister4",
+      //   "category": "VsToys",
+      //   "title": "Registers: Paste from Register 4"
+      // },
+      // {
+      //   "command": "vstoys.registers.pasteFromRegister5",
+      //   "category": "VsToys",
+      //   "title": "Registers: Paste from Register 5"
+      // },
+      {
+        "command": "vstoys.registers.showRegisterPastePicker",
+        "category": "VsToys",
+        "title": "Registers: Show Register Paste Picker"
+      },
+      {
+        "command": "vstoys.registers.showRegisterCopyPicker",
+        "category": "VsToys",
+        "title": "Registers: Show Register Copy Picker"
+      },
+      {
+        "command": "vstoys.registers.clearAllRegisters",
+        "category": "VsToys",
+        "title": "Registers: Clear All Registers"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        "vstoys.registers.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Registers module in VSCode Toys",
+          "order": 6000
+        },
+        "vstoys.registers.maxPreviewLength": {
+          "type": "number",
+          "default": 200,
+          "description": "Maximum preview length in quick pick menu for register contents",
+          "order": 6001
+        }
+      }
+    }
+  }
+}
