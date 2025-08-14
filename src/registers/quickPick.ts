@@ -20,6 +20,7 @@ export class RegisterQuickPick {
         const items: RegisterQuickPickItem[] = [];
         for (let i = 1; i <= 5; i++) {
             const hasContent = this.registerManager.hasContent(i);
+            
             let description: string;
             let detail: string;
             
@@ -72,6 +73,8 @@ export class RegisterQuickPick {
                 // Check if the user typed a number 1-5
                 if (value.length === 1 && /^[1-5]$/.test(value)) {
                     const registerNumber = parseInt(value);
+                    
+                    // Always allow copying to any register (1-5), regardless of showEmptyRegisters setting
                     this.printOutput(`Keyboard shortcut: Selected register ${registerNumber} for copying`);
                     quickPick.hide();
                     resolve(registerNumber);
@@ -95,31 +98,41 @@ export class RegisterQuickPick {
     public async showRegisterPastePicker(): Promise<string | undefined> {
         const config = vscode.workspace.getConfiguration('vstoys.registers');
         const maxPreviewLength = config.get<number>('maxPreviewLength', 200);
+        const showEmptyRegisters = config.get<boolean>('showEmptyRegisters', true);
 
-        // Show ALL registers (1-5), regardless of whether they have content
         const items: RegisterQuickPickItem[] = [];
+        
         for (let i = 1; i <= 5; i++) {
             const hasContent = this.registerManager.hasContent(i);
-            let description: string;
-            let detail: string;
             
-            if (hasContent) {
-                const content = this.registerManager.getFromRegister(i)!;
-                const registerContent = this.registerManager.getAllRegisters().get(i)!;
-                description = this.registerManager.getPreview(content, maxPreviewLength);
-                detail = `Stored: ${this.formatTimestamp(registerContent.timestamp)}`;
-            } else {
-                description = "Empty";
-                detail = "No content stored";
-            }
+            // Only include register if it has content OR if we're showing empty registers
+            if (hasContent || showEmptyRegisters) {
+                let description: string;
+                let detail: string;
+                
+                if (hasContent) {
+                    const content = this.registerManager.getFromRegister(i)!;
+                    const registerContent = this.registerManager.getAllRegisters().get(i)!;
+                    description = this.registerManager.getPreview(content, maxPreviewLength);
+                    detail = `Stored: ${this.formatTimestamp(registerContent.timestamp)}`;
+                } else {
+                    description = "Empty";
+                    detail = "No content stored";
+                }
 
-            items.push({
-                label: `Register ${i}`,
-                description: description,
-                detail: detail,
-                registerNumber: i,
-                content: hasContent ? this.registerManager.getAllRegisters().get(i)! : { text: '', timestamp: new Date() }
-            });
+                items.push({
+                    label: `Register ${i}`,
+                    description: description,
+                    detail: detail,
+                    registerNumber: i,
+                    content: hasContent ? this.registerManager.getAllRegisters().get(i)! : { text: '', timestamp: new Date() }
+                });
+            }
+        }
+
+        if (items.length === 0) {
+            vscode.window.showInformationMessage('No registers contain content');
+            return undefined;
         }
 
         const quickPick = vscode.window.createQuickPick<RegisterQuickPickItem>();
