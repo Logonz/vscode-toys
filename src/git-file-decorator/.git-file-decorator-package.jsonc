@@ -3,6 +3,7 @@
     "commands": [
       {
         "command": "vstoys.git.fileDecorator.refresh",
+        "category": "VsToys",
         "title": "File Decorator: Refresh Decorations - (VsToys)"
       }
     ],

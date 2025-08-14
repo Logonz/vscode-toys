@@ -4,7 +4,8 @@
       // Insert your commands here
       {
         "command": "vstoys.clear-line.clearLines",
-        "title": "VsToys - Clear Line: Clear Lines"
+        "category": "VsToys",
+        "title": "Clear Line: Clear Lines"
       }
     ],
     "configuration": {
