@@ -202,11 +202,21 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
             const upChar = args?.upCharacter || 'k';
             const downChar = args?.downCharacter || 'j';
             
+            // Handle single character inputs (allow them without error)
+            if (trimmedValue === '+' || trimmedValue === '-' || trimmedValue === upChar || trimmedValue === downChar) {
+              return null; // Allow incomplete input
+            }
+            
             // Handle various prefixes
             if (trimmedValue.startsWith('+')) {
-              offset = parseInt(trimmedValue.substring(1));
+              const numStr = trimmedValue.substring(1);
+              offset = parseInt(numStr);
             } else if (trimmedValue.startsWith('-')) {
-              offset = parseInt(trimmedValue);
+              const numStr = trimmedValue.substring(1);
+              offset = parseInt(numStr);
+              if (!isNaN(offset)) {
+                offset = -offset; // make it negative
+              }
             } else if (trimmedValue.startsWith(upChar)) {
               const numStr = trimmedValue.substring(upChar.length);
               const num = parseInt(numStr);
