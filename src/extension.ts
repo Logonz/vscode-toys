@@ -6,6 +6,7 @@ import { activateGit } from "./git/main";
 import { activateCopyHighlight } from "./copy-highlight/main";
 import { activateClearLine } from "./clear-line/main";
 import { activateFileDecorator } from "./git-file-decorator/main";
+import { activateGotoLine } from "./goto-line/main";
 
 try {
   require("./debug");
@@ -47,6 +48,12 @@ let vsToys: {
     name: "File Decorator",
     moduleContext: "file-decorator",
     activator: (name, context) => activateFileDecorator(name, context),
+    deactivator: () => {},
+  },
+  {
+    name: "Goto Line",
+    moduleContext: "goto-line",
+    activator: activateGotoLine,
     deactivator: () => {},
   },
 ];
