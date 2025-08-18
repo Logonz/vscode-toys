@@ -1,0 +1,29 @@
+{
+  "contributes": {
+    "commands": [
+      {
+        "command": "vstoys.paste-replace.replaceLineWithClipboard",
+        "category": "VsToys",
+        "title": "Paste Replace: Replace Line with Clipboard"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "vstoys.paste-replace.replaceLineWithClipboard",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v", 
+        "when": "editorTextFocus && vstoys.paste-replace.active"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        "vstoys.paste-replace.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Paste Replace module in VSCode Toys",
+          "order": 7000
+        }
+      }
+    }
+  }
+}
