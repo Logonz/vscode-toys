@@ -189,7 +189,7 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
         // Show input box for relative line offset
         const result = await vscode.window.showInputBox({
           prompt: `Go to relative line (+/- offset)`,
-          placeHolder: `Enter relative offset (e.g., +5, -3, 10) (current: ${currentLine}/${totalLines})`,
+          placeHolder: `Enter relative offset (e.g., +5, -3, 10, ${args?.upCharacter || 'k'}5, ${args?.downCharacter || 'j'}5) (current: ${currentLine}/${totalLines})`,
           validateInput: (value: string) => {
             if (!value.trim()) {
               return "Please enter a relative offset";
@@ -198,18 +198,30 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
             const trimmedValue = value.trim();
             let offset: number;
             
-            // Handle explicit +/- signs or plain numbers
+            // Get configured characters (with defaults)
+            const upChar = args?.upCharacter || 'k';
+            const downChar = args?.downCharacter || 'j';
+            
+            // Handle various prefixes
             if (trimmedValue.startsWith('+')) {
               offset = parseInt(trimmedValue.substring(1));
             } else if (trimmedValue.startsWith('-')) {
               offset = parseInt(trimmedValue);
+            } else if (trimmedValue.startsWith(upChar)) {
+              const numStr = trimmedValue.substring(upChar.length);
+              const num = parseInt(numStr);
+              offset = isNaN(num) ? NaN : -num; // negative for up
+            } else if (trimmedValue.startsWith(downChar)) {
+              const numStr = trimmedValue.substring(downChar.length);
+              const num = parseInt(numStr);
+              offset = isNaN(num) ? NaN : num; // positive for down
             } else {
               // Plain number defaults to positive (down)
               offset = parseInt(trimmedValue);
             }
             
             if (isNaN(offset)) {
-              return "Please enter a valid number with optional +/- prefix";
+              return `Please enter a valid number with optional +/-, ${upChar} (up), or ${downChar} (down) prefix`;
             }
             
             // Calculate target line to validate bounds
@@ -236,11 +248,23 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
           const trimmedValue = result.trim();
           let offset: number;
           
+          // Get configured characters (with defaults)
+          const upChar = args?.upCharacter || 'k';
+          const downChar = args?.downCharacter || 'j';
+          
           // Parse the offset
           if (trimmedValue.startsWith('+')) {
             offset = parseInt(trimmedValue.substring(1));
           } else if (trimmedValue.startsWith('-')) {
             offset = parseInt(trimmedValue);
+          } else if (trimmedValue.startsWith(upChar)) {
+            const numStr = trimmedValue.substring(upChar.length);
+            const num = parseInt(numStr);
+            offset = isNaN(num) ? NaN : -num; // negative for up
+          } else if (trimmedValue.startsWith(downChar)) {
+            const numStr = trimmedValue.substring(downChar.length);
+            const num = parseInt(numStr);
+            offset = isNaN(num) ? NaN : num; // positive for down
           } else {
             // Plain number defaults to positive (down)
             offset = parseInt(trimmedValue);
