@@ -12,6 +12,31 @@ import { createOutputChannel, deactivate } from "../extension";
 let printGotoLineOutput: (content: string, reveal?: boolean) => void;
 
 /**
+ * Navigate to a line relative to the current position
+ * @param editor The text editor to navigate in
+ * @param relativeOffset The relative offset (positive for down, negative for up)
+ * @param args Optional arguments to pass to commands after navigation
+ */
+function navigateToRelativeLine(editor: vscode.TextEditor, relativeOffset: number, args?: any): void {
+  const currentPosition = editor.selection.active;
+  const currentLineNumber = currentPosition.line; // 0-based
+  const targetLineNumber = currentLineNumber + relativeOffset;
+  const totalLines = editor.document.lineCount;
+
+  // Validate target line is within bounds
+  if (targetLineNumber < 0 || targetLineNumber >= totalLines) {
+    const displayCurrentLine = currentLineNumber + 1;
+    const displayTargetLine = targetLineNumber + 1;
+    vscode.window.showErrorMessage(`Cannot navigate to line ${displayTargetLine}. Valid range is 1-${totalLines} (current: ${displayCurrentLine})`);
+    return;
+  }
+
+  // Convert to 1-based line number for the existing navigateToLine function
+  const targetLine1Based = targetLineNumber + 1;
+  navigateToLine(editor, targetLine1Based, args);
+}
+
+/**
  * Navigate to a specific line in the editor
  * @param editor The text editor to navigate in
  * @param lineOrPosition Either a 1-based line number or a vscode.Position
@@ -136,6 +161,98 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
         if (!isNaN(lineNumber) && lineNumber >= 1 && lineNumber <= totalLines) {
           navigateToLine(editor, lineNumber, args);
         }
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("vstoys.goto-line.goto-relative", async (args) => {
+      console.log(args);
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showErrorMessage("No active text editor");
+        return;
+      }
+
+      const document = editor.document;
+      const totalLines = document.lineCount;
+      const currentLine = editor.selection.active.line + 1; // VS Code uses 0-based indexing
+
+      // Store current line number settings
+      const config = vscode.workspace.getConfiguration('editor');
+      const originalLineNumbers = config.get('lineNumbers');
+      
+      try {
+        // Temporarily enable relative line numbers
+        await config.update('lineNumbers', 'relative', vscode.ConfigurationTarget.Global);
+        
+        // Show input box for relative line offset
+        const result = await vscode.window.showInputBox({
+          prompt: `Go to relative line (+/- offset)`,
+          placeHolder: `Enter relative offset (e.g., +5, -3, 10) (current: ${currentLine}/${totalLines})`,
+          validateInput: (value: string) => {
+            if (!value.trim()) {
+              return "Please enter a relative offset";
+            }
+            
+            const trimmedValue = value.trim();
+            let offset: number;
+            
+            // Handle explicit +/- signs or plain numbers
+            if (trimmedValue.startsWith('+')) {
+              offset = parseInt(trimmedValue.substring(1));
+            } else if (trimmedValue.startsWith('-')) {
+              offset = parseInt(trimmedValue);
+            } else {
+              // Plain number defaults to positive (down)
+              offset = parseInt(trimmedValue);
+            }
+            
+            if (isNaN(offset)) {
+              return "Please enter a valid number with optional +/- prefix";
+            }
+            
+            // Calculate target line to validate bounds
+            const currentLineIndex = editor.selection.active.line; // 0-based
+            const targetLineIndex = currentLineIndex + offset;
+            const targetLineDisplay = targetLineIndex + 1; // 1-based for display
+            
+            if (targetLineIndex < 0 || targetLineIndex >= totalLines) {
+              return `Target line ${targetLineDisplay} is out of bounds (1-${totalLines})`;
+            }
+            
+            return null; // No error
+          }
+        });
+
+        // Handle the result
+        if (result !== undefined) {
+          try {
+            vscode.commands.executeCommand("vstoys.dot-repeat.repeatExit", { deactivateAll: true });
+          } catch (error) {
+            console.error("Error executing dot-repeat command:", error);
+          }
+
+          const trimmedValue = result.trim();
+          let offset: number;
+          
+          // Parse the offset
+          if (trimmedValue.startsWith('+')) {
+            offset = parseInt(trimmedValue.substring(1));
+          } else if (trimmedValue.startsWith('-')) {
+            offset = parseInt(trimmedValue);
+          } else {
+            // Plain number defaults to positive (down)
+            offset = parseInt(trimmedValue);
+          }
+          
+          if (!isNaN(offset)) {
+            navigateToRelativeLine(editor, offset, args);
+          }
+        }
+      } finally {
+        // Always restore the original line number setting
+        await config.update('lineNumbers', originalLineNumbers, vscode.ConfigurationTarget.Global);
       }
     })
   );
