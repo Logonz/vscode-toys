@@ -4,10 +4,12 @@
       // Insert your commands here
       {
         "command": "vstoys.goto-line.goto",
+        "category": "VsToys",
         "title": "VsToys - Goto Line: Go to Line"
       },
       {
         "command": "vstoys.goto-line.goto-relative",
+        "category": "VsToys",
         "title": "VsToys - Goto Line: Go to Relative Line"
       }
     ],
