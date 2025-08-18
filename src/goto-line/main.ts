@@ -36,7 +36,21 @@ function navigateToLine(editor: vscode.TextEditor, lineOrPosition: number | vsco
   if (args?.select === true) {
     // Create selection from current cursor position to target line
     const currentPosition = editor.selection.active;
-    newSelection = new vscode.Selection(currentPosition, position);
+    const currentLineNumber = currentPosition.line;
+    const targetLineNumber = position.line;
+    
+    let selectionEndPosition: vscode.Position;
+    
+    if (targetLineNumber > currentLineNumber) {
+      // Selecting downward - select to end of target line (inclusive)
+      const targetLineText = editor.document.lineAt(targetLineNumber);
+      selectionEndPosition = new vscode.Position(targetLineNumber, targetLineText.text.length);
+    } else {
+      // Selecting upward - select to beginning of target line
+      selectionEndPosition = new vscode.Position(targetLineNumber, 0);
+    }
+    
+    newSelection = new vscode.Selection(currentPosition, selectionEndPosition);
 
     // Move cursor to create the selection
     editor.selection = newSelection;
@@ -47,9 +61,11 @@ function navigateToLine(editor: vscode.TextEditor, lineOrPosition: number | vsco
       editor.edit((editBuilder) => {
         editBuilder.delete(newSelection);
       });
-      printGotoLineOutput(`Selected and deleted from line ${currentPosition.line + 1} to line ${displayLineNumber}`);
+      const direction = targetLineNumber > currentLineNumber ? "down" : "up";
+      printGotoLineOutput(`Selected and deleted from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);
     } else {
-      printGotoLineOutput(`Selected from line ${currentPosition.line + 1} to line ${displayLineNumber}`);
+      const direction = targetLineNumber > currentLineNumber ? "down" : "up";
+      printGotoLineOutput(`Selected from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);
     }
   } else {
     // Just move cursor to the target line
