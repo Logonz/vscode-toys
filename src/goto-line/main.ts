@@ -88,6 +88,9 @@ function navigateToLine(editor: vscode.TextEditor, lineOrPosition: number | vsco
       });
       const direction = targetLineNumber > currentLineNumber ? "down" : "up";
       printGotoLineOutput(`Selected and deleted from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);
+
+      // ! Reindent the lines during delete. (Do we need a setting here?)
+      vscode.commands.executeCommand("editor.action.reindentlines");
     } else {
       const direction = targetLineNumber > currentLineNumber ? "down" : "up";
       printGotoLineOutput(`Selected from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);
