@@ -1,0 +1,32 @@
+{
+  "contributes": {
+    "commands": [
+      // Insert your commands here
+      {
+        "command": "vstoys.goto-line.goto",
+        "title": "VsToys - Goto Line: Go to Line"
+      }
+    ],
+    "configuration": {
+      
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.goto-line.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Goto Line module in VSCode Toys",
+          "order": 3000
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+      // {
+      //   "command": "vstoys.goto-line.goto",
+      //   "key": "ctrl+g",
+      //   "mac": "cmd+g",
+      //   "when": "editorTextFocus && vstoys.goto-line.active"
+      // }
+    ]
+  }
+}
