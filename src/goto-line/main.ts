@@ -79,7 +79,7 @@ function navigateToLine(editor: vscode.TextEditor, lineOrPosition: number | vsco
 
     // Move cursor to create the selection
     editor.selection = newSelection;
-    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
 
     if (args?.delete === true) {
       // Delete the selected text
@@ -97,7 +97,7 @@ function navigateToLine(editor: vscode.TextEditor, lineOrPosition: number | vsco
     newSelection = new vscode.Selection(position, position);
     // Move cursor to the line (or create selection)
     editor.selection = newSelection;
-    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
     printGotoLineOutput(`Navigated to line ${displayLineNumber}`);
   }
 
