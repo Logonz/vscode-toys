@@ -1,0 +1,48 @@
+{
+  "contributes": {
+    "commands": [
+      // Insert your commands here
+      {
+        "command": "vstoys.goto-line.goto",
+        "title": "VsToys - Goto Line: Go to Line"
+      },
+      {
+        "command": "vstoys.goto-line.goto-relative",
+        "title": "VsToys - Goto Line: Go to Relative Line"
+      }
+    ],
+    "configuration": {
+      
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.goto-line.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Goto Line module in VSCode Toys",
+          "order": 3000
+        },
+        "vstoys.goto-line.upCharacter": {
+          "type": "string",
+          "default": "k",
+          "description": "Character prefix for moving up in relative goto (e.g., 'k5' to go up 5 lines)",
+          "order": 3001
+        },
+        "vstoys.goto-line.downCharacter": {
+          "type": "string",
+          "default": "j",
+          "description": "Character prefix for moving down in relative goto (e.g., 'j5' to go down 5 lines)",
+          "order": 3002
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+      // {
+      //   "command": "vstoys.goto-line.goto",
+      //   "key": "ctrl+g",
+      //   "mac": "cmd+g",
+      //   "when": "editorTextFocus && vstoys.goto-line.active"
+      // }
+    ]
+  }
+}
