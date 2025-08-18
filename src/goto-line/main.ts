@@ -3,10 +3,6 @@
 import * as vscode from "vscode";
 import { createOutputChannel, deactivate } from "../extension";
 
-interface GotoLineQuickPickItem extends vscode.QuickPickItem {
-  lineNumber?: number;
-}
-
 /**
  * Prints the given content on the output channel.
  *
@@ -89,107 +85,42 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
       const totalLines = document.lineCount;
       const currentLine = editor.selection.active.line + 1; // VS Code uses 0-based indexing
 
-      // Create quick pick items for each line
-      const items: GotoLineQuickPickItem[] = [];
-
-      // Add current line indicator
-      items.push({
-        label: `$(arrow-right) ${currentLine}: ${document.lineAt(currentLine - 1).text.trim() || "(empty line)"}`,
-        description: `Current line`,
-        lineNumber: currentLine,
+      // Show input box for line number
+      const result = await vscode.window.showInputBox({
+        prompt: `Go to line (1-${totalLines})`,
+        placeHolder: `Enter line number (current: ${currentLine})`,
+        value: currentLine.toString(),
+        validateInput: (value: string) => {
+          if (!value.trim()) {
+            return "Please enter a line number";
+          }
+          
+          const lineNumber = parseInt(value.trim());
+          if (isNaN(lineNumber)) {
+            return "Please enter a valid number";
+          }
+          
+          if (lineNumber < 1 || lineNumber > totalLines) {
+            return `Line number must be between 1 and ${totalLines}`;
+          }
+          
+          return null; // No error
+        }
       });
 
-      // Add separator
-      items.push({
-        label: "",
-        kind: vscode.QuickPickItemKind.Separator,
-      });
-
-      // Add lines with content preview
-      for (let i = 1; i <= totalLines; i++) {
-        const lineText = document.lineAt(i - 1).text.trim();
-        const isCurrent = i === currentLine;
-
-        items.push({
-          label: `${isCurrent ? "$(arrow-right) " : ""}${i}: ${lineText || "(empty line)"}`,
-          description: isCurrent ? "Current" : "",
-          lineNumber: i,
-        });
-      }
-
-      // Show quick pick
-      const quickPick = vscode.window.createQuickPick();
-      quickPick.items = items;
-      quickPick.placeholder = `Go to line (1-${totalLines})`;
-      quickPick.title = "Go to Line";
-      quickPick.matchOnDescription = true;
-      quickPick.matchOnDetail = true;
-
-      // Handle selection
-      // quickPick.onDidChangeSelection(async (selection) => {
-      //   printGotoLineOutput("onDidChangeSelection");
-      //   try {
-      //     vscode.commands.executeCommand("vstoys.dot-repeat.repeatExit", { deactivateAll: true });
-      //   } catch (error) {
-      //     console.error("Error executing dot-repeat command:", error);
-      //   }
-
-      //   if (selection[0]) {
-      //     const selectedItem = selection[0] as GotoLineQuickPickItem;
-      //     if (selectedItem.lineNumber) {
-      //       navigateToLine(editor, selectedItem.lineNumber, args);
-      //     }
-      //   }
-      // });
-
-      // Handle acceptance (Enter key)
-      quickPick.onDidAccept(() => {
-        printGotoLineOutput("onDidAccept");
+      // Handle the result
+      if (result !== undefined) {
         try {
           vscode.commands.executeCommand("vstoys.dot-repeat.repeatExit", { deactivateAll: true });
         } catch (error) {
           console.error("Error executing dot-repeat command:", error);
         }
 
-        // If user typed a number directly, navigate to that line
-        const inputValue = quickPick.value;
-        const lineNumber = parseInt(inputValue);
-
+        const lineNumber = parseInt(result.trim());
         if (!isNaN(lineNumber) && lineNumber >= 1 && lineNumber <= totalLines) {
           navigateToLine(editor, lineNumber, args);
-        } else if (quickPick.selectedItems.length > 0) {
-          // If a line was selected from the list, navigate to it using the stored lineNumber
-          const selectedItem = quickPick.selectedItems[0] as GotoLineQuickPickItem;
-          if (selectedItem.lineNumber) {
-            navigateToLine(editor, selectedItem.lineNumber, args);
-          }
         }
-
-        quickPick.hide();
-      });
-
-      // Handle manual input
-      quickPick.onDidChangeValue((value) => {
-        printGotoLineOutput("onDidChangeValue");
-        try {
-          vscode.commands.executeCommand("vstoys.dot-repeat.repeatExit", { deactivateAll: true });
-        } catch (error) {
-          console.error("Error executing dot-repeat command:", error);
-        }
-        const lineNumber = parseInt(value);
-        if (!isNaN(lineNumber) && lineNumber >= 1 && lineNumber <= totalLines) {
-          // Filter items to show matching line using the stored lineNumber
-          const filteredItems = items.filter(
-            (item) => item.lineNumber === lineNumber || item.kind === vscode.QuickPickItemKind.Separator
-          );
-          quickPick.items = filteredItems.length > 1 ? filteredItems : items;
-        } else if (value === "") {
-          // Show all items when input is cleared
-          quickPick.items = items;
-        }
-      });
-
-      quickPick.show();
+      }
     })
   );
 
