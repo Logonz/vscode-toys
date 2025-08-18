@@ -8,6 +8,7 @@ import { activateClearLine } from "./clear-line/main";
 import { activateFileDecorator } from "./git-file-decorator/main";
 import { activateRegisters } from "./registers/main";
 import { activateGotoLine } from "./goto-line/main";
+import { activatePasteReplace } from "./paste-replace/main";
 
 try {
   require("./debug");
@@ -61,6 +62,12 @@ let vsToys: {
     name: "Goto Line",
     moduleContext: "goto-line",
     activator: activateGotoLine,
+    deactivator: () => {},
+  },
+  {
+    name: "Paste Replace",
+    moduleContext: "paste-replace",
+    activator: activatePasteReplace,
     deactivator: () => {},
   },
 ];

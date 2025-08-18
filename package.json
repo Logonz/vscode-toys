@@ -43,6 +43,11 @@
         "title": "Registers: Clear All Registers"
       },
       {
+        "command": "vstoys.paste-replace.replaceLineWithClipboard",
+        "category": "VsToys",
+        "title": "Paste Replace: Replace Line with Clipboard"
+      },
+      {
         "command": "vstoys.goto-line.goto",
         "category": "VsToys",
         "title": "VsToys - Goto Line: Go to Line"
@@ -114,6 +119,12 @@
           "default": true,
           "description": "Show all registers (including empty ones) in quick paste menu. When disabled, only shows registers with content.",
           "order": 6002
+        },
+        "vstoys.paste-replace.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Paste Replace module in VSCode Toys",
+          "order": 7000
         },
         "vstoys.goto-line.enabled": {
           "type": "boolean",
@@ -208,6 +219,12 @@
       }
     },
     "keybindings": [
+      {
+        "command": "vstoys.paste-replace.replaceLineWithClipboard",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "editorTextFocus && vstoys.paste-replace.active"
+      },
       {
         "key": "alt+s f",
         "command": "vstoys.git.stageFile",
