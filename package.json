@@ -28,6 +28,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "vstoys.debug.showQuickPick",
+        "title": "VSCode Toys: Show Debug Menu"
+      },
+      {
         "command": "vstoys.registers.showRegisterPastePicker",
         "category": "VsToys",
         "title": "Registers: Show Register Paste Picker"
@@ -101,6 +105,16 @@
           "default": true,
           "description": "Global enable/disable for the VSCode Toys",
           "order": 100
+        },
+        "vstoys.smart-open.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Smart Open module in VSCode Toys"
+        },
+        "vstoys.smart-open.maxWorkspaceFiles": {
+          "type": "number",
+          "default": 5000,
+          "description": "Maximum number of files to index in the workspace, tip is to use gitignore to exclude files"
         },
         "vstoys.registers.enabled": {
           "type": "boolean",
