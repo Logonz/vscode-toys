@@ -16,15 +16,15 @@ interface ICustomEditorLabelPattern {
   isAbsolutePath: boolean;
 }
 
-// ? Configuration Functions
-let customLabelEnabled: boolean = false;
-export function IsCustomLabelEnabled(): boolean {
-  return customLabelEnabled;
-}
-
-let customLabelPatterns: ICustomEditorLabelPatterns = {};
-export function GetCustomLabelPatterns(): ICustomEditorLabelPatterns {
-  return customLabelPatterns;
+ /**
+ * Gets a custom label for a file using cached configuration
+ */
+export function GetCustomLabelForFile(file: vscode.Uri): string {
+  if (customLabelsEnabledCache && customLabelService) {
+    const label = customLabelService.getName(file);
+    return label ? label : vscode.workspace.asRelativePath(file);
+  }
+  return vscode.workspace.asRelativePath(file);
 }
 
 let maxWorkspaceFiles: number = 5000;
@@ -32,28 +32,47 @@ export function GetMaxWorkspaceFiles(): number {
   return maxWorkspaceFiles;
 }
 
+// Static cache for custom labels configuration
+let customLabelsEnabledCache: boolean = false;
+let customLabelsPatternsCache: ICustomEditorLabelPatterns | undefined = undefined;
+let customLabelService: CustomEditorLabelService | undefined = undefined;
+
+export function IsCustomLabelsEnabled(): boolean {
+  return customLabelsEnabledCache;
+}
+
+/**
+ * Updates the custom labels enabled cache from VS Code configuration
+ */
+function updateCustomLabelsEnabledCache(): void {
+  customLabelsEnabledCache = vscode.workspace
+    .getConfiguration("workbench")
+    .get<boolean>("editor.customLabels.enabled") || false;
+}
+
+/**
+ * Updates the custom labels patterns cache from VS Code configuration
+ */
+function updateCustomLabelsPatternsCache(): void {
+  customLabelsPatternsCache = vscode.workspace
+    .getConfiguration("workbench")
+    .get<ICustomEditorLabelPatterns>("editor.customLabels.patterns");
+
+  // Update the label service if patterns exist
+  if (customLabelsPatternsCache) {
+    customLabelService = new CustomEditorLabelService(customLabelsPatternsCache);
+  } else {
+    customLabelService = undefined;
+  }
+}
+
 let customEditorLabelService: CustomEditorLabelService | undefined;
 export function updateCustomLabelConfiguration(): void {
   // * Get if custom labels are enabled
-  const customLabelsEnabled: boolean | undefined = vscode.workspace
-    .getConfiguration("workbench")
-    .get<boolean>("editor.customLabels.enabled");
-
-  if (customLabelsEnabled !== undefined) {
-    customLabelEnabled = customLabelsEnabled;
-  }
+  updateCustomLabelsEnabledCache();
 
   // * Get the custom label patterns
-  const customLabelsPatterns: ICustomEditorLabelPatterns | undefined =
-    vscode.workspace
-      .getConfiguration("workbench")
-      .get<ICustomEditorLabelPatterns>("editor.customLabels.patterns");
-  
-  if (customLabelsPatterns) {
-    customLabelPatterns = customLabelsPatterns;
-    // * Update the custom editor label service
-    customEditorLabelService = new CustomEditorLabelService(customLabelPatterns);
-  }
+  updateCustomLabelsPatternsCache();
 
   // * Get the max workspace files
   const maxFiles: number | undefined = vscode.workspace
@@ -64,14 +83,6 @@ export function updateCustomLabelConfiguration(): void {
     maxWorkspaceFiles = maxFiles;
   }
 }
-
-export function GetCustomEditorLabelService(): CustomEditorLabelService {
-  if (customEditorLabelService === undefined) {
-    customEditorLabelService = new CustomEditorLabelService(customLabelPatterns);
-  }
-  return customEditorLabelService;
-}
-
 
 // ? CustomEditorLabelService - The actual functionality
 export class CustomEditorLabelService {
@@ -156,7 +167,7 @@ export class CustomEditorLabelService {
 
     return template.replace(
       this._parsedTemplateExpression,
-      (match: string, variable: string, ...args: any[]) => {
+      (match: string, variable: string, ...args: any[]): string => {
         const groups = args[args.length - 1]; // The last argument contains named groups
         const dirnameN = groups.dirnameN || "0";
         const extnameN = groups.extnameN || "0";
@@ -185,6 +196,9 @@ export class CustomEditorLabelService {
           const nthDir = this.getNthDirname(path.dirname(relevantPath), n);
           if (nthDir) {
             return nthDir;
+          } else {
+            // Return workspace name as that is default behavior for vscode
+            return vscode.workspace.name || "";
           }
         }
 
