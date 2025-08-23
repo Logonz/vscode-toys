@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
-import { printChannelOutput } from "./extension";
+import { printChannelOutput } from "../extension";
 import deindent from "deindent";
 
 // Static mappings from icon theme definition

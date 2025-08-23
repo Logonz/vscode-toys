@@ -1,0 +1,33 @@
+
+{
+  "contributes": {
+    "commands": [
+      {
+        "command": "vstoys.debug.showQuickPick",
+        "title": "VSCode Toys: Show Debug Menu"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.smart-open.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Smart Open module in VSCode Toys"
+        },
+        "vstoys.smart-open.maxWorkspaceFiles": {
+          "type": "number",
+          "default": 5000,
+          "description": "Maximum number of files to index in the workspace, tip is to use gitignore to exclude files"
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+    ]
+  }
+  // Use this to enable proposed API features
+  // "enabledApiProposals": [
+  //   "quickPickSortByLabel"
+  // ]
+}

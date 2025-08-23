@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { LoadIcons } from "./icons";
 import { GetAllFilesInWorkspace, updateFilesExcludeCache, updateSearchExcludeCache } from "./files";
 import { showDebugQuickPick } from "./debugQuickPick";
-import { updateCustomLabelConfiguration } from "./helpers/customEditorLabelService";
+import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelService";
 
 export function activateSmartOpen(name: string, context: vscode.ExtensionContext) {
 
