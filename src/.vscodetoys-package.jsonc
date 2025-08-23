@@ -1,10 +1,6 @@
 {
   "contributes": {
     "commands": [
-      {
-        "command": "vstoys.debug.showQuickPick",
-        "title": "VSCode Toys: Show Debug Menu"
-      }
     ],
     "configuration": {
       "properties": {
