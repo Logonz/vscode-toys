@@ -15,8 +15,8 @@ export function activateSmartOpen(name: string, context: vscode.ExtensionContext
 
   context.subscriptions.push(debugCommand);
 
-  setTimeout(() => {
-    GetAllFilesInWorkspace();
-  }, 3000);
+  // setTimeout(() => {
+  //   GetAllFilesInWorkspace();
+  // }, 3000);
 
 }

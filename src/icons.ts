@@ -4,13 +4,33 @@ import fs from "fs";
 import { printChannelOutput } from "./extension";
 import deindent from "deindent";
 
+// Static mappings from icon theme definition
 const iconDefinitions = new Map<string, vscode.Uri>();
 const iconFileNames = new Map<string, vscode.Uri>();
 const iconFolderNames = new Map<string, vscode.Uri>();
 const iconLanguageIds = new Map<string, vscode.Uri>();
 const iconFileExtensions = new Map<string, vscode.Uri>();
 
+// Runtime performance caches
+const extensionToIcon = new Map<string, vscode.Uri>(); // Smart cache: theme definitions + learned mappings
+const filePathToIcon = new Map<string, vscode.Uri>(); // File path → icon cache for instant lookups
+let iconCacheStats = { hits: 0, misses: 0, extensionHits: 0 };
+
+/**
+ * Loads icon theme from VS Code and populates static mapping caches.
+ * Reads the active icon theme's JSON file and builds lookup maps for fast icon resolution.
+ */
 export function LoadIcons() {
+  // Clear all caches to ensure clean state (important for theme switches or reloading)
+  iconDefinitions.clear();
+  iconFileNames.clear();
+  iconFolderNames.clear();
+  iconLanguageIds.clear();
+  iconFileExtensions.clear();
+  extensionToIcon.clear();
+  filePathToIcon.clear();
+  iconCacheStats = { hits: 0, misses: 0, extensionHits: 0 };
+
   printChannelOutput("Loading icons", false);
   const configuration = vscode.workspace.getConfiguration();
 
@@ -69,12 +89,15 @@ export function LoadIcons() {
           See issue: https://github.com/microsoft/vscode/issues/59826 for more information
           `);
       }
+
+      // TODO: Should we always tolower the key or not?
       if (iconJSON.fileExtensions) {
         Object.entries(iconJSON.fileExtensions).forEach(([key, value]: any) => {
           const iconDefinitionKey = value;
           const icon = iconDefinitions.get(iconDefinitionKey);
           if (icon) {
             iconFileExtensions.set(key, icon);
+            extensionToIcon.set(key, icon);
           }
         });
       }
@@ -112,37 +135,96 @@ export function LoadIcons() {
     }
   }
   printChannelOutput("Icons loaded", false);
-  // Print the length of all loaded lists
   console.log("iconDefinitions length:", iconDefinitions.size);
   console.log("iconFileNames length:", iconFileNames.size);
   console.log("iconFolderNames length:", iconFolderNames.size);
   console.log("iconLanguageIds length:", iconLanguageIds.size);
   console.log("iconFileExtensions length:", iconFileExtensions.size);
+  console.log("extensionToIcon cache size:", extensionToIcon.size);
 }
 
-export async function GetIconForFile(file: vscode.Uri): Promise<vscode.Uri | undefined> {
+/**
+ * Fast synchronous icon lookup using cached mappings.
+ * Checks file path cache first, then extension cache, avoiding expensive file I/O.
+ * Internal function - use GetIconForFile() for consistent behavior.
+ * @param file - File URI to get icon for
+ * @returns Icon URI if cached, undefined if cache miss
+ */
+function FastGetIconForFileSync(file: vscode.Uri): vscode.Uri | undefined {
+  const cached = filePathToIcon.get(file.fsPath);
+  if (cached) {
+    iconCacheStats.hits++;
+    return cached;
+  }
+
   // Get file extension
   const fileExtension = path.extname(file.fsPath).toLowerCase();
-
-  // Exclude binary files
   if (binaryFileExtensions.has(fileExtension)) {
-    console.log(`Binary file detected, skipping: ${file.fsPath}`);
+    return undefined;
+  }
+  // Create all possible variations for lookup
+  const fileExtensionWithoutDot = fileExtension.slice(1); // Remove the dot
+  const fileName = path.basename(file.fsPath);
+  const dotFileNameWithoutDot = fileName.startsWith(".") ? fileName.slice(1) : undefined;
+
+
+
+  let icon: vscode.Uri | undefined;
+
+  // Check for full file name match
+  if (iconFileNames.has(fileName)) {
+    icon = iconFileNames.get(fileName);
+  }
+  // Test for things such as .vscodeignore and other files that start with a dot
+  else if (dotFileNameWithoutDot && extensionToIcon.has(dotFileNameWithoutDot)) {
+    icon = extensionToIcon.get(dotFileNameWithoutDot);
+    iconCacheStats.extensionHits++;
+  }
+  // Check for learned extension match
+  else if (extensionToIcon.has(fileExtensionWithoutDot)) {
+    icon = extensionToIcon.get(fileExtensionWithoutDot);
+    iconCacheStats.extensionHits++;
+  }
+
+  if (icon) {
+    filePathToIcon.set(file.fsPath, icon);
+    return icon;
+  }
+
+  iconCacheStats.misses++;
+  return undefined;
+}
+
+/**
+ * Full icon resolution with fallback to language ID analysis.
+ * First tries sync cache lookup, then opens file to determine language ID for icon mapping.
+ * Updates both file path and extension caches for future performance.
+ * @param file - File URI to get icon for
+ * @returns Icon URI if found, undefined otherwise
+ */
+export async function GetIconForFile(file: vscode.Uri): Promise<vscode.Uri | undefined> {
+  const syncResult = FastGetIconForFileSync(file);
+  if (syncResult) {
+    return syncResult;
+  }
+
+  const fileExtension = path.extname(file.fsPath).toLowerCase();
+  const fileExtensionWithoutDot = fileExtension.slice(1); // Remove the dot
+
+  if (binaryFileExtensions.has(fileExtension)) {
     return undefined;
   }
 
   try {
+    console.log(`Opening file: ${file.fsPath}` + (fileExtension ? ` (ext: ${fileExtensionWithoutDot})` : ""));
     const fileDoc = await vscode.workspace.openTextDocument(file);
-    // console.log("DOC", fileDoc.fileName, fileDoc.languageId);
 
     let gIcon: vscode.Uri | undefined = undefined;
     if (iconLanguageIds.has(fileDoc.languageId)) {
       gIcon = iconLanguageIds.get(fileDoc.languageId);
     }
-    if (!gIcon && iconFileExtensions.has(path.extname(fileDoc.fileName))) {
-      gIcon = iconFileExtensions.get(path.extname(fileDoc.fileName));
-    }
-    if (!gIcon && iconFileNames.has(path.basename(fileDoc.fileName))) {
-      gIcon = iconFileNames.get(path.basename(fileDoc.fileName));
+    if (!gIcon && iconFileExtensions.has(fileExtensionWithoutDot)) {
+      gIcon = iconFileExtensions.get(fileExtensionWithoutDot);
     }
     if (!gIcon && iconFolderNames.has(path.basename(fileDoc.fileName))) {
       gIcon = iconFolderNames.get(path.basename(fileDoc.fileName));
@@ -152,16 +234,78 @@ export async function GetIconForFile(file: vscode.Uri): Promise<vscode.Uri | und
     }
 
     if (gIcon) {
+      filePathToIcon.set(file.fsPath, gIcon);
+      if (!extensionToIcon.has(fileExtensionWithoutDot)) {
+        extensionToIcon.set(fileExtensionWithoutDot, gIcon);
+      }
       return gIcon;
     } else {
       console.log(`No icon found for ${fileDoc.fileName}`);
-      printChannelOutput(`No icon found for ${fileDoc.fileName}`, false);
       return undefined;
     }
   } catch (error) {
     console.error(`Error opening file: ${error}`);
     return undefined;
   }
+}
+
+/**
+ * Efficiently loads icons for multiple files by processing unique extensions once.
+ * Avoids redundant processing by grouping files by extension and using cached results.
+ * @param files - Array of file URIs to process
+ */
+export async function batchLoadIcons(files: vscode.Uri[]): Promise<void> {
+  const startTime = performance.now();
+  const processedExtensions = new Set<string>();
+
+  for (const file of files) {
+    const fileExtension = path.extname(file.fsPath).toLowerCase();
+    const fileExtensionWithoutDot = fileExtension.slice(1); // Remove the dot
+
+    if (binaryFileExtensions.has(fileExtension) || processedExtensions.has(fileExtensionWithoutDot)) {
+      continue;
+    }
+
+    const cachedIcon = extensionToIcon.get(fileExtensionWithoutDot);
+    if (cachedIcon) {
+      filePathToIcon.set(file.fsPath, cachedIcon);
+      processedExtensions.add(fileExtensionWithoutDot);
+      continue;
+    }
+
+    const icon = await GetIconForFile(file);
+    if (icon && !extensionToIcon.has(fileExtensionWithoutDot)) {
+      extensionToIcon.set(fileExtensionWithoutDot, icon);
+    }
+    processedExtensions.add(fileExtensionWithoutDot);
+  }
+
+  const endTime = performance.now();
+  console.log(`Batch icon loading took ${endTime - startTime}ms for ${files.length} files`);
+}
+
+/**
+ * Returns current icon cache performance statistics.
+ * @returns Object with hits, misses, and extension hits counts
+ */
+export function getIconCacheStats(): typeof iconCacheStats {
+  return { ...iconCacheStats };
+}
+
+/**
+ * Clears runtime icon caches and resets performance statistics.
+ * Restores extensionToIcon to initial theme state (removes learned mappings).
+ */
+export function clearIconCache(): void {
+  filePathToIcon.clear();
+  extensionToIcon.clear();
+
+  // Restore base theme mappings to extensionToIcon
+  iconFileExtensions.forEach((icon, extension) => {
+    extensionToIcon.set(extension, icon);
+  });
+
+  iconCacheStats = { hits: 0, misses: 0, extensionHits: 0 };
 }
 
 // List of binary file extensions
