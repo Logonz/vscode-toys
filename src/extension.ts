@@ -9,8 +9,7 @@ import { activateFileDecorator } from "./git-file-decorator/main";
 import { activateRegisters } from "./registers/main";
 import { activateGotoLine } from "./goto-line/main";
 import { activatePasteReplace } from "./paste-replace/main";
-import { LoadIcons } from "./icons";
-import { GetAllFilesInWorkspace } from "./files";
+import { activateSmartOpen } from "./smart-open-main";
 
 try {
   require("./debug");
@@ -94,11 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
   printChannelOutput = createOutputChannel("Main");
   printChannelOutput("Started");
 
-  LoadIcons();
-
-  setTimeout(() => {
-    GetAllFilesInWorkspace();
-  }, 3000);
+  activateSmartOpen("Smart Open", context);
 
   // Set a context to indicate that the extension is installed
   // To be used when binding commands to the extension

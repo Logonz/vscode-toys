@@ -116,6 +116,8 @@ export async function GetAllFilesInWorkspace(): Promise<vscode.Uri[]> {
     const rules: GitignoreRule[] = (ig as any)._rules;
     console.log("Gitignore rules:", rules);
 
+    // ! TODO: In the future if better tooling around this exist this should be improved
+
     const globs = await globifyGitIgnoreFile(folderPath);
     console.log("Glob patterns from gitignore:", globs);
     const excludeGlobsOnly = globs.filter((glob) => glob.included === false).map((glob) => glob.glob);
@@ -139,6 +141,7 @@ export async function GetAllFilesInWorkspace(): Promise<vscode.Uri[]> {
     //   //   allFiles.push(file);
     //   // }
     // });
+    allFiles.push(...files);
 
     // Write a list of filenames to a file in the workspace folder.
     const fileList = files.map((file) => file.fsPath);

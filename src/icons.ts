@@ -112,6 +112,12 @@ export function LoadIcons() {
     }
   }
   printChannelOutput("Icons loaded", false);
+  // Print the length of all loaded lists
+  console.log("iconDefinitions length:", iconDefinitions.size);
+  console.log("iconFileNames length:", iconFileNames.size);
+  console.log("iconFolderNames length:", iconFolderNames.size);
+  console.log("iconLanguageIds length:", iconLanguageIds.size);
+  console.log("iconFileExtensions length:", iconFileExtensions.size);
 }
 
 export async function GetIconForFile(file: vscode.Uri): Promise<vscode.Uri | undefined> {
