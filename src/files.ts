@@ -88,7 +88,7 @@ export async function createExcludeGlobPattern(folderPath: string): Promise<stri
 /**
  * Updates the search.exclude cache from VS Code configuration
  */
-function updateSearchExcludeCache(): void {
+export function updateSearchExcludeCache(): void {
   const config = vscode.workspace.getConfiguration();
   const searchExclude = config.get<Record<string, boolean>>("search.exclude") || {};
 
@@ -98,12 +98,13 @@ function updateSearchExcludeCache(): void {
       searchExcludeCache.push(key);
     }
   }
+  console.log("Updated search.exclude cache:", searchExcludeCache);
 }
 
 /**
  * Updates the files.exclude cache from VS Code configuration
  */
-function updateFilesExcludeCache(): void {
+export function updateFilesExcludeCache(): void {
   const config = vscode.workspace.getConfiguration();
   const filesExclude = config.get<Record<string, boolean>>("files.exclude") || {};
 
@@ -113,21 +114,7 @@ function updateFilesExcludeCache(): void {
       filesExcludeCache.push(key);
     }
   }
-}
-export async function StartListener() {
-  // Initialize caches on startup
-  updateSearchExcludeCache();
-  updateFilesExcludeCache();
-
-  vscode.workspace.onDidChangeConfiguration((event) => {
-    if (event.affectsConfiguration("search.exclude")) {
-      updateSearchExcludeCache();
-      console.log("Updated search.exclude cache:", searchExcludeCache);
-    } else if (event.affectsConfiguration("files.exclude")) {
-      updateFilesExcludeCache();
-      console.log("Updated files.exclude cache:", filesExcludeCache);
-    }
-  });
+  console.log("Updated files.exclude cache:", filesExcludeCache);
 }
 
 export async function GetAllFilesInWorkspace(): Promise<vscode.Uri[]> {

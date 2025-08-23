@@ -1,22 +1,46 @@
 import * as vscode from "vscode";
 import { LoadIcons } from "./icons";
-import { GetAllFilesInWorkspace, StartListener } from "./files";
+import { GetAllFilesInWorkspace, updateFilesExcludeCache, updateSearchExcludeCache } from "./files";
 import { showDebugQuickPick } from "./debugQuickPick";
-
+import { updateCustomLabelConfiguration } from "./helpers/customEditorLabelService";
 
 export function activateSmartOpen(name: string, context: vscode.ExtensionContext) {
+
+  // Initialize all icons
+  // TODO: Reload with icon theme change.
   LoadIcons();
 
-  StartListener();
 
-  const debugCommand = vscode.commands.registerCommand('vstoys.debug.showQuickPick', async () => {
+  const debugCommand = vscode.commands.registerCommand("vstoys.debug.showQuickPick", async () => {
     await showDebugQuickPick();
   });
 
+  const configChangeListener = vscode.workspace.onDidChangeConfiguration((event) => {
+    if (
+      event.affectsConfiguration("workbench.editor.customLabels.enabled") ||
+      event.affectsConfiguration("workbench.editor.customLabels.patterns") ||
+      event.affectsConfiguration("vstoys.smart-open.maxWorkspaceFiles")
+    ) {
+      updateCustomLabelConfiguration();
+    }
+  });
+
+  const excludeListener = vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration("search.exclude")) {
+        updateSearchExcludeCache();
+      } else if (event.affectsConfiguration("files.exclude")) {
+        updateFilesExcludeCache();
+      }
+    });
+
   context.subscriptions.push(debugCommand);
+  context.subscriptions.push(configChangeListener);
+  context.subscriptions.push(excludeListener);
 
-  // setTimeout(() => {
-  //   GetAllFilesInWorkspace();
-  // }, 3000);
+  // Initialize exclude listeners
+  updateSearchExcludeCache();
+  updateFilesExcludeCache();
 
+  // Initialize the custom editor label service
+  updateCustomLabelConfiguration();
 }
