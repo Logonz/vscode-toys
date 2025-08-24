@@ -3,6 +3,7 @@ import { LoadIcons } from "./icons";
 import { GetAllFilesInWorkspace, updateFilesExcludeCache, updateSearchExcludeCache } from "./files";
 import { showDebugQuickPick } from "./debugQuickPick";
 import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelService";
+import { showQuickPickWithInlineSearch } from "./picks/fileListWithFuzzy";
 
 export function activateSmartOpen(name: string, context: vscode.ExtensionContext) {
 
@@ -13,6 +14,10 @@ export function activateSmartOpen(name: string, context: vscode.ExtensionContext
 
   const debugCommand = vscode.commands.registerCommand("vstoys.debug.showQuickPick", async () => {
     await showDebugQuickPick();
+  });
+
+  const smartOpenCommand = vscode.commands.registerCommand("vstoys.smart-open.showQuickPick", async () => {
+    await showQuickPickWithInlineSearch();
   });
 
   const configChangeListener = vscode.workspace.onDidChangeConfiguration((event) => {
@@ -34,6 +39,7 @@ export function activateSmartOpen(name: string, context: vscode.ExtensionContext
     });
 
   context.subscriptions.push(debugCommand);
+  context.subscriptions.push(smartOpenCommand);
   context.subscriptions.push(configChangeListener);
   context.subscriptions.push(excludeListener);
 

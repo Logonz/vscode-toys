@@ -32,6 +32,31 @@
         "title": "VSCode Toys: Show Debug Menu"
       },
       {
+        "command": "vstoys.smart-open.showQuickPick",
+        "title": "Smart Open: Search Files",
+        "category": "VsToys"
+      },
+      {
+        "command": "vstoys.smart-open.navigateUp",
+        "category": "VsToys",
+        "title": "Smart Open: Navigate Up"
+      },
+      {
+        "command": "vstoys.smart-open.navigateDown",
+        "category": "VsToys",
+        "title": "Smart Open: Navigate Down"
+      },
+      {
+        "command": "vstoys.smart-open.selectFile",
+        "category": "VsToys",
+        "title": "Smart Open: Select File"
+      },
+      {
+        "command": "vstoys.smart-open.deleteChar",
+        "category": "VsToys",
+        "title": "Smart Open: Delete Character"
+      },
+      {
         "command": "vstoys.registers.showRegisterPastePicker",
         "category": "VsToys",
         "title": "Registers: Show Register Paste Picker"
@@ -234,6 +259,26 @@
     },
     "keybindings": [
       {
+        "command": "vstoys.smart-open.navigateUp",
+        "key": "up",
+        "when": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.navigateDown",
+        "key": "down",
+        "when": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.selectFile",
+        "key": "enter",
+        "when": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.deleteChar",
+        "key": "backspace",
+        "when": "vstoys.smart-open.searching"
+      },
+      {
         "command": "vstoys.paste-replace.replaceLineWithClipboard",
         "key": "ctrl+shift+v",
         "mac": "cmd+shift+v",
@@ -376,7 +421,10 @@
         "id": "fileExplorerDecorator",
         "label": "File Explorer Decorator"
       }
-    ]
+    ],
+    "views": {},
+    "menus": {},
+    "viewsContainers": {}
   },
   "scripts": {
     "ext": "vsce package --allow-star-activation -o vscode-toys.vsix && code --install-extension vscode-toys.vsix",

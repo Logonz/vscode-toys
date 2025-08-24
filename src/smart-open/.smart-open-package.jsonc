@@ -5,6 +5,31 @@
       {
         "command": "vstoys.debug.showQuickPick",
         "title": "VSCode Toys: Show Debug Menu"
+      },
+      {
+        "command": "vstoys.smart-open.showQuickPick",
+        "title": "Smart Open: Search Files",
+        "category": "VsToys"
+      },
+      {
+        "command": "vstoys.smart-open.navigateUp",
+        "category": "VsToys",
+        "title": "Smart Open: Navigate Up"
+      },
+      {
+        "command": "vstoys.smart-open.navigateDown",
+        "category": "VsToys",
+        "title": "Smart Open: Navigate Down"
+      },
+      {
+        "command": "vstoys.smart-open.selectFile",
+        "category": "VsToys",
+        "title": "Smart Open: Select File"
+      },
+      {
+        "command": "vstoys.smart-open.deleteChar",
+        "category": "VsToys",
+        "title": "Smart Open: Delete Character"
       }
     ],
     "configuration": {
@@ -23,7 +48,26 @@
       }
     },
     "keybindings": [
-      // Insert your keybindings here
+      {
+        "command": "vstoys.smart-open.navigateUp",
+        "key": "up",
+        "when": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.navigateDown",
+        "key": "down",
+        "when": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.selectFile",
+        "key": "enter",
+        "when": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.deleteChar",
+        "key": "backspace",
+        "when": "vstoys.smart-open.searching"
+      }
     ]
   }
   // Use this to enable proposed API features

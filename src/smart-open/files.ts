@@ -117,7 +117,7 @@ export function updateFilesExcludeCache(): void {
   console.log("Updated files.exclude cache:", filesExcludeCache);
 }
 
-export async function GetAllFilesInWorkspace(): Promise<vscode.Uri[]> {
+export async function GetAllFilesInWorkspace(filterString: string = ""): Promise<vscode.Uri[]> {
   const totalStart = performance.now();
   console.log("=== Performance Profile: GetAllFilesInWorkspace ===");
 
@@ -146,7 +146,13 @@ export async function GetAllFilesInWorkspace(): Promise<vscode.Uri[]> {
     const findEnd = performance.now();
     console.log(`  File finding: ${(findEnd - findStart).toFixed(2)}ms (found ${files.length} files)`);
 
-    allFiles.push(...files);
+    // If filterString was plain text (not glob), do a substring match here
+    const filteredFiles =
+      filterString && !/[*?]/.test(filterString)
+        ? files.filter((f) => f.fsPath.toLowerCase().includes(filterString.toLowerCase()))
+        : files;
+
+    allFiles.push(...filteredFiles);
 
     const folderEnd = performance.now();
     console.log(`Workspace folder "${workspaceFolder.name}" total: ${(folderEnd - folderStart).toFixed(2)}ms`);

@@ -93,7 +93,7 @@ async function executeDebugAction(action: string): Promise<void> {
       await showFileListWithCustomLabels();
       break;
     case "showFileListFuzzy":
-      await showFileListWithFuzzy();
+      await showFileListWithFuzzy("");
       break;
     case "showCacheStats":
       await showIconCacheStats();
