@@ -26,6 +26,9 @@ packageJson.tags = {};
 packageJson.contributes.commands = [];
 packageJson.contributes.configuration.properties = {};
 packageJson.contributes.keybindings = [];
+packageJson.contributes.views = {};
+packageJson.contributes.menus = {};
+packageJson.contributes.viewsContainers = {};
 
 // Get all files called "inject-package.json" under the src folder
 const injectFiles = require("glob").sync("src/**/.*-package.jsonc");

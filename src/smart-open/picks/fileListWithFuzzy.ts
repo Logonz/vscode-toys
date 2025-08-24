@@ -32,7 +32,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   console.log("=== Performance Profile: showFileListWithFuzzy ===");
 
   const fileLoadStart = performance.now();
-  const files = await GetAllFilesInWorkspace(input);
+  const files = await GetAllFilesInWorkspace();
   const fileLoadEnd = performance.now();
   console.log(`1. File loading: ${(fileLoadEnd - fileLoadStart).toFixed(2)}ms (${files.length} files)`);
 
@@ -45,11 +45,16 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
 
   // Use cached configuration instead of reading from workspace every time
   files.forEach((file) => {
+    // Filter the files by the input, we want to filter by custom labels.
+    const customLabel = GetCustomLabelForFile(file)
+    if (input && !customLabel.toLowerCase().includes(input.toLowerCase())) {
+      return; // Skip files that don't match the input
+    }
     const fileObject: UriExt = {
       uri: file,
       fsPath: file.fsPath,
       relativePath: vscode.workspace.asRelativePath(file),
-      customLabel: GetCustomLabelForFile(file),
+      customLabel: customLabel,
     };
     internalFiles.push(fileObject);
   });
@@ -121,10 +126,10 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
       // const spaces = "1".repeat(diff);
       const spaces = "\u00A0".repeat(diff);
 
-      sortedItems[i].label = `${spaces} ${item.label}`;
+      sortedItems[i].label = `${spaces}${item.label}`;
       // sortedItems[i].label = `${spaces}${i} ${item.label}`;
     } else {
-      sortedItems[i].label = ` ${item.label}`;
+      sortedItems[i].label = `\u00A0${item.label}`;
       // sortedItems[i].label = `${i} ${item.label}`;
     }
   }
@@ -183,6 +188,13 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
         );
 
         picked.placeholder = `Search: ${inlineInput.input} [${selectedIndex + 1}/${itemCount}]`;
+      }
+    } else {
+      // No found items
+      if (inlineInput) {
+        picked.placeholder = `Search: ${inlineInput.input} [0/0]`;
+      } else {
+        picked.placeholder = `Search: [0/0] (No InlineInput)`;
       }
     }
   };
