@@ -97,38 +97,49 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
         return;
       }
 
-      // Get current line and document info
-      const currentLine = editor.selection.active.line;
-      const lineText = editor.document.lineAt(currentLine);
       const lineEnding = detectLineEnding(editor.document);
-
-      // Extract leading whitespace (indentation)
-      const leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
-
-      // Process multi-line clipboard content with relative indentation
-      // Split by both CRLF and LF to handle clipboard content from different sources
       const clipboardLines = clipboardText.split(/\r?\n/);
-      const processedLines = processMultiLineContent(clipboardLines, leadingWhitespace);
 
-      // Replace current line and insert additional lines
+      // Collect all cursor positions and sort them in reverse order (bottom to top)
+      // This prevents line number shifts from affecting subsequent operations
+      const cursors = editor.selections
+        .map(selection => selection.active.line)
+        .sort((a, b) => b - a); // Sort in descending order
+
+      // Remove duplicates (in case multiple cursors are on the same line)
+      const uniqueCursors = [...new Set(cursors)];
+
+      // Process each cursor position
       await editor.edit((editBuilder) => {
-        const fullLineRange = lineText.range;
+        for (const currentLine of uniqueCursors) {
+          const lineText = editor.document.lineAt(currentLine);
 
-        if (processedLines.length === 1) {
-          // Single line: simple replacement
-          editBuilder.replace(fullLineRange, processedLines[0]);
-        } else {
-          // Multi-line: replace first line, then insert additional lines
-          editBuilder.replace(fullLineRange, processedLines[0]);
+          // Extract leading whitespace (indentation) for this line
+          const leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
 
-          // Insert additional lines after the current line using document's line ending
-          const endOfCurrentLine = fullLineRange.end;
-          const additionalLines = lineEnding + processedLines.slice(1).join(lineEnding);
-          editBuilder.insert(endOfCurrentLine, additionalLines);
+          // Process multi-line clipboard content with relative indentation for this cursor
+          const processedLines = processMultiLineContent(clipboardLines, leadingWhitespace);
+
+          const fullLineRange = lineText.range;
+
+          if (processedLines.length === 1) {
+            // Single line: simple replacement
+            editBuilder.replace(fullLineRange, processedLines[0]);
+          } else {
+            // Multi-line: replace first line, then insert additional lines
+            editBuilder.replace(fullLineRange, processedLines[0]);
+
+            // Insert additional lines after the current line using document's line ending
+            const endOfCurrentLine = fullLineRange.end;
+            const additionalLines = lineEnding + processedLines.slice(1).join(lineEnding);
+            editBuilder.insert(endOfCurrentLine, additionalLines);
+          }
         }
       });
 
-      printPasteReplaceOutput(`Replaced line ${currentLine + 1} with clipboard content`);
+      const cursorCount = uniqueCursors.length;
+      const lineNumbers = uniqueCursors.sort((a, b) => a - b).map(line => line + 1).join(', ');
+      printPasteReplaceOutput(`Replaced ${cursorCount} line(s) [${lineNumbers}] with clipboard content`);
     } catch (error) {
       vscode.window.showErrorMessage(`Paste replace failed: ${error}`);
       printPasteReplaceOutput(`Error: ${error}`);
