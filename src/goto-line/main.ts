@@ -1,7 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import { createOutputChannel, deactivate } from "../extension";
+import { createOutputChannel } from "../extension";
+import { navigateToLine, navigateToRelativeLine } from "./navigation";
 
 /**
  * Prints the given content on the output channel.
@@ -10,108 +11,6 @@ import { createOutputChannel, deactivate } from "../extension";
  * @param reveal Whether the output channel should be revealed.
  */
 let printGotoLineOutput: (content: string, reveal?: boolean) => void;
-
-/**
- * Navigate to a line relative to the current position
- * @param editor The text editor to navigate in
- * @param relativeOffset The relative offset (positive for down, negative for up)
- * @param args Optional arguments to pass to commands after navigation
- */
-function navigateToRelativeLine(editor: vscode.TextEditor, relativeOffset: number, args?: any): void {
-  const currentPosition = editor.selection.active;
-  const currentLineNumber = currentPosition.line; // 0-based
-  const targetLineNumber = currentLineNumber + relativeOffset;
-  const totalLines = editor.document.lineCount;
-
-  // Validate target line is within bounds
-  if (targetLineNumber < 0 || targetLineNumber >= totalLines) {
-    const displayCurrentLine = currentLineNumber + 1;
-    const displayTargetLine = targetLineNumber + 1;
-    vscode.window.showErrorMessage(`Cannot navigate to line ${displayTargetLine}. Valid range is 1-${totalLines} (current: ${displayCurrentLine})`);
-    return;
-  }
-
-  // Convert to 1-based line number for the existing navigateToLine function
-  const targetLine1Based = targetLineNumber + 1;
-  navigateToLine(editor, targetLine1Based, args);
-}
-
-/**
- * Navigate to a specific line in the editor
- * @param editor The text editor to navigate in
- * @param lineOrPosition Either a 1-based line number or a vscode.Position
- * @param args Optional arguments to pass to commands after navigation
- */
-function navigateToLine(editor: vscode.TextEditor, lineOrPosition: number | vscode.Position, args?: any): void {
-  let position: vscode.Position;
-  let displayLineNumber: number;
-
-  if (typeof lineOrPosition === "number") {
-    // Convert 1-based line number to 0-based position
-    position = new vscode.Position(lineOrPosition - 1, 0);
-    displayLineNumber = lineOrPosition;
-  } else {
-    // Use the provided position
-    position = lineOrPosition;
-    displayLineNumber = position.line + 1;
-  }
-
-  let newSelection: vscode.Selection;
-
-  if (args?.select === true) {
-    // Create selection from current cursor position to target line
-    const currentPosition = editor.selection.active;
-    const currentLineNumber = currentPosition.line;
-    const targetLineNumber = position.line;
-    
-    let selectionEndPosition: vscode.Position;
-    
-    if (targetLineNumber > currentLineNumber) {
-      // Selecting downward - select to end of target line (inclusive)
-      const targetLineText = editor.document.lineAt(targetLineNumber);
-      selectionEndPosition = new vscode.Position(targetLineNumber, targetLineText.text.length);
-    } else {
-      // Selecting upward - select to beginning of target line
-      selectionEndPosition = new vscode.Position(targetLineNumber, 0);
-    }
-    
-    newSelection = new vscode.Selection(currentPosition, selectionEndPosition);
-
-    // Move cursor to create the selection
-    editor.selection = newSelection;
-    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-
-    if (args?.delete === true) {
-      // Delete the selected text
-      editor.edit((editBuilder) => {
-        editBuilder.delete(newSelection);
-      });
-      const direction = targetLineNumber > currentLineNumber ? "down" : "up";
-      printGotoLineOutput(`Selected and deleted from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);
-
-      // ! Reindent the lines during delete. (Do we need a setting here?)
-      // vscode.commands.executeCommand("editor.action.reindentlines");
-      vscode.commands.executeCommand("editor.action.reindentselectedlines");
-    } else {
-      const direction = targetLineNumber > currentLineNumber ? "down" : "up";
-      printGotoLineOutput(`Selected from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);
-    }
-  } else {
-    // Just move cursor to the target line
-    newSelection = new vscode.Selection(position, position);
-    // Move cursor to the line (or create selection)
-    editor.selection = newSelection;
-    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-    printGotoLineOutput(`Navigated to line ${displayLineNumber}`);
-  }
-
-  // Execute command after goto if specified
-  if (args?.["executeCommandAfterGoto"]) {
-    console.log(args["executeCommandAfterGoto"]);
-    vscode.commands.executeCommand(args["executeCommandAfterGoto"]);
-  }
-}
-
 export function activateGotoLine(name: string, context: vscode.ExtensionContext) {
   console.log(`Activating ${name}`);
   printGotoLineOutput = createOutputChannel(`${name}`);
@@ -139,16 +38,16 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
           if (!value.trim()) {
             return "Please enter a line number";
           }
-          
+
           const lineNumber = parseInt(value.trim());
           if (isNaN(lineNumber)) {
             return "Please enter a valid number";
           }
-          
+
           if (lineNumber < 1 || lineNumber > totalLines) {
             return `Line number must be between 1 and ${totalLines}`;
           }
-          
+
           return null; // No error
         }
       });
@@ -156,14 +55,14 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
       // Handle the result
       if (result !== undefined) {
         try {
-          vscode.commands.executeCommand("vstoys.dot-repeat.repeatExit", { deactivateAll: true });
+          vscode.commands.executeCommand("vstoys.hyper.deactivateAll");
         } catch (error) {
-          console.error("Error executing dot-repeat command:", error);
+          console.error("Error executing hyper command:", error);
         }
 
         const lineNumber = parseInt(result.trim());
         if (!isNaN(lineNumber) && lineNumber >= 1 && lineNumber <= totalLines) {
-          navigateToLine(editor, lineNumber, args);
+          navigateToLine(editor, lineNumber, args, printGotoLineOutput);
         }
       }
     })
@@ -185,11 +84,11 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
       // Store current line number settings
       const config = vscode.workspace.getConfiguration('editor');
       const originalLineNumbers = config.get('lineNumbers');
-      
+
       try {
         // Temporarily enable relative line numbers
         await config.update('lineNumbers', 'relative', vscode.ConfigurationTarget.Global);
-        
+
         // Show input box for relative line offset
         const result = await vscode.window.showInputBox({
           prompt: `Go to relative line (+/- offset)`,
@@ -198,19 +97,19 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
             if (!value.trim()) {
               return "Please enter a relative offset";
             }
-            
+
             const trimmedValue = value.trim();
             let offset: number;
-            
+
             // Get configured characters (with defaults)
             const upChar = args?.upCharacter || 'k';
             const downChar = args?.downCharacter || 'j';
-            
+
             // Handle single character inputs (allow them without error)
             if (trimmedValue === '+' || trimmedValue === '-' || trimmedValue === upChar || trimmedValue === downChar) {
               return null; // Allow incomplete input
             }
-            
+
             // Handle various prefixes
             if (trimmedValue.startsWith('+')) {
               const numStr = trimmedValue.substring(1);
@@ -233,20 +132,20 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
               // Plain number defaults to positive (down)
               offset = parseInt(trimmedValue);
             }
-            
+
             if (isNaN(offset)) {
               return `Please enter a valid number with optional +/-, ${upChar} (up), or ${downChar} (down) prefix`;
             }
-            
+
             // Calculate target line to validate bounds
             const currentLineIndex = editor.selection.active.line; // 0-based
             const targetLineIndex = currentLineIndex + offset;
             const targetLineDisplay = targetLineIndex + 1; // 1-based for display
-            
+
             if (targetLineIndex < 0 || targetLineIndex >= totalLines) {
               return `Target line ${targetLineDisplay} is out of bounds (1-${totalLines})`;
             }
-            
+
             return null; // No error
           }
         });
@@ -254,18 +153,18 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
         // Handle the result
         if (result !== undefined) {
           try {
-            vscode.commands.executeCommand("vstoys.dot-repeat.repeatExit", { deactivateAll: true });
+            vscode.commands.executeCommand("vstoys.hyper.deactivateAll");
           } catch (error) {
-            console.error("Error executing dot-repeat command:", error);
+            console.error("Error executing hyper command:", error);
           }
 
           const trimmedValue = result.trim();
           let offset: number;
-          
+
           // Get configured characters (with defaults)
           const upChar = args?.upCharacter || 'k';
           const downChar = args?.downCharacter || 'j';
-          
+
           // Parse the offset
           if (trimmedValue.startsWith('+')) {
             offset = parseInt(trimmedValue.substring(1));
@@ -283,9 +182,9 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
             // Plain number defaults to positive (down)
             offset = parseInt(trimmedValue);
           }
-          
+
           if (!isNaN(offset)) {
-            navigateToRelativeLine(editor, offset, args);
+            navigateToRelativeLine(editor, offset, args, printGotoLineOutput);
           }
         }
       } finally {
