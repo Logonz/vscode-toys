@@ -77,6 +77,11 @@
         "title": "Paste Replace: Replace Line with Clipboard"
       },
       {
+        "command": "vstoys.hyper.deactivateAll",
+        "category": "VsToys",
+        "title": "Hyper: Deactivate All"
+      },
+      {
         "command": "vstoys.goto-line.goto",
         "category": "VsToys",
         "title": "VsToys - Goto Line: Go to Line"
@@ -100,16 +105,6 @@
         "command": "vstoys.git.stageHunk",
         "category": "VsToys",
         "title": "Git: Stage Hunk at Selection - (VsToys)"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "category": "VsToys",
-        "title": "DotRepeat: repeatExecute"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExit",
-        "category": "VsToys",
-        "title": "DotRepeat: repeatExit"
       },
       {
         "command": "vstoys.copy-highlight.copy",
@@ -165,6 +160,79 @@
           "description": "Enable the Paste Replace module in VSCode Toys",
           "order": 7000
         },
+        "vstoys.hyper.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Hyper module in VSCode Toys",
+          "order": 3000
+        },
+        "vstoys.hyper.normalLayers": {
+          "type": "array",
+          "default": [
+            {
+              "name": "hyper-layer",
+              "enabled": true
+            }
+          ],
+          "description": "List of active Hyper layers to register, activates a layer.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the hyper layer"
+              },
+              "timeout": {
+                "type": "number",
+                "description": "The timeout for this layer in seconds",
+                "default": 6
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether this layer is enabled",
+                "default": true
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "order": 3001
+        },
+        "vstoys.hyper.switchLayers": {
+          "type": "array",
+          "default": [
+            {
+              "name": "commit-layer",
+              "timeout": 900,
+              "enabled": true
+            }
+          ],
+          "description": "List of active Hyper layers to register, activates a layer.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the hyper layer"
+              },
+              "timeout": {
+                "type": "number",
+                "description": "The timeout for this layer in seconds",
+                "default": 6
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether this layer is enabled",
+                "default": true
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "order": 3002
+        },
         "vstoys.goto-line.enabled": {
           "type": "boolean",
           "default": true,
@@ -219,12 +287,6 @@
           "default": true,
           "description": "Enable the Git module in VSCode Toys",
           "order": 4000
-        },
-        "vstoys.dot-repeat.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable the Dot-Repeat module in VSCode Toys",
-          "order": 3000
         },
         "vstoys.copy-highlight.enabled": {
           "type": "boolean",
@@ -285,6 +347,18 @@
         "when": "editorTextFocus && vstoys.paste-replace.active"
       },
       {
+        "command": "vstoys.hyper.layerActivate.hyper-layer",
+        "key": "f20",
+        "mac": "f20",
+        "when": "vstoys.hyper.active"
+      },
+      {
+        "command": "vstoys.hyper.deactivateAll",
+        "key": "escape",
+        "mac": "escape",
+        "when": "vstoys.hyper.global"
+      },
+      {
         "key": "alt+s f",
         "command": "vstoys.git.stageFile",
         "when": "editorTextFocus && vstoys.git.active"
@@ -293,116 +367,6 @@
         "key": "alt+s h",
         "command": "vstoys.git.stageHunk",
         "when": "editorTextFocus && vstoys.git.active"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "key": "f20",
-        "mac": "f20",
-        "args": {
-          "contextId": "hyper-layer-active"
-        },
-        "when": "vstoys.dot-repeat.active"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExit",
-        "key": "escape",
-        "mac": "escape",
-        "args": {
-          "deactivateAll": true
-        },
-        "when": "vstoys.dot-repeat.global"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "key": "alt+a",
-        "mac": "alt+a",
-        "args": {
-          "contextId": "repeat-smartselect",
-          "command": "editor.action.smartSelect.expand"
-        },
-        "when": "editorTextFocus && vstoys.dot-repeat.active"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "key": "up",
-        "mac": "up",
-        "args": {
-          "repeat": true,
-          "contextId": "repeat-smartselect",
-          "command": "editor.action.smartSelect.expand"
-        },
-        "when": "editorTextFocus && repeat-smartselect"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "key": "down",
-        "mac": "down",
-        "args": {
-          "repeat": true,
-          "contextId": "repeat-smartselect",
-          "command": "editor.action.smartSelect.shrink"
-        },
-        "when": "editorTextFocus && repeat-smartselect"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "key": "a",
-        "mac": "a",
-        "args": {
-          "contextId": "repeat-smartselect",
-          "command": "editor.action.smartSelect.expand"
-        },
-        "when": "editorTextFocus && repeat-smartselect"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "key": "shift+a",
-        "mac": "shift+a",
-        "args": {
-          "contextId": "repeat-smartselect",
-          "command": "editor.action.smartSelect.shrink"
-        },
-        "when": "editorTextFocus && repeat-smartselect"
-      },
-      {
-        "key": "d d",
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "args": {
-          "timeoutSeconds": 1,
-          "contextId": "repeat-delete",
-          "command": "editor.action.deleteLines"
-        },
-        "when": "editorTextFocus && hyper-layer-active && !repeat-delete"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "key": "d",
-        "mac": "d",
-        "args": {
-          "contextId": "repeat-delete",
-          "command": "editor.action.deleteLines"
-        },
-        "when": "editorTextFocus && repeat-delete"
-      },
-      {
-        "key": "d c",
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "args": {
-          "timeoutSeconds": 1,
-          "contextId": "repeat-delete",
-          "command": "vstoys.clear-line.clearLines"
-        },
-        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active && !repeat-delete"
-      },
-      {
-        "command": "vstoys.dot-repeat.repeatExecute",
-        "key": "c",
-        "mac": "c",
-        "args": {
-          "contextId": "repeat-delete",
-          "command": "vstoys.clear-line.clearLines"
-        },
-        "when": "editorTextFocus && repeat-delete && vstoys.clear-line.active"
       },
       {
         "command": "vstoys.copy-highlight.copy",

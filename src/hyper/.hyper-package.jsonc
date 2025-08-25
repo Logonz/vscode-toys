@@ -1,0 +1,105 @@
+{
+  "tags": ["dot-repeat", "motion"],
+  "contributes": {
+    "commands": [
+      {
+        "command": "vstoys.hyper.deactivateAll",
+        "category": "VsToys",
+        "title": "Hyper: Deactivate All"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        // Insert your configuration properties here
+        "vstoys.hyper.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Hyper module in VSCode Toys",
+          "order": 3000
+        },
+        "vstoys.hyper.normalLayers": {
+          "type": "array",
+          "default": [
+            {
+              "name": "hyper-layer",
+              "enabled": true
+            }
+          ],
+          "description": "List of active Hyper layers to register, activates a layer.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the hyper layer"
+              },
+              "timeout": {
+                "type": "number",
+                "description": "The timeout for this layer in seconds",
+                "default": 6
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether this layer is enabled",
+                "default": true
+              }
+            },
+            "required": ["name"]
+          },
+          "order": 3001
+        },
+        "vstoys.hyper.switchLayers": {
+          "type": "array",
+          "default": [
+            {
+              "name": "commit-layer",
+              "timeout": 900,
+              "enabled": true
+            }
+          ],
+          "description": "List of active Hyper layers to register, activates a layer.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the hyper layer"
+              },
+              "timeout": {
+                "type": "number",
+                "description": "The timeout for this layer in seconds",
+                "default": 6
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether this layer is enabled",
+                "default": true
+              }
+            },
+            "required": ["name"]
+          },
+          "order": 3002
+        }
+      }
+    },
+    "keybindings": [
+      // Insert your keybindings here
+      // ? Hyper Layer initializer
+      {
+        "command": "vstoys.hyper.layerActivate.hyper-layer",
+        "key": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
+        "mac": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
+        "when": "vstoys.hyper.active"
+      },
+      // ! Global Exit
+      // ? Will exit all and any active repeat contexts
+      {
+        "command": "vstoys.hyper.deactivateAll",
+        "key": "escape",
+        "mac": "escape",
+        // This can never be true unless vscode.hyper.active is true, so it's safe to exclude it
+        "when": "vstoys.hyper.global"
+      }
+    ]
+  }
+}

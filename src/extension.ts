@@ -10,6 +10,7 @@ import { activateRegisters } from "./registers/main";
 import { activateGotoLine } from "./goto-line/main";
 import { activatePasteReplace } from "./paste-replace/main";
 import { activateSmartOpen } from "./smart-open/smart-open-main";
+import { activateHyper } from "./hyper/main";
 
 try {
   require("./debug");
@@ -36,9 +37,18 @@ let vsToys: {
     deactivator: () => {},
   },
   {
+    // ! DEPRECATED
     name: "Dot Repeat",
     moduleContext: "dot-repeat",
-    activator: activateDotRepeat,
+    // activator: activateDotRepeat,
+    activator: () => {},
+    deactivator: () => {},
+    // ! DEPRECATED
+  },
+  {
+    name: "Hyper Layer",
+    moduleContext: "hyper",
+    activator: activateHyper,
     deactivator: () => {},
   },
   {
