@@ -31,7 +31,7 @@ export class ActionContext {
     this.contextId = contextId;
     this.timeoutSeconds = timeoutSeconds;
   }
-  
+
   /**
    * @returns Whether the action context is active.
    */
@@ -42,10 +42,17 @@ export class ActionContext {
   /**
    * Activates the action context, creating and showing a status bar item, executing the provided command, and starting the repeat timeout.
    * @param command - The command to execute when the action context is activated.
+   * @param timeoutSeconds - Optional timeout in seconds to override the default timeout for this activation.
    */
-  activate(command: string | undefined) {
+  activate(command: string | undefined, timeoutSeconds?: number) {
+    // Update timeout if provided
+    if (timeoutSeconds !== undefined) {
+      this.timeoutSeconds = timeoutSeconds;
+      printChannelOutput(`  Updating timeout for context: ${this.contextId} to ${timeoutSeconds}s`, false);
+    }
+
     if (this.isActive) {
-      // Clear existing timeouts
+      // Clear existing timeouts and restart with potentially new timeout
       this.startRepeatTimeout();
     } else {
       // Create and show the status bar item
@@ -77,7 +84,7 @@ export class ActionContext {
     }
   }
 
-  /** 
+  /**
    * Disposes of the status bar item and clears any active timeouts associated with the action context.
    *
    * This method is called when the action context is being deactivated or destroyed. It ensures that

@@ -87,8 +87,8 @@
       // ? Hyper Layer initializer
       {
         "command": "vstoys.hyper.layerActivate.hyper-layer",
-        "key": "shift+f20", // This is bound to caps-lock (Requires a programmable keyboard)
-        "mac": "shift+f20", // This is bound to caps-lock (Requires a programmable keyboard)
+        "key": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
+        "mac": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
         "when": "vstoys.hyper.active"
       },
       // ! Global Exit

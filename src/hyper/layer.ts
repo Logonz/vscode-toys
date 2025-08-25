@@ -81,7 +81,8 @@ export function activateLayer(input: LayerActivateInput) {
     });
   }
 
-  context.activate(input.command);
+  const timeoutSeconds = input.timeout || 6; // Default timeout from config
+  context.activate(input.command, timeoutSeconds);
 }
 
 export function deactivateLayer(input: LayerDeactivateInput) {

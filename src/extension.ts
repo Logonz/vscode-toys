@@ -39,7 +39,8 @@ let vsToys: {
     // ! DEPRECATED
     name: "Dot Repeat",
     moduleContext: "dot-repeat",
-    activator: activateDotRepeat,
+    // activator: activateDotRepeat,
+    activator: () => {},
     deactivator: () => {},
     // ! DEPRECATED
   },

@@ -16,10 +16,11 @@ function unregisterAllLayers() {
 function registerNormalLayer(context: vscode.ExtensionContext, layer: HyperLayer) {
   // Register activate command
   const activateDisposable = vscode.commands.registerCommand(`vstoys.hyper.layerActivate.${layer.name}`, (args) => {
+    console.log(`[vstoys.hyper] ActivateLayer command executed`, args);
     const layerInput: LayerActivateInput = {
       layerName: layer.name,
       layerType: "normal",
-      timeout: layer.timeout || 6,
+      timeout: args?.timeout || layer.timeout || 6,
       command: args?.command
     };
     activateLayer(layerInput);
@@ -41,10 +42,11 @@ function registerNormalLayer(context: vscode.ExtensionContext, layer: HyperLayer
 function registerSwitchLayer(context: vscode.ExtensionContext, layer: HyperLayer) {
   // Register switch command
   const switchDisposable = vscode.commands.registerCommand(`vstoys.hyper.layerSwitch.${layer.name}`, (args) => {
+    console.log(`[vstoys.hyper] SwitchLayer command executed`, args);
     const layerInput: LayerActivateInput = {
       layerName: layer.name,
       layerType: 'switch',
-      timeout: layer.timeout || 6,
+      timeout: args?.timeout || layer.timeout || 6,
       command: args?.command
     };
     activateLayer(layerInput);
