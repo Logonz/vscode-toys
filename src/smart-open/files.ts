@@ -53,7 +53,8 @@ function createMergedGlobPattern(patterns: string[]): string {
  * @param folderPath Path to the workspace folder
  * @returns Promise<string> Merged glob pattern for exclusions
  */
-export async function createExcludeGlobPattern(folderPath: string): Promise<string> {
+export async function createExcludeGlobPattern(folderPath: string): Promise<string | null> {
+  try {
   // const totalStart = performance.now();
   // console.log(`=== Creating exclude glob pattern for: ${folderPath} ===`);
 
@@ -84,6 +85,10 @@ export async function createExcludeGlobPattern(folderPath: string): Promise<stri
   // console.log(`=== createExcludeGlobPattern total: ${(totalEnd - totalStart).toFixed(2)}ms ===`);
 
   return mergedExcludePattern;
+  } catch (error) {
+    console.error("Error creating exclude glob pattern:", error);
+    return null;
+  }
 }
 /**
  * Updates the search.exclude cache from VS Code configuration
