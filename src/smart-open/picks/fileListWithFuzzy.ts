@@ -35,7 +35,11 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   console.log(`1. File loading: ${(fileLoadEnd - fileLoadStart).toFixed(2)}ms (${files.length} files)`);
 
   // Batch load icons for all files
+  const iconLoadStart = performance.now();
   await batchLoadIcons(files);
+  const iconLoadEnd = performance.now();
+  console.log(`2. Icon loading: ${(iconLoadEnd - iconLoadStart).toFixed(2)}ms (${files.length} files)`);
+  console.log(`   Average per file: ${((iconLoadEnd - iconLoadStart) / files.length).toFixed(2)}ms`);
 
   // Custom label processing using cached configuration
   const labelProcessStart = performance.now();
@@ -59,34 +63,33 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
 
   const labelProcessEnd = performance.now();
   console.log(
-    `2. Custom label processing: ${(labelProcessEnd - labelProcessStart).toFixed(2)}ms (${internalFiles.length} files)`
+    `3. Custom label processing: ${(labelProcessEnd - labelProcessStart).toFixed(2)}ms (${internalFiles.length} files)`
   );
 
-  const iconLoadStart = performance.now();
   const items: FileQuickPickItem[] = [];
 
   // Get the currently active editor for context-aware scoring
   const activeEditor = vscode.window.activeTextEditor;
   const context = activeEditor ? { activeEditor } : undefined;
   const activeFilePath = activeEditor?.document.uri.fsPath;
+
+  const fileProcessingStart = performance.now();
   for (let i = 0; i < internalFiles.length; i++) {
     const fileInfo = internalFiles[i];
+
     // Do not include the current file in the suggestions
     if (activeFilePath && fileInfo.fsPath === activeFilePath) {
       continue;
     }
-    // const fileStart = performance.now();
 
     // Get the precached icons
     const icon = await GetIconForFile(fileInfo.uri);
-    // const iconTime = performance.now() - fileStart;
 
     // Calculate comprehensive score using the new scoring system
     const fileScore = scoreCalculator.calculateScore(input, fileInfo, context);
 
     items.push({
       label: fileInfo.customLabel,
-      // description: icon ? `Has icon (${iconTime.toFixed(1)}ms)` : `No icon (${iconTime.toFixed(1)}ms)`,
       description: `(${Math.round(fileScore.finalScore)}) `,
       file: fileInfo.uri,
       iconPath: icon ? icon : new vscode.ThemeIcon("file"),
@@ -97,15 +100,21 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
       console.log(`  - Processed ${i + 1}/${internalFiles.length} files`);
     }
   }
+  const fileProcessingEnd = performance.now();
+  console.log(
+    `4. File processing: ${(fileProcessingEnd - fileProcessingStart).toFixed(2)}ms (${internalFiles.length} files)`
+  );
 
+  const normalizeStart = performance.now();
   const normalizedItems = scoreCalculator.normalizeScores(items);
+  const normalizeEnd = performance.now();
+  console.log(`5. Score normalization: ${(normalizeEnd - normalizeStart).toFixed(2)}ms`);
 
+  const sortingStart = performance.now();
   // Sort by final score (or fallback to fuzzy score)
   const sortedItems = normalizedItems.sort((a, b) => b.score.finalScore - a.score.finalScore);
-
-  const iconLoadEnd = performance.now();
-  console.log(`3. Icon loading: ${(iconLoadEnd - iconLoadStart).toFixed(2)}ms (${files.length} files)`);
-  console.log(`   Average per file: ${((iconLoadEnd - iconLoadStart) / files.length).toFixed(2)}ms`);
+  const sortingEnd = performance.now();
+  console.log(`6. Sorting: ${(sortingEnd - sortingStart).toFixed(2)}ms`);
 
   // ! Remove when proposed API is implemented.
   // https://vscode.dev/github/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.quickPickSortByLabel.d.ts
@@ -136,14 +145,6 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   vscode.window.showTextDocument(activeEditorForQuickPick.document);
   const quickPickEnd = performance.now();
   console.log(`4. QuickPick display: ${(quickPickEnd - quickPickStart).toFixed(2)}ms`);
-
-  // if (picked) {
-  //   const openStart = performance.now();
-  //   const doc = await vscode.workspace.openTextDocument(picked.file);
-  //   await vscode.window.showTextDocument(doc);
-  //   const openEnd = performance.now();
-  //   console.log(`5. File opening: ${(openEnd - openStart).toFixed(2)}ms`);
-  // }
 
   const totalEnd = performance.now();
   console.log(`=== Total time: ${(totalEnd - totalStart).toFixed(2)}ms ===`);
@@ -310,16 +311,9 @@ async function openFile(uri: vscode.Uri): Promise<void> {
     const doc = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(doc);
 
-    // Record that this file was opened for scoring purposes
-    scoreCalculator.recordFileOpened(uri.fsPath);
+    // File opening is already tracked by RecencyScorer via onDidChangeActiveTextEditor
+    // No need to manually record here anymore
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to open file: ${error}`);
   }
-}
-
-/**
- * Get the score calculator instance for external configuration
- */
-export function getScoreCalculator(): ScoreCalculator {
-  return scoreCalculator;
 }
