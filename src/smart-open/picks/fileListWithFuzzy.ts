@@ -2,11 +2,11 @@ import * as vscode from "vscode";
 import { GetIconForFile, LoadIcons, batchLoadIcons, getIconCacheStats, clearIconCache } from "../icons";
 import { GetAllFilesInWorkspace } from "../files";
 import { GetCustomLabelForFile, IsCustomLabelsEnabled } from "../../helpers/customEditorLabelService";
-import { FileQuickPickItem } from "./IFileQuickPickItem";
-import { UriExt } from "./IUriExt";
+import { FileQuickPickItem } from "./interface/IFileQuickPickItem";
+import { UriExt } from "./interface/IUriExt";
 import { InlineInput } from "./InlineInput";
 import { ScoreCalculator } from "../scoring/ScoreCalculator";
-import { FileScore } from "../scoring/interface/IScore";
+import { GitScorer } from "../scoring";
 
 // Create a global score calculator instance
 const scoreCalculator = new ScoreCalculator();

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { UriExt } from "../../picks/IUriExt";
+import { UriExt } from "../../picks/interface/IUriExt";
 import { ScoringContext } from "./IContextScorer";
 
 /**

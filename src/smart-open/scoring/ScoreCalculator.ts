@@ -1,5 +1,5 @@
 import { IScorer } from "./interface/IScorer";
-import { UriExt } from "../picks/IUriExt";
+import { UriExt } from "../picks/interface/IUriExt";
 import { FileScore, ScoreConfig, DEFAULT_SCORE_CONFIG } from "./interface/IScore";
 import { ScoringContext } from "./interface/IContextScorer";
 import { FuzzyScorer } from "./Scorers/FuzzyScorer";
@@ -8,7 +8,7 @@ import { FrequencyScorer } from "./Scorers/FrequencyScorer";
 // import { LengthScorer, PathScorer } from "./PathScorers";
 import { ClosenessScorer } from "./Scorers/ClosenessScorer";
 import * as vscode from "vscode";
-import { FileQuickPickItem } from "../picks/IFileQuickPickItem";
+import { FileQuickPickItem } from "../picks/interface/IFileQuickPickItem";
 
 /**
  * Main scoring engine that combines multiple scoring algorithms

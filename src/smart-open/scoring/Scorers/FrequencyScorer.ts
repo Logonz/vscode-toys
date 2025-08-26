@@ -1,5 +1,5 @@
 import { IScorer } from "../interface/IScorer";
-import { UriExt } from "../../picks/IUriExt";
+import { UriExt } from "../../picks/interface/IUriExt";
 import { ScoringContext } from "../interface/IContextScorer";
 
 /**

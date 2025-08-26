@@ -8,9 +8,9 @@ import {
   ICustomEditorLabelPatterns,
   IsCustomLabelsEnabled,
 } from "../helpers/customEditorLabelService";
-import { FileQuickPickItem } from "./picks/IFileQuickPickItem";
-import { showFileListWithIcons } from "./picks/fileListWithIcons";
-import { showFileListWithCustomLabels } from "./picks/fileListWithCustomLabels";
+import { FileQuickPickItem } from "./picks/interface/IFileQuickPickItem";
+import { showFileListWithIcons } from "./picks/testPickers/fileListWithIcons";
+import { showFileListWithCustomLabels } from "./picks/testPickers/fileListWithCustomLabels";
 import { showFileListWithFuzzy } from "./picks/fileListWithFuzzy";
 
 interface DebugQuickPickItem extends vscode.QuickPickItem {

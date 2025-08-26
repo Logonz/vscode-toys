@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { IContextScorer, ScoringContext } from "../interface/IContextScorer";
-import { UriExt } from "../../picks/IUriExt";
+import { UriExt } from "../../picks/interface/IUriExt";
 
 /**
  * ClosenessScorer - gives higher scores to files that are "close" to the currently active editor
