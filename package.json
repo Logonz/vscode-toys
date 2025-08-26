@@ -346,22 +346,22 @@
       {
         "command": "vstoys.smart-open.navigateUp",
         "key": "up",
-        "when": "vstoys.smart-open.searching"
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.smart-open.navigateDown",
         "key": "down",
-        "when": "vstoys.smart-open.searching"
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.smart-open.selectFile",
         "key": "enter",
-        "when": "vstoys.smart-open.searching"
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.smart-open.deleteChar",
         "key": "backspace",
-        "when": "vstoys.smart-open.searching"
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.paste-replace.clipboardPasteReplace",
