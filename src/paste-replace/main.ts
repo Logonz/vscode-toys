@@ -11,9 +11,9 @@ let printPasteReplaceOutput: (content: string, reveal?: boolean) => void;
 function detectLineEnding(document: vscode.TextDocument): string {
   // Check VSCode's built-in line ending detection
   if (document.eol === vscode.EndOfLine.CRLF) {
-    return '\r\n';
+    return "\r\n";
   } else {
-    return '\n';
+    return "\n";
   }
 }
 
@@ -25,12 +25,12 @@ function detectLineEnding(document: vscode.TextDocument): string {
  */
 function processMultiLineContent(clipboardLines: string[], targetIndentation: string): string[] {
   // Filter out empty lines at the end
-  while (clipboardLines.length > 0 && clipboardLines[clipboardLines.length - 1].trim() === '') {
+  while (clipboardLines.length > 0 && clipboardLines[clipboardLines.length - 1].trim() === "") {
     clipboardLines.pop();
   }
 
   if (clipboardLines.length === 0) {
-    return [''];
+    return [""];
   }
 
   // Find the minimum indentation level (base level to anchor from)
@@ -39,7 +39,7 @@ function processMultiLineContent(clipboardLines: string[], targetIndentation: st
 
   for (const line of clipboardLines) {
     const indentMatch = line.match(/^(\s*)/);
-    const indent = indentMatch ? indentMatch[1] : '';
+    const indent = indentMatch ? indentMatch[1] : "";
     lineIndentations.push(indent);
 
     // Only consider non-empty lines for minimum indentation
@@ -62,7 +62,7 @@ function processMultiLineContent(clipboardLines: string[], targetIndentation: st
 
     if (line.trim().length === 0) {
       // Empty lines remain empty
-      processedLines.push('');
+      processedLines.push("");
     } else {
       // Calculate relative indentation from the base level
       const relativeIndent = lineIndent.substring(minIndentation);
@@ -81,6 +81,32 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   console.log(`Activating ${name}`);
   printPasteReplaceOutput = createOutputChannel(`${name}`);
   printPasteReplaceOutput(`${name} activating`);
+
+  const smartPaste = async () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showErrorMessage("No active editor");
+      return;
+    }
+
+    // Check if any cursor is on a line with only whitespace
+    const shouldUseReplaceMode = editor.selections.some((selection) => {
+      const currentLine = selection.active.line;
+      const lineText = editor.document.lineAt(currentLine);
+      // Check if line contains only whitespace (spaces, tabs, etc.)
+      return lineText.text.trim() === "";
+    });
+
+    if (shouldUseReplaceMode) {
+      printPasteReplaceOutput("Using custom replace for whitespace-only lines");
+      // Use our custom replace functionality for whitespace-only lines
+      await replaceLineWithClipboard();
+    } else {
+      printPasteReplaceOutput("Using standard paste for non-empty lines");
+      // Use VSCode's default paste action for lines with content
+      await vscode.commands.executeCommand("editor.action.clipboardPasteAction");
+    }
+  };
 
   const replaceLineWithClipboard = async () => {
     const editor = vscode.window.activeTextEditor;
@@ -102,9 +128,7 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
 
       // Collect all cursor positions and sort them in reverse order (bottom to top)
       // This prevents line number shifts from affecting subsequent operations
-      const cursors = editor.selections
-        .map(selection => selection.active.line)
-        .sort((a, b) => b - a); // Sort in descending order
+      const cursors = editor.selections.map((selection) => selection.active.line).sort((a, b) => b - a); // Sort in descending order
 
       // Remove duplicates (in case multiple cursors are on the same line)
       const uniqueCursors = [...new Set(cursors)];
@@ -138,7 +162,10 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
       });
 
       const cursorCount = uniqueCursors.length;
-      const lineNumbers = uniqueCursors.sort((a, b) => a - b).map(line => line + 1).join(', ');
+      const lineNumbers = uniqueCursors
+        .sort((a, b) => a - b)
+        .map((line) => line + 1)
+        .join(", ");
       printPasteReplaceOutput(`Replaced ${cursorCount} line(s) [${lineNumbers}] with clipboard content`);
     } catch (error) {
       vscode.window.showErrorMessage(`Paste replace failed: ${error}`);
@@ -147,7 +174,8 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("vstoys.paste-replace.replaceLineWithClipboard", replaceLineWithClipboard)
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", replaceLineWithClipboard),
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", smartPaste)
   );
 
   vscode.commands.executeCommand("setContext", "vstoys.paste-replace.active", true);
