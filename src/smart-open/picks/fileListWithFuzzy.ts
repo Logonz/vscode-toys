@@ -70,8 +70,12 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
 
   // Get the currently active editor for context-aware scoring
   const activeEditor = vscode.window.activeTextEditor;
-  const context = activeEditor ? { activeEditor } : undefined;
   const activeFilePath = activeEditor?.document.uri.fsPath;
+
+  const activeWorkspaceFolder = activeEditor
+    ? vscode.workspace.getWorkspaceFolder(activeEditor.document.uri)
+    : undefined;
+  const context = activeEditor ? { activeEditor, activeWorkspaceFolder } : undefined;
 
   const fileProcessingStart = performance.now();
   for (let i = 0; i < internalFiles.length; i++) {
