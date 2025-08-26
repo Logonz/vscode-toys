@@ -16,10 +16,15 @@ export class GitScorer implements IContextScorer {
   readonly enabled = true;
   readonly defaultWeight = 0.4;
   readonly requiresContext = true; // Requires active editor context
+  readonly context?: vscode.ExtensionContext;
 
   private coChangeCache = new Map<string, Map<string, number>>();
   private cacheTimestamps = new Map<string, number>();
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  constructor(context?: vscode.ExtensionContext) {
+    this.context = context;
+  }
 
   calculateScore(input: string, file: UriExt, context?: ScoringContext): number {
     // Only score when we have an active editor context

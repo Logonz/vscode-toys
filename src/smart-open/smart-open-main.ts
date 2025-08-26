@@ -5,6 +5,9 @@ import { showDebugQuickPick } from "./debugQuickPick";
 import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelService";
 import { showQuickPickWithInlineSearch } from "./picks/fileListWithFuzzy";
 import { createOutputChannel } from "../extension";
+import { ScoreCalculator } from "./scoring";
+
+export let scoreCalculator: ScoreCalculator;
 
 /**
  * Prints the given content on the output channel.
@@ -62,4 +65,6 @@ export async function activateSmartOpen(name: string, context: vscode.ExtensionC
 
   // Initialize the custom editor label service
   updateCustomLabelConfiguration();
+
+  scoreCalculator = new ScoreCalculator(context);
 }

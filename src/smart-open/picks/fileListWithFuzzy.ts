@@ -5,11 +5,8 @@ import { GetCustomLabelForFile, IsCustomLabelsEnabled } from "../../helpers/cust
 import { FileQuickPickItem } from "./interface/IFileQuickPickItem";
 import { UriExt } from "./interface/IUriExt";
 import { InlineInput } from "./InlineInput";
-import { ScoreCalculator } from "../scoring/ScoreCalculator";
 import { GitScorer } from "../scoring";
-
-// Create a global score calculator instance
-const scoreCalculator = new ScoreCalculator();
+import { scoreCalculator } from "../smart-open-main";
 
 const picked = vscode.window.createQuickPick<FileQuickPickItem>();
 picked.matchOnDescription = false;

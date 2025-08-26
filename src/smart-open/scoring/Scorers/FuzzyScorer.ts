@@ -1,3 +1,4 @@
+import * as vscode from "vscode";
 import { IScorer } from "../interface/IScorer";
 import { UriExt } from "../../picks/interface/IUriExt";
 import { ScoringContext } from "../interface/IContextScorer";
@@ -13,6 +14,11 @@ export class FuzzyScorer implements IScorer {
   readonly enabled = true;
   readonly defaultWeight = 1.0;
   readonly requiresContext = false;
+  readonly context?: vscode.ExtensionContext;
+
+  constructor(context?: vscode.ExtensionContext) {
+    this.context = context;
+  }
 
   calculateScore(input: string, file: UriExt, context?: ScoringContext): number {
     // Return early if no search input provided

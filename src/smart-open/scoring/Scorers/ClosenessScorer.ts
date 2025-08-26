@@ -12,6 +12,11 @@ export class ClosenessScorer implements IContextScorer {
   readonly enabled = false; // Disabled by default
   readonly defaultWeight = 0.25;
   readonly requiresContext = true; // This scorer needs access to active editor
+  readonly context?: vscode.ExtensionContext;
+
+  constructor(context?: vscode.ExtensionContext) {
+    this.context = context;
+  }
 
   calculateScore(input: string, file: UriExt, context?: ScoringContext): number {
     if (!context?.activeEditor) {

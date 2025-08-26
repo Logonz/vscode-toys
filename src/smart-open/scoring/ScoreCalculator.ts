@@ -17,21 +17,23 @@ import { FileQuickPickItem } from "../picks/interface/IFileQuickPickItem";
 export class ScoreCalculator {
   private scorers: Map<string, IScorer> = new Map();
   private config: ScoreConfig;
+  private context: vscode.ExtensionContext;
 
-  constructor(config: ScoreConfig = DEFAULT_SCORE_CONFIG) {
+  constructor(context: vscode.ExtensionContext, config: ScoreConfig = DEFAULT_SCORE_CONFIG) {
     this.config = { ...config };
+    this.context = context;
     this.initializeScorers();
   }
 
   private initializeScorers(): void {
     const scorers = [
-      new FuzzyScorer(),
-      new RecencyScorer(),
-      new FrequencyScorer(),
-      // new LengthScorer(),
-      // new PathScorer(),
-      new ClosenessScorer(), // Add the new closeness scorer
-      new GitScorer(), // Add the git co-change scorer
+      new FuzzyScorer(this.context),
+      new RecencyScorer(this.context),
+      new FrequencyScorer(this.context),
+      // new LengthScorer(this.context),
+      // new PathScorer(this.context),
+      new ClosenessScorer(this.context), // Add the new closeness scorer
+      new GitScorer(this.context), // Add the git co-change scorer
       // ! NEW-SCORER-INSERT-HERE
     ];
 
@@ -311,20 +313,5 @@ export class ScoreCalculator {
    */
   getConfig(): ScoreConfig {
     return { ...this.config };
-  }
-
-  /**
-   * Record that a file was opened (for recency/frequency tracking)
-   */
-  recordFileOpened(fsPath: string): void {
-    const recencyScorer = this.getScorer<RecencyScorer>("recency");
-    if (recencyScorer) {
-      recencyScorer.recordFileOpened(fsPath);
-    }
-
-    const frequencyScorer = this.getScorer<FrequencyScorer>("frequency");
-    if (frequencyScorer) {
-      frequencyScorer.recordFileAccessed(fsPath);
-    }
   }
 }
