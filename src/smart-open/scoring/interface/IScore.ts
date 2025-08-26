@@ -1,0 +1,70 @@
+import * as vscode from "vscode";
+
+/**
+ * object that holds multiple scoring types
+ */
+export interface FileScore {
+  // Individual score components
+  fuzzyScore: number;
+  recencyScore?: number;
+  frequencyScore?: number;
+  // lengthScore?: number;
+  // pathScore?: number;
+  closenessScore?: number;
+  // ! NEW-SCORER-INSERT-HERE
+
+  // Final computed score (weighted combination)
+  finalScore: number;
+
+  // Metadata
+  scoredAt: number; // timestamp when score was calculated
+  input: string; // the search input used for scoring
+}
+
+/**
+ * Configuration for score weights and settings
+ */
+export interface ScoreConfig {
+  weights: {
+    fuzzy: number;
+    recency: number;
+    frequency: number;
+    // length: number;
+    // path: number;
+    closeness: number; // Add closeness weight
+    // ! NEW-SCORER-INSERT-HERE
+  };
+  enabled: {
+    fuzzy: boolean;
+    recency: boolean;
+    frequency: boolean;
+    // length: boolean;
+    // path: boolean;
+    closeness: boolean; // Add closeness enabled flag
+    // ! NEW-SCORER-INSERT-HERE
+  };
+}
+
+/**
+ * Default scoring configuration
+ */
+export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
+  weights: {
+    fuzzy: 1.0, // Primary scoring mechanism
+    recency: 0.3, // Recently opened files
+    frequency: 0.2, // Frequently accessed files
+    // length: 0.1, // Prefer shorter paths
+    // path: 0.1, // Path-based bonuses
+    closeness: 0.5, // Path closeness to active editor
+    // ! NEW-SCORER-INSERT-HERE
+  },
+  enabled: {
+    fuzzy: true,
+    recency: false,
+    frequency: false,
+    // length: false,
+    // path: false,
+    closeness: true,
+    // ! NEW-SCORER-INSERT-HERE
+  },
+};

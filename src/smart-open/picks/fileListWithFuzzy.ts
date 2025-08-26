@@ -1,22 +1,23 @@
 import * as vscode from "vscode";
 import { GetIconForFile, LoadIcons, batchLoadIcons, getIconCacheStats, clearIconCache } from "../icons";
 import { GetAllFilesInWorkspace } from "../files";
-import { CustomEditorLabelService, GetCustomLabelForFile, GetMaxWorkspaceFiles, ICustomEditorLabelPatterns, IsCustomLabelsEnabled } from "../../helpers/customEditorLabelService";
-import { FileQuickPickItem } from "./FileQuickPickItem";
-import { UriExt } from "./UriExt";
-import { encodeScore } from "./encodeScore";
+import { GetCustomLabelForFile, IsCustomLabelsEnabled } from "../../helpers/customEditorLabelService";
+import { FileQuickPickItem } from "./IFileQuickPickItem";
+import { UriExt } from "./IUriExt";
 import { InlineInput } from "./InlineInput";
-// import { SmartOpenInlineInput } from "./SmartOpenInlineInput";
+import { ScoreCalculator } from "../scoring/ScoreCalculator";
+import { FileScore } from "../scoring/interface/IScore";
 
-
+// Create a global score calculator instance
+const scoreCalculator = new ScoreCalculator();
 
 const picked = vscode.window.createQuickPick<FileQuickPickItem>();
 picked.matchOnDescription = false;
 picked.matchOnDetail = false;
 // picked.enabled = false;
 picked.ignoreFocusOut = true;
-picked.totalSteps = 5;
-picked.placeholder = `Select file to open - Custom Labels ${IsCustomLabelsEnabled() ? 'ENABLED' : 'DISABLED'}`;
+picked.title = "Smart Open";
+picked.placeholder = `Select file to open - Custom Labels ${IsCustomLabelsEnabled() ? "ENABLED" : "DISABLED"}`;
 
 picked.onDidChangeValue(showFileListWithFuzzy);
 picked.onDidChangeValue((value) => {
@@ -46,7 +47,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   // Use cached configuration instead of reading from workspace every time
   files.forEach((file) => {
     // Filter the files by the input, we want to filter by custom labels.
-    const customLabel = GetCustomLabelForFile(file)
+    const customLabel = GetCustomLabelForFile(file);
     if (input && !customLabel.toLowerCase().includes(input.toLowerCase())) {
       return; // Skip files that don't match the input
     }
@@ -60,28 +61,41 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   });
 
   const labelProcessEnd = performance.now();
-  console.log(`2. Custom label processing: ${(labelProcessEnd - labelProcessStart).toFixed(2)}ms (${internalFiles.length} files)`);
+  console.log(
+    `2. Custom label processing: ${(labelProcessEnd - labelProcessStart).toFixed(2)}ms (${internalFiles.length} files)`
+  );
 
   const iconLoadStart = performance.now();
   const items: FileQuickPickItem[] = [];
 
-
-
+  // Get the currently active editor for context-aware scoring
+  const activeEditor = vscode.window.activeTextEditor;
+  const context = activeEditor ? { activeEditor } : undefined;
+  const activeFilePath = activeEditor?.document.uri.fsPath;
   for (let i = 0; i < internalFiles.length; i++) {
     const fileInfo = internalFiles[i];
-    const fileStart = performance.now();
+    // Do not include the current file in the suggestions
+    if (activeFilePath && fileInfo.fsPath === activeFilePath) {
+      continue;
+    }
+    // const fileStart = performance.now();
 
     // Get the precached icons
     const icon = await GetIconForFile(fileInfo.uri);
-    const iconTime = performance.now() - fileStart;
+    // const iconTime = performance.now() - fileStart;
+
+    // Calculate comprehensive score using the new scoring system
+    const fileScore = scoreCalculator.calculateScore(input, fileInfo, context);
 
     items.push({
       label: fileInfo.customLabel,
-      description: icon ? `Has icon (${iconTime.toFixed(1)}ms)` : `No icon (${iconTime.toFixed(1)}ms)`,
+      // description: icon ? `Has icon (${iconTime.toFixed(1)}ms)` : `No icon (${iconTime.toFixed(1)}ms)`,
+      description: `(${Math.round(fileScore.finalScore)}) `,
       file: fileInfo.uri,
       // filePath: fileInfo.fsPath,
       // relativePath: fileInfo.relativePath,
       iconPath: icon ? icon : new vscode.ThemeIcon("file"),
+      score: fileScore, // Store the complete score object
       // rawScore: 0,
       // recencyScore: 0,
       // frequencyScore: 0,
@@ -94,19 +108,10 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
     }
   }
 
-  const sortedItems = items
-    .sort((a, b) => b.label.length - a.label.length)
-    // Map to QuickPick items
-    .map(
-      (item): FileQuickPickItem => ({
-        label: `${item.label}`,
-        description: `(${item.label.length}) ${item.description}`,
-        file: item.file,
-        iconPath: item.iconPath,
-      })
-    );
+  const normalizedItems = scoreCalculator.normalizeScores(items);
 
-
+  // Sort by final score (or fallback to fuzzy score)
+  const sortedItems = normalizedItems.sort((a, b) => b.score.finalScore - a.score.finalScore);
 
   const iconLoadEnd = performance.now();
   console.log(`3. Icon loading: ${(iconLoadEnd - iconLoadStart).toFixed(2)}ms (${files.length} files)`);
@@ -134,11 +139,11 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
     }
   }
 
-  const activeEditor = vscode.window.activeTextEditor || vscode.window.visibleTextEditors[0];
+  const activeEditorForQuickPick = vscode.window.activeTextEditor || vscode.window.visibleTextEditors[0];
   const quickPickStart = performance.now();
   picked.items = sortedItems;
   picked.show();
-  vscode.window.showTextDocument(activeEditor.document);
+  vscode.window.showTextDocument(activeEditorForQuickPick.document);
   const quickPickEnd = performance.now();
   console.log(`4. QuickPick display: ${(quickPickEnd - quickPickStart).toFixed(2)}ms`);
 
@@ -182,10 +187,7 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
 
       if (inlineInput) {
         const itemCount = picked.items.length;
-        inlineInput.updateStatusBar(
-          `Search: ${inlineInput.input} [${selectedIndex + 1}/${itemCount}]`,
-          true
-        );
+        inlineInput.updateStatusBar(`Search: ${inlineInput.input} [${selectedIndex + 1}/${itemCount}]`, true);
 
         picked.placeholder = `Search: ${inlineInput.input} [${selectedIndex + 1}/${itemCount}]`;
       }
@@ -231,7 +233,7 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
         if (inlineInput) {
           inlineInput.destroy();
         }
-      }
+      },
     });
 
     // Register arrow key commands
@@ -304,7 +306,6 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
 
     // Initialize status bar
     inlineInput.updateStatusBar("Search files...", true);
-
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to start inline search: ${error}`);
     await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
@@ -318,7 +319,17 @@ async function openFile(uri: vscode.Uri): Promise<void> {
   try {
     const doc = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(doc);
+
+    // Record that this file was opened for scoring purposes
+    scoreCalculator.recordFileOpened(uri.fsPath);
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to open file: ${error}`);
   }
+}
+
+/**
+ * Get the score calculator instance for external configuration
+ */
+export function getScoreCalculator(): ScoreCalculator {
+  return scoreCalculator;
 }

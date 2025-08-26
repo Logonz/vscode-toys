@@ -1,10 +1,15 @@
 import * as vscode from "vscode";
 import { GetIconForFile, LoadIcons, batchLoadIcons, getIconCacheStats, clearIconCache } from "../icons";
 import { GetAllFilesInWorkspace } from "../files";
-import { CustomEditorLabelService, GetCustomLabelForFile, GetMaxWorkspaceFiles, ICustomEditorLabelPatterns, IsCustomLabelsEnabled } from "../../helpers/customEditorLabelService";
-import { FileQuickPickItem } from "./FileQuickPickItem";
-
-
+import {
+  CustomEditorLabelService,
+  GetCustomLabelForFile,
+  GetMaxWorkspaceFiles,
+  ICustomEditorLabelPatterns,
+  IsCustomLabelsEnabled,
+} from "../../helpers/customEditorLabelService";
+import { FileQuickPickItem } from "./IFileQuickPickItem";
+import { FileScore } from "../scoring";
 
 export async function showFileListWithCustomLabels(): Promise<void> {
   const totalStart = performance.now();
@@ -33,7 +38,9 @@ export async function showFileListWithCustomLabels(): Promise<void> {
   });
 
   const labelProcessEnd = performance.now();
-  console.log(`2. Custom label processing: ${(labelProcessEnd - labelProcessStart).toFixed(2)}ms (${internalFiles.length} files)`);
+  console.log(
+    `2. Custom label processing: ${(labelProcessEnd - labelProcessStart).toFixed(2)}ms (${internalFiles.length} files)`
+  );
 
   const iconLoadStart = performance.now();
   const items: FileQuickPickItem[] = [];
@@ -53,6 +60,7 @@ export async function showFileListWithCustomLabels(): Promise<void> {
       label: fileInfo.customLabel,
       description: icon ? `Has icon (${iconTime.toFixed(1)}ms)` : `No icon (${iconTime.toFixed(1)}ms)`,
       file: fileInfo.uri,
+      score: {} as FileScore,
       // filePath: fileInfo.fsPath,
       // relativePath: fileInfo.relativePath,
       iconPath: icon ? icon : new vscode.ThemeIcon("file"),
@@ -74,7 +82,9 @@ export async function showFileListWithCustomLabels(): Promise<void> {
 
   const quickPickStart = performance.now();
   const picked = await vscode.window.showQuickPick(items, {
-    placeHolder: `Select file to open (showing first 50 of ${files.length} files) - Custom Labels ${IsCustomLabelsEnabled() ? 'ENABLED' : 'DISABLED'}`
+    placeHolder: `Select file to open (showing first 50 of ${files.length} files) - Custom Labels ${
+      IsCustomLabelsEnabled() ? "ENABLED" : "DISABLED"
+    }`,
   });
   const quickPickEnd = performance.now();
   console.log(`4. QuickPick display: ${(quickPickEnd - quickPickStart).toFixed(2)}ms`);

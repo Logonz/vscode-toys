@@ -1,10 +1,15 @@
 import * as vscode from "vscode";
 import { GetIconForFile, LoadIcons, batchLoadIcons, getIconCacheStats, clearIconCache } from "../icons";
 import { GetAllFilesInWorkspace } from "../files";
-import { CustomEditorLabelService, GetCustomLabelForFile, GetMaxWorkspaceFiles, ICustomEditorLabelPatterns, IsCustomLabelsEnabled } from "../../helpers/customEditorLabelService";
-import { FileQuickPickItem } from "./FileQuickPickItem";
-
-
+import {
+  CustomEditorLabelService,
+  GetCustomLabelForFile,
+  GetMaxWorkspaceFiles,
+  ICustomEditorLabelPatterns,
+  IsCustomLabelsEnabled,
+} from "../../helpers/customEditorLabelService";
+import { FileQuickPickItem } from "./IFileQuickPickItem";
+import { FileScore } from "../scoring";
 
 export async function showFileListWithIcons(): Promise<void> {
   const totalStart = performance.now();
@@ -38,6 +43,7 @@ export async function showFileListWithIcons(): Promise<void> {
       label: relativePath,
       description: icon ? `Has icon (${iconTime.toFixed(1)}ms)` : `No icon (${iconTime.toFixed(1)}ms)`,
       file: file,
+      score: {} as FileScore,
       // filePath: file.fsPath,
       // relativePath: relativePath,
       iconPath: icon ? icon : new vscode.ThemeIcon("file"),
@@ -59,7 +65,7 @@ export async function showFileListWithIcons(): Promise<void> {
 
   const quickPickStart = performance.now();
   const picked = await vscode.window.showQuickPick(items, {
-    placeHolder: `Select file to open (showing first 50 of ${files.length} files)`
+    placeHolder: `Select file to open (showing first 50 of ${files.length} files)`,
   });
   const quickPickEnd = performance.now();
   console.log(`3. QuickPick display: ${(quickPickEnd - quickPickStart).toFixed(2)}ms`);
