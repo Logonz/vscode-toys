@@ -64,8 +64,8 @@ export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
   },
   enabled: {
     fuzzy: true,
-    recency: false,
-    frequency: false,
+    recency: true,
+    frequency: true,
     // length: false,
     // path: false,
     closeness: true,
