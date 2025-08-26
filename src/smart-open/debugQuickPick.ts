@@ -1,12 +1,17 @@
 import * as vscode from "vscode";
 import { GetIconForFile, LoadIcons, batchLoadIcons, getIconCacheStats, clearIconCache } from "./icons";
 import { GetAllFilesInWorkspace } from "./files";
-import { CustomEditorLabelService, GetCustomLabelForFile, GetMaxWorkspaceFiles, ICustomEditorLabelPatterns, IsCustomLabelsEnabled } from "../helpers/customEditorLabelService";
-import { FileQuickPickItem } from "./picks/FileQuickPickItem";
+import {
+  CustomEditorLabelService,
+  GetCustomLabelForFile,
+  GetMaxWorkspaceFiles,
+  ICustomEditorLabelPatterns,
+  IsCustomLabelsEnabled,
+} from "../helpers/customEditorLabelService";
+import { FileQuickPickItem } from "./picks/IFileQuickPickItem";
 import { showFileListWithIcons } from "./picks/fileListWithIcons";
 import { showFileListWithCustomLabels } from "./picks/fileListWithCustomLabels";
 import { showFileListWithFuzzy } from "./picks/fileListWithFuzzy";
-
 
 interface DebugQuickPickItem extends vscode.QuickPickItem {
   action: string;
@@ -17,57 +22,57 @@ export async function showDebugQuickPick(): Promise<void> {
     {
       label: "$(file) Test File Loading",
       description: "Load and display all files in workspace",
-      action: "testFiles"
+      action: "testFiles",
     },
     {
       label: "$(symbol-color) Test Icon Loading",
       description: "Load icons and test icon resolution",
-      action: "testIcons"
+      action: "testIcons",
     },
     {
       label: "$(zap) Test Performance Icon Loading",
       description: "Test optimized batch icon loading",
-      action: "testBatchIcons"
+      action: "testBatchIcons",
     },
     {
       label: "$(list-unordered) Show File List",
       description: "Display all workspace files with icons",
-      action: "showFileList"
+      action: "showFileList",
     },
     {
       label: "$(list-unordered) Show File List (Custom Labels)",
       description: "Display all workspace files with icons and custom labels",
-      action: "showFileListCustomLabels"
+      action: "showFileListCustomLabels",
     },
     {
       label: "$(list-unordered) Show File List (Fuzzy Search)",
       description: "Display all workspace files with icons and fuzzy search",
-      action: "showFileListFuzzy"
+      action: "showFileListFuzzy",
     },
     {
       label: "$(graph) Icon Cache Stats",
       description: "Show icon cache performance statistics",
-      action: "showCacheStats"
+      action: "showCacheStats",
     },
     {
       label: "$(trash) Clear Icon Cache",
       description: "Clear all cached icons",
-      action: "clearCache"
+      action: "clearCache",
     },
     {
       label: "$(gear) Test Configuration",
       description: "Show current VS Code configuration",
-      action: "testConfig"
+      action: "testConfig",
     },
     {
       label: "$(debug-console) Console Logs",
       description: "Open output channel for debugging",
-      action: "openConsole"
-    }
+      action: "openConsole",
+    },
   ];
 
   const picked = await vscode.window.showQuickPick(items, {
-    placeHolder: "Select debug action"
+    placeHolder: "Select debug action",
   });
 
   if (picked) {
@@ -111,76 +116,85 @@ async function executeDebugAction(action: string): Promise<void> {
 }
 
 async function testFileLoading(): Promise<void> {
-  vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
-    title: "Loading files...",
-    cancellable: false
-  }, async () => {
-    const files = await GetAllFilesInWorkspace();
-    vscode.window.showInformationMessage(`Found ${files.length} files in workspace`);
-    console.log("Files loaded:", files);
-  });
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Loading files...",
+      cancellable: false,
+    },
+    async () => {
+      const files = await GetAllFilesInWorkspace();
+      vscode.window.showInformationMessage(`Found ${files.length} files in workspace`);
+      console.log("Files loaded:", files);
+    }
+  );
 }
 
 async function testIconLoading(): Promise<void> {
-  vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
-    title: "Loading icons...",
-    cancellable: false
-  }, async () => {
-    LoadIcons();
-    vscode.window.showInformationMessage("Icons loaded - check console for details");
-  });
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Loading icons...",
+      cancellable: false,
+    },
+    async () => {
+      LoadIcons();
+      vscode.window.showInformationMessage("Icons loaded - check console for details");
+    }
+  );
 }
 
 async function testBatchIconLoading(): Promise<void> {
   // Lets always load icons before testing
   LoadIcons();
-  vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
-    title: "Testing batch vs serial icon loading...",
-    cancellable: false
-  }, async (progress) => {
-    const files = await GetAllFilesInWorkspace();
-    const testFiles = files.slice(0, 100); // Test with first 100 files
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Testing batch vs serial icon loading...",
+      cancellable: false,
+    },
+    async (progress) => {
+      const files = await GetAllFilesInWorkspace();
+      const testFiles = files.slice(0, 100); // Test with first 100 files
 
-    // Test serial loading (like showFileListWithIcons)
-    progress.report({ message: "Testing serial loading..." });
-    clearIconCache();
-    const serialStartTime = performance.now();
+      // Test serial loading (like showFileListWithIcons)
+      progress.report({ message: "Testing serial loading..." });
+      clearIconCache();
+      const serialStartTime = performance.now();
 
-    for (const file of testFiles) {
-      const icon = await GetIconForFile(file);
+      for (const file of testFiles) {
+        const icon = await GetIconForFile(file);
+      }
+
+      const serialEndTime = performance.now();
+      const serialStats = getIconCacheStats();
+      const serialTime = serialEndTime - serialStartTime;
+
+      // Test batch loading
+      progress.report({ message: "Testing batch loading..." });
+      clearIconCache();
+      const batchStartTime = performance.now();
+
+      await batchLoadIcons(testFiles);
+
+      const batchEndTime = performance.now();
+      const batchStats = getIconCacheStats();
+      const batchTime = batchEndTime - batchStartTime;
+
+      // Show comparison results
+      const improvement = (((serialTime - batchTime) / serialTime) * 100).toFixed(1);
+
+      vscode.window.showInformationMessage(
+        `Icon Loading Performance Test (${testFiles.length} files):\n` +
+          `Serial: ${serialTime.toFixed(2)}ms (${serialStats.hits} hits, ${serialStats.misses} misses)\n` +
+          `Batch: ${batchTime.toFixed(2)}ms (${batchStats.hits} hits, ${batchStats.misses} misses)\n` +
+          `Improvement: ${improvement}% faster`
+      );
+
+      console.log("Serial loading stats:", serialStats);
+      console.log("Batch loading stats:", batchStats);
     }
-
-    const serialEndTime = performance.now();
-    const serialStats = getIconCacheStats();
-    const serialTime = serialEndTime - serialStartTime;
-
-    // Test batch loading
-    progress.report({ message: "Testing batch loading..." });
-    clearIconCache();
-    const batchStartTime = performance.now();
-
-    await batchLoadIcons(testFiles);
-
-    const batchEndTime = performance.now();
-    const batchStats = getIconCacheStats();
-    const batchTime = batchEndTime - batchStartTime;
-
-    // Show comparison results
-    const improvement = ((serialTime - batchTime) / serialTime * 100).toFixed(1);
-
-    vscode.window.showInformationMessage(
-      `Icon Loading Performance Test (${testFiles.length} files):\n` +
-      `Serial: ${serialTime.toFixed(2)}ms (${serialStats.hits} hits, ${serialStats.misses} misses)\n` +
-      `Batch: ${batchTime.toFixed(2)}ms (${batchStats.hits} hits, ${batchStats.misses} misses)\n` +
-      `Improvement: ${improvement}% faster`
-    );
-
-    console.log("Serial loading stats:", serialStats);
-    console.log("Batch loading stats:", batchStats);
-  });
+  );
 }
 
 async function showIconCacheStats(): Promise<void> {
