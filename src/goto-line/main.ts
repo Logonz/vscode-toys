@@ -3,7 +3,7 @@
 import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
 import { navigateToLine, navigateToRelativeLine } from "./navigation";
-import { GotoLinePreview, parseAbsoluteLineInput, parseRelativeLineInput } from "./preview";
+import { GotoLinePreview } from "./preview";
 
 /**
  * Prints the given content on the output channel.
@@ -177,4 +177,76 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
   );
 
   printGotoLineOutput(`${name} activated`, false);
+}
+
+/**
+ * Parse user input for absolute line navigation and return the target line number
+ * @param input The user input string
+ * @param totalLines Total number of lines in the document
+ * @returns The target line number (1-based) or null if invalid
+ */
+function parseAbsoluteLineInput(input: string, totalLines: number): number | null {
+  if (!input.trim()) {
+    return null;
+  }
+
+  const lineNumber = parseInt(input.trim());
+  if (isNaN(lineNumber) || lineNumber < 1 || lineNumber > totalLines) {
+    return null;
+  }
+
+  return lineNumber;
+}
+
+/**
+ * Parse user input for relative line navigation and return the offset
+ * @param input The user input string
+ * @param args Command arguments containing up/down characters
+ * @returns The relative offset or null if invalid
+ */
+function parseRelativeLineInput(input: string, args?: any): number | null {
+  if (!input.trim()) {
+    return null;
+  }
+
+  const trimmedValue = input.trim();
+  let offset: number;
+
+  // Get configured characters (with defaults)
+  const upChar = args?.upCharacter || 'k';
+  const downChar = args?.downCharacter || 'j';
+
+  // Handle single character inputs (return null for incomplete input)
+  if (trimmedValue === '+' || trimmedValue === '-' || trimmedValue === upChar || trimmedValue === downChar) {
+    return null;
+  }
+
+  // Handle various prefixes
+  if (trimmedValue.startsWith('+')) {
+    const numStr = trimmedValue.substring(1);
+    offset = parseInt(numStr);
+  } else if (trimmedValue.startsWith('-')) {
+    const numStr = trimmedValue.substring(1);
+    offset = parseInt(numStr);
+    if (!isNaN(offset)) {
+      offset = -offset; // make it negative
+    }
+  } else if (trimmedValue.startsWith(upChar)) {
+    const numStr = trimmedValue.substring(upChar.length);
+    const num = parseInt(numStr);
+    offset = isNaN(num) ? NaN : -num; // negative for up
+  } else if (trimmedValue.startsWith(downChar)) {
+    const numStr = trimmedValue.substring(downChar.length);
+    const num = parseInt(numStr);
+    offset = isNaN(num) ? NaN : num; // positive for down
+  } else {
+    // Plain number defaults to positive (down)
+    offset = parseInt(trimmedValue);
+  }
+
+  if (isNaN(offset)) {
+    return null;
+  }
+
+  return offset;
 }

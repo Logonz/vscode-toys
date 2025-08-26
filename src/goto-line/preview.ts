@@ -17,28 +17,38 @@ function pickColorType(inputColor: string): vscode.ThemeColor | string {
 export class GotoLinePreview {
   private normalDecorationType: vscode.TextEditorDecorationType;
   private deleteDecorationType: vscode.TextEditorDecorationType;
+  private normalCharDecorationType: vscode.TextEditorDecorationType;
+  private deleteCharDecorationType: vscode.TextEditorDecorationType;
   private activeEditor: vscode.TextEditor | undefined;
   // editor.selectionBackground
   // editor.selectionBorder
   constructor() {
-    // Create decoration type for normal preview highlighting
+    // Create decoration type for normal preview highlighting (whole lines)
     this.normalDecorationType = vscode.window.createTextEditorDecorationType({
       backgroundColor: pickColorType('editor.wordHighlightBackground'),
-      // borderColor: pickColorType('editor.wordHighlightBackground'),
-      // borderWidth: '1px',
-      // borderStyle: 'solid',
       isWholeLine: true,
       overviewRulerColor: pickColorType('editor.wordHighlightBackground'),
       overviewRulerLane: vscode.OverviewRulerLane.Right
     });
 
-    // Create decoration type for delete preview highlighting
+    // Create decoration type for delete preview highlighting (whole lines)
     this.deleteDecorationType = vscode.window.createTextEditorDecorationType({
       backgroundColor: pickColorType('inputValidation.errorBackground'),
-      // borderColor: pickColorType('inputValidation.errorBackground'),
-      // borderWidth: '1px',
-      // borderStyle: 'solid',
       isWholeLine: true,
+      overviewRulerColor: pickColorType('inputValidation.errorBackground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Right
+    });
+
+    // Create decoration type for normal preview highlighting (character-level)
+    this.normalCharDecorationType = vscode.window.createTextEditorDecorationType({
+      backgroundColor: pickColorType('editor.wordHighlightBackground'),
+      overviewRulerColor: pickColorType('editor.wordHighlightBackground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Right
+    });
+
+    // Create decoration type for delete preview highlighting (character-level)
+    this.deleteCharDecorationType = vscode.window.createTextEditorDecorationType({
+      backgroundColor: pickColorType('inputValidation.errorBackground'),
       overviewRulerColor: pickColorType('inputValidation.errorBackground'),
       overviewRulerLane: vscode.OverviewRulerLane.Right
     });
@@ -126,47 +136,91 @@ export class GotoLinePreview {
       return;
     }
 
-    const decorations: vscode.DecorationOptions[] = [];
+    const currentPosition = editor.selection.active; // Get actual cursor position
+    const currentLineNumber = currentPosition.line; // 0-based
+    const targetLineNumber = toLine - 1; // Convert to 0-based
 
-    // Determine selection direction and range
-    const startLine = Math.min(fromLine, toLine);
-    const endLine = Math.max(fromLine, toLine);
+    const wholeLineDecorations: vscode.DecorationOptions[] = [];
+    const charLevelDecorations: vscode.DecorationOptions[] = [];
 
-    // Convert to 0-based indices
-    const startLineIndex = startLine - 1;
-    const endLineIndex = endLine - 1;
+    // Choose decoration types based on delete flag
+    const wholeLineDecorationType = args?.delete ? this.deleteDecorationType : this.normalDecorationType;
+    const charLevelDecorationType = args?.delete ? this.deleteCharDecorationType : this.normalCharDecorationType;
 
-    if (toLine > fromLine) {
-      // Selecting downward - select to end of target line (inclusive)
-      const endLineText = editor.document.lineAt(endLineIndex);
-      const range = new vscode.Range(
-        startLineIndex, 0,
-        endLineIndex, endLineText.text.length
-      );
-      decorations.push({ range });
-    } else if (toLine < fromLine) {
-      // Selecting upward - select to beginning of target line
-      const range = new vscode.Range(
-        endLineIndex, 0,
-        startLineIndex, editor.document.lineAt(startLineIndex).text.length
-      );
-      decorations.push({ range });
+    if (targetLineNumber > currentLineNumber) {
+      // Downward selection: from cursor position to end of target line
+
+      // 1. Current line: from cursor to end of line (character-level)
+      const currentLineText = editor.document.lineAt(currentLineNumber);
+      if (currentPosition.character < currentLineText.text.length) {
+        charLevelDecorations.push({
+          range: new vscode.Range(
+            currentPosition,
+            new vscode.Position(currentLineNumber, currentLineText.text.length)
+          )
+        });
+      }
+
+      // 2. Middle lines: entire lines (whole-line decorations)
+      for (let lineNum = currentLineNumber + 1; lineNum < targetLineNumber; lineNum++) {
+        wholeLineDecorations.push({
+          range: new vscode.Range(lineNum, 0, lineNum, 0) // whole line range
+        });
+      }
+
+      // 3. Target line: entire line (whole-line decoration)
+      if (targetLineNumber > currentLineNumber) {
+        wholeLineDecorations.push({
+          range: new vscode.Range(targetLineNumber, 0, targetLineNumber, 0)
+        });
+      }
+
+    } else if (targetLineNumber < currentLineNumber) {
+      // Upward selection: from beginning of target line to cursor position
+
+      // 1. Target line: entire line (whole-line decoration)
+      wholeLineDecorations.push({
+        range: new vscode.Range(targetLineNumber, 0, targetLineNumber, 0)
+      });
+
+      // 2. Middle lines: entire lines (whole-line decorations)
+      for (let lineNum = targetLineNumber + 1; lineNum < currentLineNumber; lineNum++) {
+        wholeLineDecorations.push({
+          range: new vscode.Range(lineNum, 0, lineNum, 0)
+        });
+      }
+
+      // 3. Current line: from beginning to cursor (character-level)
+      if (currentPosition.character > 0) {
+        charLevelDecorations.push({
+          range: new vscode.Range(
+            new vscode.Position(currentLineNumber, 0),
+            currentPosition
+          )
+        });
+      }
+
     } else {
-      // Same line - just highlight the current line
-      const range = new vscode.Range(startLineIndex, 0, startLineIndex, 0);
-      decorations.push({ range });
+      // Same line - just highlight the current line (whole-line)
+      wholeLineDecorations.push({
+        range: new vscode.Range(currentLineNumber, 0, currentLineNumber, 0)
+      });
     }
 
-    // Use appropriate decoration type
-    const decorationType = args?.delete ? this.deleteDecorationType : this.normalDecorationType;
-    editor.setDecorations(decorationType, decorations);
-  }  /**
+    // Apply decorations efficiently
+    editor.setDecorations(wholeLineDecorationType, wholeLineDecorations);
+    editor.setDecorations(charLevelDecorationType, charLevelDecorations);
+  }
+
+  /**
    * Clear all preview decorations
    */
   public clearPreview(): void {
     if (this.activeEditor) {
       this.activeEditor.setDecorations(this.normalDecorationType, []);
       this.activeEditor.setDecorations(this.deleteDecorationType, []);
+      this.activeEditor.setDecorations(this.normalCharDecorationType, []);
+      this.activeEditor.setDecorations(this.deleteCharDecorationType, []);
       this.activeEditor = undefined;
     }
   }
@@ -178,77 +232,7 @@ export class GotoLinePreview {
     this.clearPreview();
     this.normalDecorationType.dispose();
     this.deleteDecorationType.dispose();
+    this.normalCharDecorationType.dispose();
+    this.deleteCharDecorationType.dispose();
   }
-}
-
-/**
- * Parse user input for absolute line navigation and return the target line number
- * @param input The user input string
- * @param totalLines Total number of lines in the document
- * @returns The target line number (1-based) or null if invalid
- */
-export function parseAbsoluteLineInput(input: string, totalLines: number): number | null {
-  if (!input.trim()) {
-    return null;
-  }
-
-  const lineNumber = parseInt(input.trim());
-  if (isNaN(lineNumber) || lineNumber < 1 || lineNumber > totalLines) {
-    return null;
-  }
-
-  return lineNumber;
-}
-
-/**
- * Parse user input for relative line navigation and return the offset
- * @param input The user input string
- * @param args Command arguments containing up/down characters
- * @returns The relative offset or null if invalid
- */
-export function parseRelativeLineInput(input: string, args?: any): number | null {
-  if (!input.trim()) {
-    return null;
-  }
-
-  const trimmedValue = input.trim();
-  let offset: number;
-
-  // Get configured characters (with defaults)
-  const upChar = args?.upCharacter || 'k';
-  const downChar = args?.downCharacter || 'j';
-
-  // Handle single character inputs (return null for incomplete input)
-  if (trimmedValue === '+' || trimmedValue === '-' || trimmedValue === upChar || trimmedValue === downChar) {
-    return null;
-  }
-
-  // Handle various prefixes
-  if (trimmedValue.startsWith('+')) {
-    const numStr = trimmedValue.substring(1);
-    offset = parseInt(numStr);
-  } else if (trimmedValue.startsWith('-')) {
-    const numStr = trimmedValue.substring(1);
-    offset = parseInt(numStr);
-    if (!isNaN(offset)) {
-      offset = -offset; // make it negative
-    }
-  } else if (trimmedValue.startsWith(upChar)) {
-    const numStr = trimmedValue.substring(upChar.length);
-    const num = parseInt(numStr);
-    offset = isNaN(num) ? NaN : -num; // negative for up
-  } else if (trimmedValue.startsWith(downChar)) {
-    const numStr = trimmedValue.substring(downChar.length);
-    const num = parseInt(numStr);
-    offset = isNaN(num) ? NaN : num; // positive for down
-  } else {
-    // Plain number defaults to positive (down)
-    offset = parseInt(trimmedValue);
-  }
-
-  if (isNaN(offset)) {
-    return null;
-  }
-
-  return offset;
 }
