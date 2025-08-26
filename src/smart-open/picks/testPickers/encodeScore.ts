@@ -55,3 +55,4 @@ export function encodeScore(num: number, minLength: number): string {
 
   return encoded;
 }
+// "vscode": "^1.89.1"

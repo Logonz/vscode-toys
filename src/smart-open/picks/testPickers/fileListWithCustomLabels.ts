@@ -1,15 +1,15 @@
 import * as vscode from "vscode";
-import { GetIconForFile, LoadIcons, batchLoadIcons, getIconCacheStats, clearIconCache } from "../icons";
-import { GetAllFilesInWorkspace } from "../files";
+import { GetIconForFile, LoadIcons, batchLoadIcons, getIconCacheStats, clearIconCache } from "../../icons";
+import { GetAllFilesInWorkspace } from "../../files";
 import {
   CustomEditorLabelService,
   GetCustomLabelForFile,
   GetMaxWorkspaceFiles,
   ICustomEditorLabelPatterns,
   IsCustomLabelsEnabled,
-} from "../../helpers/customEditorLabelService";
-import { FileQuickPickItem } from "./IFileQuickPickItem";
-import { FileScore } from "../scoring";
+} from "../../../helpers/customEditorLabelService";
+import { FileQuickPickItem } from "../interface/IFileQuickPickItem";
+import { FileScore } from "../../scoring";
 
 export async function showFileListWithCustomLabels(): Promise<void> {
   const totalStart = performance.now();
