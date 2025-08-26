@@ -8,6 +8,25 @@ import { InlineInput } from "./InlineInput";
 import { GitScorer } from "../scoring";
 import { scoreCalculator } from "../smart-open-main";
 
+// Switch editor or file listener
+vscode.window.onDidChangeActiveTextEditor((editor) => {
+  console.log("Active editor changed:", editor?.document.uri);
+  if (editor?.document) {
+    // The active file
+    const fileObject: UriExt = {
+      uri: editor.document.uri,
+      fsPath: editor.document.uri.fsPath,
+      relativePath: vscode.workspace.asRelativePath(editor.document.uri),
+      customLabel: "",
+    };
+
+    const activeWorkspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+    const context = { activeEditor: editor, activeWorkspaceFolder };
+    // Re-evaluate the scoring when the active editor changes
+    scoreCalculator.getScorer<GitScorer>("git")?.calculateScore("", fileObject, context);
+  }
+});
+
 const picked = vscode.window.createQuickPick<FileQuickPickItem>();
 picked.matchOnDescription = false;
 picked.matchOnDetail = false;
