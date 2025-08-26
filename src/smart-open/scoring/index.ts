@@ -10,6 +10,7 @@ export { RecencyScorer } from "./Scorers/RecencyScorer";
 export { FrequencyScorer } from "./Scorers/FrequencyScorer";
 // export { LengthScorer, PathScorer } from "./PathScorers";
 export { ClosenessScorer } from "./Scorers/ClosenessScorer";
+export { GitScorer } from "./Scorers/GitScorer";
 // ! NEW-SCORER-INSERT-HERE
 
 // Example/optional scorers

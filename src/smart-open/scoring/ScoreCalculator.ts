@@ -7,6 +7,7 @@ import { RecencyScorer } from "./Scorers/RecencyScorer";
 import { FrequencyScorer } from "./Scorers/FrequencyScorer";
 // import { LengthScorer, PathScorer } from "./PathScorers";
 import { ClosenessScorer } from "./Scorers/ClosenessScorer";
+import { GitScorer } from "./Scorers/GitScorer";
 import * as vscode from "vscode";
 import { FileQuickPickItem } from "../picks/interface/IFileQuickPickItem";
 
@@ -30,6 +31,7 @@ export class ScoreCalculator {
       // new LengthScorer(),
       // new PathScorer(),
       new ClosenessScorer(), // Add the new closeness scorer
+      new GitScorer(), // Add the git co-change scorer
       // ! NEW-SCORER-INSERT-HERE
     ];
 
@@ -56,7 +58,11 @@ export class ScoreCalculator {
         continue;
       }
 
+      // const scorerStart = performance.now();
       const score = scorer.calculateScore(input, file, context);
+      // const scorerEnd = performance.now();
+      // console.log(`Scorer ${type} calculated score in ${(scorerEnd - scorerStart).toFixed(2)} ms`);
+
       const weight = this.getWeight(type);
 
       // Store individual score
@@ -78,6 +84,9 @@ export class ScoreCalculator {
         //   break;
         case "closeness":
           scores.closenessScore = score;
+          break;
+        case "git":
+          scores.gitScore = score;
           break;
         // ! NEW-SCORER-INSERT-HERE
       }
@@ -142,6 +151,7 @@ export class ScoreCalculator {
       recency: { min: Infinity, max: -Infinity },
       frequency: { min: Infinity, max: -Infinity },
       closeness: { min: Infinity, max: -Infinity },
+      git: { min: Infinity, max: -Infinity },
       // ! NEW-SCORER-INSERT-HERE
     };
 
@@ -165,6 +175,10 @@ export class ScoreCalculator {
         scoreRanges.closeness.min = Math.min(scoreRanges.closeness.min, score.closenessScore);
         scoreRanges.closeness.max = Math.max(scoreRanges.closeness.max, score.closenessScore);
       }
+      if (score.gitScore !== undefined && !isNaN(score.gitScore)) {
+        scoreRanges.git.min = Math.min(scoreRanges.git.min, score.gitScore);
+        scoreRanges.git.max = Math.max(scoreRanges.git.max, score.gitScore);
+      }
       // ! NEW-SCORER-INSERT-HERE
     }
 
@@ -184,6 +198,7 @@ export class ScoreCalculator {
     const normalizeRecency = createNormalizer("recency", scoreRanges.recency);
     const normalizeFrequency = createNormalizer("frequency", scoreRanges.frequency);
     const normalizeCloseness = createNormalizer("closeness", scoreRanges.closeness);
+    const normalizeGit = createNormalizer("git", scoreRanges.git);
     // ! NEW-SCORER-INSERT-HERE
 
     // Second pass: Apply normalization to all items
@@ -211,6 +226,10 @@ export class ScoreCalculator {
         score.closenessScore = normalizeCloseness(score.closenessScore);
         score.finalScore += score.closenessScore;
       }
+      if (score.gitScore !== undefined && !isNaN(score.gitScore)) {
+        score.gitScore = normalizeGit(score.gitScore);
+        score.finalScore += score.gitScore;
+      }
       // ! NEW-SCORER-INSERT-HERE
 
       // Create a description with all values
@@ -227,8 +246,11 @@ export class ScoreCalculator {
       if (score.frequencyScore !== undefined) {
         item.description += `Freq: ${score.frequencyScore?.toFixed(1)} `;
       }
+      if (score.gitScore !== undefined) {
+        item.description += `Git: ${score.gitScore?.toFixed(1)} `;
+      }
       // ! NEW-SCORER-INSERT-HERE
-      console.log(`Final Normalized scores for ${item.file}:`, score);
+      // console.log(`Final Normalized scores for ${item.file}:`, score);
     }
 
     return items;
@@ -251,6 +273,8 @@ export class ScoreCalculator {
       //   return this.config.enabled.path;
       case "closeness":
         return this.config.enabled.closeness;
+      case "git":
+        return this.config.enabled.git;
       // ! NEW-SCORER-INSERT-HERE
       default:
         return false;
@@ -274,6 +298,8 @@ export class ScoreCalculator {
       //   return this.config.weights.path;
       case "closeness":
         return this.config.weights.closeness;
+      case "git":
+        return this.config.weights.git;
       // ! NEW-SCORER-INSERT-HERE
       default:
         return 0;

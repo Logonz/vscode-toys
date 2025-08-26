@@ -11,6 +11,11 @@ export interface ScoringContext {
   activeEditor?: vscode.TextEditor;
 
   /**
+   * The currently active workspace folder, if any
+   */
+  activeWorkspaceFolder?: vscode.WorkspaceFolder;
+
+  /**
    * All files being scored (useful for relative scoring)
    */
   allFiles?: UriExt[];

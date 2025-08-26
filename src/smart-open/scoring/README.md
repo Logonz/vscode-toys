@@ -92,11 +92,19 @@ recencyScorer?.recordFileOpened(filePath);
 - Prefers shorter file paths
 - Weight: 0.1
 
-### 5. PathScorer (Disabled by default)
+### 5. ClosenessScorer (Enabled by default)
 
-- Gives bonuses/penalties based on path patterns
-- Examples: bonus for `src/`, penalty for `node_modules`
-- Weight: 0.1
+- Scores based on path proximity to the currently active file
+- Files in the same directory get higher scores
+- Weight: 0.5
+
+### 6. GitScorer (Disabled by default)
+
+- Scores based on git co-change history
+- Files that have been modified together with the current file get higher scores
+- Uses git log analysis to find related files
+- Weight: 0.4
+- **Note**: Disabled by default due to potential performance impact
 
 ## Creating Custom Scorers
 
@@ -196,11 +204,10 @@ calculator.updateConfig({
 
 Potential new scorers:
 
-- **GitScorer** - Prefer files with recent git activity
 - **SimilarityScorer** - Files similar to currently open files
 - **ProjectScorer** - Files related to current project context
 - **TimeScorer** - Files modified at similar times of day
-- **CollaborationScorer** - Files often edited together
+- **CollaborationScorer** - Files often edited together by the same author
 
 ## Testing
 

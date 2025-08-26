@@ -11,6 +11,7 @@ export interface FileScore {
   // lengthScore?: number;
   // pathScore?: number;
   closenessScore?: number;
+  gitScore?: number;
   // ! NEW-SCORER-INSERT-HERE
 
   // Final computed score (weighted combination)
@@ -32,6 +33,7 @@ export interface ScoreConfig {
     // length: number;
     // path: number;
     closeness: number; // Add closeness weight
+    git: number; // Add git weight
     // ! NEW-SCORER-INSERT-HERE
   };
   enabled: {
@@ -41,6 +43,7 @@ export interface ScoreConfig {
     // length: boolean;
     // path: boolean;
     closeness: boolean; // Add closeness enabled flag
+    git: boolean; // Add git enabled flag
     // ! NEW-SCORER-INSERT-HERE
   };
 }
@@ -56,6 +59,7 @@ export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
     // length: 0.1, // Prefer shorter paths
     // path: 0.1, // Path-based bonuses
     closeness: 0.5, // Path closeness to active editor
+    git: 0.4, // Git co-change scoring
     // ! NEW-SCORER-INSERT-HERE
   },
   enabled: {
@@ -65,6 +69,7 @@ export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
     // length: false,
     // path: false,
     closeness: true,
+    git: true, // Disabled by default due to potential performance impact
     // ! NEW-SCORER-INSERT-HERE
   },
 };
