@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import { activateDotRepeat } from "./dot-repeat/main";
+// import { activateDotRepeat } from "./dot-repeat/main";
 import { activateGit } from "./git/main";
 import { activateCopyHighlight } from "./copy-highlight/main";
 import { activateClearLine } from "./clear-line/main";
@@ -81,6 +81,12 @@ let vsToys: {
     activator: activatePasteReplace,
     deactivator: () => {},
   },
+  {
+    name: "Smart Open",
+    moduleContext: "smart-open",
+    activator: activateSmartOpen,
+    deactivator: () => {},
+  },
 ];
 
 let DAcontext: vscode.ExtensionContext;
@@ -102,8 +108,6 @@ export function activate(context: vscode.ExtensionContext) {
   DAcontext = context;
   printChannelOutput = createOutputChannel("Main");
   printChannelOutput("Started");
-
-  activateSmartOpen("Smart Open", context);
 
   // Set a context to indicate that the extension is installed
   // To be used when binding commands to the extension

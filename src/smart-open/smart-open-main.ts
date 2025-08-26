@@ -1,17 +1,22 @@
 import * as vscode from "vscode";
 import { LoadIcons } from "./icons";
-import { GetAllFilesInWorkspace, updateFilesExcludeCache, updateSearchExcludeCache } from "./files";
+import { updateFilesExcludeCache, updateSearchExcludeCache } from "./files";
 import { showDebugQuickPick } from "./debugQuickPick";
 import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelService";
 import { showQuickPickWithInlineSearch } from "./picks/fileListWithFuzzy";
-import { coChangeScores } from "./git";
+import { createOutputChannel } from "../extension";
 
-export function activateSmartOpen(name: string, context: vscode.ExtensionContext) {
+/**
+ * Prints the given content on the output channel.
+ *
+ * @param content The content to be printed.
+ * @param reveal Whether the output channel should be revealed.
+ */
+export let printSmartOpenOutput: (content: string, reveal?: boolean) => void;
 
-  // Initialize all icons
-  // TODO: Reload with icon theme change.
-  LoadIcons();
-
+export async function activateSmartOpen(name: string, context: vscode.ExtensionContext) {
+  printSmartOpenOutput = createOutputChannel(name);
+  printSmartOpenOutput(`${name} activating`);
 
   const debugCommand = vscode.commands.registerCommand("vstoys.debug.showQuickPick", async () => {
     await showDebugQuickPick();
@@ -29,43 +34,31 @@ export function activateSmartOpen(name: string, context: vscode.ExtensionContext
     ) {
       updateCustomLabelConfiguration();
     }
+
+    if (event.affectsConfiguration("workbench.iconTheme")) {
+      LoadIcons();
+    }
   });
 
   const excludeListener = vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration("search.exclude")) {
-        updateSearchExcludeCache();
-      } else if (event.affectsConfiguration("files.exclude")) {
-        updateFilesExcludeCache();
-      }
-    });
+    if (event.affectsConfiguration("search.exclude")) {
+      updateSearchExcludeCache();
+    } else if (event.affectsConfiguration("files.exclude")) {
+      updateFilesExcludeCache();
+    }
+  });
 
   context.subscriptions.push(debugCommand);
   context.subscriptions.push(smartOpenCommand);
   context.subscriptions.push(configChangeListener);
   context.subscriptions.push(excludeListener);
 
+  // Initialize all icons
+  LoadIcons();
+
   // Initialize exclude listeners
   updateSearchExcludeCache();
   updateFilesExcludeCache();
-
-  // Safely access the first workspace folder (workspaceFolders may be undefined)
-  const firstWorkspaceFolder = vscode.workspace.workspaceFolders?.[0];
-  if (firstWorkspaceFolder) {
-    const workspacePath = firstWorkspaceFolder.uri.fsPath;
-    console.log(workspacePath);
-    // Initialize the git change scorer
-    console.log(
-      await coChangeScores({
-        // repoRoot: workspacePath,
-        // targetRelPath: "approle.tf",
-        repoRoot: "/Users/david.holmstedt/projects/vscode-toys",
-        targetRelPath: "package.json",
-      })
-    );
-  } else {
-    // No workspace open; skip git-based initialization
-    // console.debug("No workspace folder available; skipping git co-change scorer initialization.");
-  }
 
   // Initialize the custom editor label service
   updateCustomLabelConfiguration();
