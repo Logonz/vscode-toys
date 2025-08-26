@@ -13,15 +13,15 @@ export interface GotoLineSettings {
  * Gets the current goto-line settings from VS Code configuration
  */
 export function getGotoLineSettings(): GotoLineSettings {
-  const config = vscode.workspace.getConfiguration('vstoys.goto-line');
+  const config = vscode.workspace.getConfiguration("vstoys.goto-line");
 
   return {
-    enabled: config.get('enabled', true),
-    upCharacter: config.get('upCharacter', 'k'),
-    downCharacter: config.get('downCharacter', 'j'),
-    highlightingEnabled: config.get('highlightingEnabled', true),
-    selectColor: config.get('selectColor', 'editor.wordHighlightBackground'),
-    deleteColor: config.get('deleteColor', 'inputValidation.errorBackground')
+    enabled: config.get("enabled", true),
+    upCharacter: config.get("upCharacter", "k"),
+    downCharacter: config.get("downCharacter", "j"),
+    highlightingEnabled: config.get("highlightingEnabled", true),
+    selectColor: config.get("selectColor", "editor.wordHighlightBackground"),
+    deleteColor: config.get("deleteColor", "inputValidation.errorBackground"),
   };
 }
 
@@ -40,7 +40,7 @@ export class GotoLineSettingsManager {
 
     // Listen for configuration changes
     const configListener = vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('vstoys.goto-line')) {
+      if (e.affectsConfiguration("vstoys.goto-line")) {
         this.updateSettings();
       }
     });
@@ -74,7 +74,7 @@ export class GotoLineSettingsManager {
    * Dispose of event listeners
    */
   dispose(): void {
-    this._disposables.forEach(d => d.dispose());
+    this._disposables.forEach((d) => d.dispose());
     this._onSettingsChanged.dispose();
   }
 }

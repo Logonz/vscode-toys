@@ -40,7 +40,7 @@ export class GotoLinePreview {
       backgroundColor: pickColorType(this.settings.selectColor),
       isWholeLine: true,
       overviewRulerColor: pickColorType(this.settings.selectColor),
-      overviewRulerLane: vscode.OverviewRulerLane.Right
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
 
     // Create decoration type for delete preview highlighting (whole lines)
@@ -48,21 +48,21 @@ export class GotoLinePreview {
       backgroundColor: pickColorType(this.settings.deleteColor),
       isWholeLine: true,
       overviewRulerColor: pickColorType(this.settings.deleteColor),
-      overviewRulerLane: vscode.OverviewRulerLane.Right
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
 
     // Create decoration type for normal preview highlighting (character-level)
     this.normalCharDecorationType = vscode.window.createTextEditorDecorationType({
       backgroundColor: pickColorType(this.settings.selectColor),
       overviewRulerColor: pickColorType(this.settings.selectColor),
-      overviewRulerLane: vscode.OverviewRulerLane.Right
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
 
     // Create decoration type for delete preview highlighting (character-level)
     this.deleteCharDecorationType = vscode.window.createTextEditorDecorationType({
       backgroundColor: pickColorType(this.settings.deleteColor),
       overviewRulerColor: pickColorType(this.settings.deleteColor),
-      overviewRulerLane: vscode.OverviewRulerLane.Right
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
   }
 
@@ -98,11 +98,7 @@ export class GotoLinePreview {
    * @param targetLine The target line number (1-based)
    * @param args Command arguments that might include select/delete flags
    */
-  public previewAbsoluteLineSelection(
-    editor: vscode.TextEditor,
-    targetLine: number,
-    args?: any
-  ): void {
+  public previewAbsoluteLineSelection(editor: vscode.TextEditor, targetLine: number, args?: any): void {
     // Check if highlighting is enabled
     if (!this.settings.highlightingEnabled) {
       return;
@@ -127,11 +123,7 @@ export class GotoLinePreview {
    * @param relativeOffset The relative offset (positive for down, negative for up)
    * @param args Command arguments that might include select/delete flags
    */
-  public previewRelativeLineSelection(
-    editor: vscode.TextEditor,
-    relativeOffset: number,
-    args?: any
-  ): void {
+  public previewRelativeLineSelection(editor: vscode.TextEditor, relativeOffset: number, args?: any): void {
     // Check if highlighting is enabled
     if (!this.settings.highlightingEnabled) {
       return;
@@ -150,7 +142,8 @@ export class GotoLinePreview {
 
     // Show selection preview
     this.showSelectionPreview(editor, currentLine, targetLine, args);
-  }  /**
+  }
+  /**
    * Show preview for a single line (cursor movement only)
    */
   private showSingleLinePreview(editor: vscode.TextEditor, targetLine: number, args?: any): void {
@@ -200,56 +193,48 @@ export class GotoLinePreview {
       const currentLineText = editor.document.lineAt(currentLineNumber);
       if (currentPosition.character < currentLineText.text.length) {
         charLevelDecorations.push({
-          range: new vscode.Range(
-            currentPosition,
-            new vscode.Position(currentLineNumber, currentLineText.text.length)
-          )
+          range: new vscode.Range(currentPosition, new vscode.Position(currentLineNumber, currentLineText.text.length)),
         });
       }
 
       // 2. Middle lines: entire lines (whole-line decorations)
       for (let lineNum = currentLineNumber + 1; lineNum < targetLineNumber; lineNum++) {
         wholeLineDecorations.push({
-          range: new vscode.Range(lineNum, 0, lineNum, 0) // whole line range
+          range: new vscode.Range(lineNum, 0, lineNum, 0), // whole line range
         });
       }
 
       // 3. Target line: entire line (whole-line decoration)
       if (targetLineNumber > currentLineNumber) {
         wholeLineDecorations.push({
-          range: new vscode.Range(targetLineNumber, 0, targetLineNumber, 0)
+          range: new vscode.Range(targetLineNumber, 0, targetLineNumber, 0),
         });
       }
-
     } else if (targetLineNumber < currentLineNumber) {
       // Upward selection: from beginning of target line to cursor position
 
       // 1. Target line: entire line (whole-line decoration)
       wholeLineDecorations.push({
-        range: new vscode.Range(targetLineNumber, 0, targetLineNumber, 0)
+        range: new vscode.Range(targetLineNumber, 0, targetLineNumber, 0),
       });
 
       // 2. Middle lines: entire lines (whole-line decorations)
       for (let lineNum = targetLineNumber + 1; lineNum < currentLineNumber; lineNum++) {
         wholeLineDecorations.push({
-          range: new vscode.Range(lineNum, 0, lineNum, 0)
+          range: new vscode.Range(lineNum, 0, lineNum, 0),
         });
       }
 
       // 3. Current line: from beginning to cursor (character-level)
       if (currentPosition.character > 0) {
         charLevelDecorations.push({
-          range: new vscode.Range(
-            new vscode.Position(currentLineNumber, 0),
-            currentPosition
-          )
+          range: new vscode.Range(new vscode.Position(currentLineNumber, 0), currentPosition),
         });
       }
-
     } else {
       // Same line - just highlight the current line (whole-line)
       wholeLineDecorations.push({
-        range: new vscode.Range(currentLineNumber, 0, currentLineNumber, 0)
+        range: new vscode.Range(currentLineNumber, 0, currentLineNumber, 0),
       });
     }
 

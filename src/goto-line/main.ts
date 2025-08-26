@@ -31,7 +31,8 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
   // Listen for settings changes and update preview
   settingsManager.onSettingsChanged((newSettings) => {
     gotoLinePreview.updateSettings(newSettings);
-  });  context.subscriptions.push(
+  });
+  context.subscriptions.push(
     vscode.commands.registerCommand("vstoys.goto-line.goto", async (args) => {
       console.log(args);
       const editor = vscode.window.activeTextEditor;
@@ -67,7 +68,7 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
           gotoLinePreview.previewAbsoluteLineSelection(editor, targetLine, args);
 
           return null; // No error
-        }
+        },
       });
 
       // Handle the result
@@ -106,12 +107,12 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
       const currentLine = editor.selection.active.line + 1; // VS Code uses 0-based indexing
 
       // Store current line number settings
-      const config = vscode.workspace.getConfiguration('editor');
-      const originalLineNumbers = config.get('lineNumbers');
+      const config = vscode.workspace.getConfiguration("editor");
+      const originalLineNumbers = config.get("lineNumbers");
 
       try {
         // Temporarily enable relative line numbers
-        await config.update('lineNumbers', 'relative', vscode.ConfigurationTarget.Global);
+        await config.update("lineNumbers", "relative", vscode.ConfigurationTarget.Global);
 
         // Show input box for relative line offset
         const result = await vscode.window.showInputBox({
@@ -132,7 +133,7 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
             const downChar = settingsManager.settings.downCharacter;
 
             // Handle single character inputs (allow them without error)
-            if (trimmedValue === '+' || trimmedValue === '-' || trimmedValue === upChar || trimmedValue === downChar) {
+            if (trimmedValue === "+" || trimmedValue === "-" || trimmedValue === upChar || trimmedValue === downChar) {
               return null; // Allow incomplete input
             }
 
@@ -155,7 +156,7 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
             gotoLinePreview.previewRelativeLineSelection(editor, offset, args);
 
             return null; // No error
-          }
+          },
         });
 
         // Handle the result
@@ -179,7 +180,7 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
         }
       } finally {
         // Always restore the original line number setting and clear preview
-        await config.update('lineNumbers', originalLineNumbers, vscode.ConfigurationTarget.Global);
+        await config.update("lineNumbers", originalLineNumbers, vscode.ConfigurationTarget.Global);
         gotoLinePreview.clearPreview();
       }
     })
@@ -213,7 +214,10 @@ function parseAbsoluteLineInput(input: string, totalLines: number): number | nul
  * @param settings Settings containing up/down characters
  * @returns The relative offset or null if invalid
  */
-function parseRelativeLineInput(input: string, settings: { upCharacter: string; downCharacter: string }): number | null {
+function parseRelativeLineInput(
+  input: string,
+  settings: { upCharacter: string; downCharacter: string }
+): number | null {
   if (!input.trim()) {
     return null;
   }
@@ -226,15 +230,15 @@ function parseRelativeLineInput(input: string, settings: { upCharacter: string; 
   const downChar = settings.downCharacter;
 
   // Handle single character inputs (return null for incomplete input)
-  if (trimmedValue === '+' || trimmedValue === '-' || trimmedValue === upChar || trimmedValue === downChar) {
+  if (trimmedValue === "+" || trimmedValue === "-" || trimmedValue === upChar || trimmedValue === downChar) {
     return null;
   }
 
   // Handle various prefixes
-  if (trimmedValue.startsWith('+')) {
+  if (trimmedValue.startsWith("+")) {
     const numStr = trimmedValue.substring(1);
     offset = parseInt(numStr);
-  } else if (trimmedValue.startsWith('-')) {
+  } else if (trimmedValue.startsWith("-")) {
     const numStr = trimmedValue.substring(1);
     offset = parseInt(numStr);
     if (!isNaN(offset)) {

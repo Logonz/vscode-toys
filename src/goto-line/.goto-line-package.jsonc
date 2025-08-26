@@ -14,7 +14,6 @@
       }
     ],
     "configuration": {
-
       "properties": {
         // Insert your configuration properties here
         "vstoys.goto-line.enabled": {
