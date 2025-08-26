@@ -29,7 +29,6 @@ function loadGitignore(folderPath: string): ReturnType<typeof ignore> {
   return ig;
 }
 
-
 /**
  * Creates a merged glob pattern using brace expansion from an array of glob patterns
  * @param patterns Array of glob patterns to merge
@@ -55,39 +54,39 @@ function createMergedGlobPattern(patterns: string[]): string {
  */
 export async function createExcludeGlobPattern(folderPath: string): Promise<string | null> {
   try {
-  // const totalStart = performance.now();
-  // console.log(`=== Creating exclude glob pattern for: ${folderPath} ===`);
+    // const totalStart = performance.now();
+    // console.log(`=== Creating exclude glob pattern for: ${folderPath} ===`);
 
-  // const ig = loadGitignore(folderPath);
+    // const ig = loadGitignore(folderPath);
 
-  // const rules: GitignoreRule[] = (ig as any)._rules;
-  // console.log("Gitignore rules:", rules);
+    // const rules: GitignoreRule[] = (ig as any)._rules;
+    // console.log("Gitignore rules:", rules);
 
-  const globs = await globifyGitIgnoreFile(folderPath);
+    const globs = await globifyGitIgnoreFile(folderPath);
 
-  // console.log("Glob patterns from gitignore:", globs);
-  const excludeGlobsOnly = globs.filter((glob) => glob.included === false).map((glob) => glob.glob);
+    // console.log("Glob patterns from gitignore:", globs);
+    const excludeGlobsOnly = globs.filter((glob) => glob.included === false).map((glob) => glob.glob);
 
-  // Add standard exclusions
-  excludeGlobsOnly.push("**/.git/**");
-  excludeGlobsOnly.push(...searchExcludeCache);
-  excludeGlobsOnly.push(...filesExcludeCache);
+    // Add standard exclusions
+    // excludeGlobsOnly.push("**/.git/**");
+    excludeGlobsOnly.push(...searchExcludeCache);
+    excludeGlobsOnly.push(...filesExcludeCache);
 
-  // console.log("Original excludeGlobsOnly:", excludeGlobsOnly);
+    // console.log("Original excludeGlobsOnly:", excludeGlobsOnly);
 
-  // const mergeStart = performance.now();
-  const mergedExcludePattern = createMergedGlobPattern(excludeGlobsOnly);
-  // const mergeEnd = performance.now();
-  // console.log(`  Pattern merging: ${(mergeEnd - mergeStart).toFixed(2)}ms`);
-  // console.log("Merged exclude pattern:", mergedExcludePattern);
+    // const mergeStart = performance.now();
+    const mergedExcludePattern = createMergedGlobPattern(excludeGlobsOnly);
+    // const mergeEnd = performance.now();
+    // console.log(`  Pattern merging: ${(mergeEnd - mergeStart).toFixed(2)}ms`);
+    // console.log("Merged exclude pattern:", mergedExcludePattern);
 
-  // const totalEnd = performance.now();
-  // console.log(`=== createExcludeGlobPattern total: ${(totalEnd - totalStart).toFixed(2)}ms ===`);
+    // const totalEnd = performance.now();
+    // console.log(`=== createExcludeGlobPattern total: ${(totalEnd - totalStart).toFixed(2)}ms ===`);
 
-  return mergedExcludePattern;
+    return mergedExcludePattern;
   } catch (error) {
     console.error("Error creating exclude glob pattern:", error);
-    return null;
+    return createMergedGlobPattern([...searchExcludeCache, ...filesExcludeCache]);
   }
 }
 /**
@@ -164,7 +163,9 @@ export async function GetAllFilesInWorkspace(filterString: string = ""): Promise
   }
 
   const totalEnd = performance.now();
-  console.log(`=== GetAllFilesInWorkspace total: ${(totalEnd - totalStart).toFixed(2)}ms (${allFiles.length} files) ===`);
+  console.log(
+    `=== GetAllFilesInWorkspace total: ${(totalEnd - totalStart).toFixed(2)}ms (${allFiles.length} files) ===`
+  );
 
   return allFiles;
 }
