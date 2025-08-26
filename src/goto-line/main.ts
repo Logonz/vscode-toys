@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
 import { navigateToLine, navigateToRelativeLine } from "./navigation";
 import { GotoLinePreview } from "./preview";
+import { GotoLineSettingsManager, getGotoLineSettings } from "./settings";
 
 /**
  * Prints the given content on the output channel.
@@ -13,16 +14,24 @@ import { GotoLinePreview } from "./preview";
  */
 let printGotoLineOutput: (content: string, reveal?: boolean) => void;
 let gotoLinePreview: GotoLinePreview;
+let settingsManager: GotoLineSettingsManager;
 export function activateGotoLine(name: string, context: vscode.ExtensionContext) {
   console.log(`Activating ${name}`);
   printGotoLineOutput = createOutputChannel(`${name}`);
   printGotoLineOutput(`${name} activating`);
 
-  // Initialize preview manager
-  gotoLinePreview = new GotoLinePreview();
+  // Initialize settings manager
+  settingsManager = new GotoLineSettingsManager();
+  context.subscriptions.push(settingsManager);
+
+  // Initialize preview manager with current settings
+  gotoLinePreview = new GotoLinePreview(settingsManager.settings);
   context.subscriptions.push(gotoLinePreview);
 
-  context.subscriptions.push(
+  // Listen for settings changes and update preview
+  settingsManager.onSettingsChanged((newSettings) => {
+    gotoLinePreview.updateSettings(newSettings);
+  });  context.subscriptions.push(
     vscode.commands.registerCommand("vstoys.goto-line.goto", async (args) => {
       console.log(args);
       const editor = vscode.window.activeTextEditor;
@@ -107,7 +116,7 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
         // Show input box for relative line offset
         const result = await vscode.window.showInputBox({
           prompt: `Go to relative line (+/- offset)`,
-          placeHolder: `Enter relative offset (e.g., +5, -3, 10, ${args?.upCharacter || 'k'}5, ${args?.downCharacter || 'j'}5) (current: ${currentLine}/${totalLines})`,
+          placeHolder: `Enter relative offset (e.g., +5, -3, 10, ${settingsManager.settings.upCharacter}5, ${settingsManager.settings.downCharacter}5) (current: ${currentLine}/${totalLines})`,
           validateInput: (value: string) => {
             // Clear previous preview
             gotoLinePreview.clearPreview();
@@ -118,16 +127,16 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
 
             const trimmedValue = value.trim();
 
-            // Get configured characters (with defaults)
-            const upChar = args?.upCharacter || 'k';
-            const downChar = args?.downCharacter || 'j';
+            // Get configured characters from settings
+            const upChar = settingsManager.settings.upCharacter;
+            const downChar = settingsManager.settings.downCharacter;
 
             // Handle single character inputs (allow them without error)
             if (trimmedValue === '+' || trimmedValue === '-' || trimmedValue === upChar || trimmedValue === downChar) {
               return null; // Allow incomplete input
             }
 
-            const offset = parseRelativeLineInput(value, args);
+            const offset = parseRelativeLineInput(value, settingsManager.settings);
 
             if (offset === null) {
               return `Please enter a valid number with optional +/-, ${upChar} (up), or ${downChar} (down) prefix`;
@@ -160,7 +169,7 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
             console.error("Error executing hyper command:", error);
           }
 
-          const offset = parseRelativeLineInput(result, args);
+          const offset = parseRelativeLineInput(result, settingsManager.settings);
           if (offset !== null) {
             navigateToRelativeLine(editor, offset, args, printGotoLineOutput);
           }
@@ -201,10 +210,10 @@ function parseAbsoluteLineInput(input: string, totalLines: number): number | nul
 /**
  * Parse user input for relative line navigation and return the offset
  * @param input The user input string
- * @param args Command arguments containing up/down characters
+ * @param settings Settings containing up/down characters
  * @returns The relative offset or null if invalid
  */
-function parseRelativeLineInput(input: string, args?: any): number | null {
+function parseRelativeLineInput(input: string, settings: { upCharacter: string; downCharacter: string }): number | null {
   if (!input.trim()) {
     return null;
   }
@@ -212,9 +221,9 @@ function parseRelativeLineInput(input: string, args?: any): number | null {
   const trimmedValue = input.trim();
   let offset: number;
 
-  // Get configured characters (with defaults)
-  const upChar = args?.upCharacter || 'k';
-  const downChar = args?.downCharacter || 'j';
+  // Get configured characters from settings
+  const upChar = settings.upCharacter;
+  const downChar = settings.downCharacter;
 
   // Handle single character inputs (return null for incomplete input)
   if (trimmedValue === '+' || trimmedValue === '-' || trimmedValue === upChar || trimmedValue === downChar) {

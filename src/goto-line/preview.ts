@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { GotoLineSettings } from "./settings";
 
 /**
  * @param inputColor Takes a theme ID (like `editor.background`) or color string (like `#ffffff`) and returns vscode.ThemeColor or unchanged color string
@@ -15,43 +16,80 @@ function pickColorType(inputColor: string): vscode.ThemeColor | string {
  * Manages preview decorations for goto-line operations
  */
 export class GotoLinePreview {
-  private normalDecorationType: vscode.TextEditorDecorationType;
-  private deleteDecorationType: vscode.TextEditorDecorationType;
-  private normalCharDecorationType: vscode.TextEditorDecorationType;
-  private deleteCharDecorationType: vscode.TextEditorDecorationType;
+  private normalDecorationType!: vscode.TextEditorDecorationType;
+  private deleteDecorationType!: vscode.TextEditorDecorationType;
+  private normalCharDecorationType!: vscode.TextEditorDecorationType;
+  private deleteCharDecorationType!: vscode.TextEditorDecorationType;
   private activeEditor: vscode.TextEditor | undefined;
-  // editor.selectionBackground
-  // editor.selectionBorder
-  constructor() {
+  private settings: GotoLineSettings;
+
+  constructor(settings: GotoLineSettings) {
+    this.settings = settings;
+    this.createDecorationTypes();
+  }
+
+  /**
+   * Create or recreate decoration types based on current settings
+   */
+  private createDecorationTypes(): void {
+    // Dispose existing decorations if they exist
+    this.disposeDecorationTypes();
+
     // Create decoration type for normal preview highlighting (whole lines)
     this.normalDecorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: pickColorType('editor.wordHighlightBackground'),
+      backgroundColor: pickColorType(this.settings.selectColor),
       isWholeLine: true,
-      overviewRulerColor: pickColorType('editor.wordHighlightBackground'),
+      overviewRulerColor: pickColorType(this.settings.selectColor),
       overviewRulerLane: vscode.OverviewRulerLane.Right
     });
 
     // Create decoration type for delete preview highlighting (whole lines)
     this.deleteDecorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: pickColorType('inputValidation.errorBackground'),
+      backgroundColor: pickColorType(this.settings.deleteColor),
       isWholeLine: true,
-      overviewRulerColor: pickColorType('inputValidation.errorBackground'),
+      overviewRulerColor: pickColorType(this.settings.deleteColor),
       overviewRulerLane: vscode.OverviewRulerLane.Right
     });
 
     // Create decoration type for normal preview highlighting (character-level)
     this.normalCharDecorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: pickColorType('editor.wordHighlightBackground'),
-      overviewRulerColor: pickColorType('editor.wordHighlightBackground'),
+      backgroundColor: pickColorType(this.settings.selectColor),
+      overviewRulerColor: pickColorType(this.settings.selectColor),
       overviewRulerLane: vscode.OverviewRulerLane.Right
     });
 
     // Create decoration type for delete preview highlighting (character-level)
     this.deleteCharDecorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: pickColorType('inputValidation.errorBackground'),
-      overviewRulerColor: pickColorType('inputValidation.errorBackground'),
+      backgroundColor: pickColorType(this.settings.deleteColor),
+      overviewRulerColor: pickColorType(this.settings.deleteColor),
       overviewRulerLane: vscode.OverviewRulerLane.Right
     });
+  }
+
+  /**
+   * Dispose existing decoration types
+   */
+  private disposeDecorationTypes(): void {
+    if (this.normalDecorationType) {
+      this.normalDecorationType.dispose();
+    }
+    if (this.deleteDecorationType) {
+      this.deleteDecorationType.dispose();
+    }
+    if (this.normalCharDecorationType) {
+      this.normalCharDecorationType.dispose();
+    }
+    if (this.deleteCharDecorationType) {
+      this.deleteCharDecorationType.dispose();
+    }
+  }
+
+  /**
+   * Update settings and recreate decorations
+   */
+  public updateSettings(newSettings: GotoLineSettings): void {
+    this.settings = newSettings;
+    this.createDecorationTypes();
   }
 
   /**
@@ -65,6 +103,11 @@ export class GotoLinePreview {
     targetLine: number,
     args?: any
   ): void {
+    // Check if highlighting is enabled
+    if (!this.settings.highlightingEnabled) {
+      return;
+    }
+
     this.activeEditor = editor;
 
     if (!args?.select && !args?.delete) {
@@ -89,6 +132,11 @@ export class GotoLinePreview {
     relativeOffset: number,
     args?: any
   ): void {
+    // Check if highlighting is enabled
+    if (!this.settings.highlightingEnabled) {
+      return;
+    }
+
     this.activeEditor = editor;
 
     const currentLine = editor.selection.active.line + 1; // Convert to 1-based
@@ -102,9 +150,7 @@ export class GotoLinePreview {
 
     // Show selection preview
     this.showSelectionPreview(editor, currentLine, targetLine, args);
-  }
-
-  /**
+  }  /**
    * Show preview for a single line (cursor movement only)
    */
   private showSingleLinePreview(editor: vscode.TextEditor, targetLine: number, args?: any): void {
@@ -230,9 +276,6 @@ export class GotoLinePreview {
    */
   public dispose(): void {
     this.clearPreview();
-    this.normalDecorationType.dispose();
-    this.deleteDecorationType.dispose();
-    this.normalCharDecorationType.dispose();
-    this.deleteCharDecorationType.dispose();
+    this.disposeDecorationTypes();
   }
 }

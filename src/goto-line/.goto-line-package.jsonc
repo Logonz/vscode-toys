@@ -14,7 +14,7 @@
       }
     ],
     "configuration": {
-      
+
       "properties": {
         // Insert your configuration properties here
         "vstoys.goto-line.enabled": {
@@ -34,6 +34,24 @@
           "default": "j",
           "description": "Character prefix for moving down in relative goto (e.g., 'j5' to go down 5 lines)",
           "order": 3002
+        },
+        "vstoys.goto-line.highlightingEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable line highlighting preview when using goto commands",
+          "order": 3003
+        },
+        "vstoys.goto-line.selectColor": {
+          "type": "string",
+          "default": "editor.wordHighlightBackground",
+          "description": "Color for highlighting lines during selection operations (theme color ID or hex color)",
+          "order": 3004
+        },
+        "vstoys.goto-line.deleteColor": {
+          "type": "string",
+          "default": "inputValidation.errorBackground",
+          "description": "Color for highlighting lines during delete operations (theme color ID or hex color)",
+          "order": 3005
         }
       }
     },
