@@ -22,7 +22,9 @@ export function navigateToRelativeLine(
   if (targetLineNumber < 0 || targetLineNumber >= totalLines) {
     const displayCurrentLine = currentLineNumber + 1;
     const displayTargetLine = targetLineNumber + 1;
-    vscode.window.showErrorMessage(`Cannot navigate to line ${displayTargetLine}. Valid range is 1-${totalLines} (current: ${displayCurrentLine})`);
+    vscode.window.showErrorMessage(
+      `Cannot navigate to line ${displayTargetLine}. Valid range is 1-${totalLines} (current: ${displayCurrentLine})`
+    );
     return;
   }
 
@@ -84,15 +86,25 @@ export function navigateToLine(
 
     if (args?.delete === true) {
       // Delete the selected text
-      editor.edit((editBuilder) => {
-        editBuilder.delete(newSelection);
-      });
-      const direction = targetLineNumber > currentLineNumber ? "down" : "up";
-      printOutput?.(`Selected and deleted from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);
-
-      // ! Reindent the lines during delete. (Do we need a setting here?)
-      // vscode.commands.executeCommand("editor.action.reindentlines");
-      vscode.commands.executeCommand("editor.action.reindentselectedlines");
+      editor
+        .edit((editBuilder) => {
+          editBuilder.delete(newSelection);
+        })
+        .then((applied) => {
+          const direction = targetLineNumber > currentLineNumber ? "down" : "up";
+          if (applied) {
+            printOutput?.(
+              `Selected and deleted from line ${
+                currentPosition.line + 1
+              } to line ${displayLineNumber} (${direction}ward)`
+            );
+            // ! Reindent the lines during delete. (Do we need a setting here?)
+            // Reindent after delete completes
+            vscode.commands.executeCommand("editor.action.reindentselectedlines");
+          } else {
+            printOutput?.("Delete operation did not apply; skipped reindent");
+          }
+        });
     } else {
       const direction = targetLineNumber > currentLineNumber ? "down" : "up";
       printOutput?.(`Selected from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);

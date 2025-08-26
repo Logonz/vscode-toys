@@ -3,6 +3,8 @@
 import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
 import { navigateToLine, navigateToRelativeLine } from "./navigation";
+import { GotoLinePreview } from "./preview";
+import { GotoLineSettingsManager, getGotoLineSettings } from "./settings";
 
 /**
  * Prints the given content on the output channel.
@@ -11,11 +13,25 @@ import { navigateToLine, navigateToRelativeLine } from "./navigation";
  * @param reveal Whether the output channel should be revealed.
  */
 let printGotoLineOutput: (content: string, reveal?: boolean) => void;
+let gotoLinePreview: GotoLinePreview;
+let settingsManager: GotoLineSettingsManager;
 export function activateGotoLine(name: string, context: vscode.ExtensionContext) {
   console.log(`Activating ${name}`);
   printGotoLineOutput = createOutputChannel(`${name}`);
   printGotoLineOutput(`${name} activating`);
 
+  // Initialize settings manager
+  settingsManager = new GotoLineSettingsManager();
+  context.subscriptions.push(settingsManager);
+
+  // Initialize preview manager with current settings
+  gotoLinePreview = new GotoLinePreview(settingsManager.settings);
+  context.subscriptions.push(gotoLinePreview);
+
+  // Listen for settings changes and update preview
+  settingsManager.onSettingsChanged((newSettings) => {
+    gotoLinePreview.updateSettings(newSettings);
+  });
   context.subscriptions.push(
     vscode.commands.registerCommand("vstoys.goto-line.goto", async (args) => {
       console.log(args);
@@ -35,35 +51,44 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
         placeHolder: `Enter line number (current: ${currentLine})`,
         value: currentLine.toString(),
         validateInput: (value: string) => {
+          // Clear previous preview
+          gotoLinePreview.clearPreview();
+
           if (!value.trim()) {
             return "Please enter a line number";
           }
 
-          const lineNumber = parseInt(value.trim());
-          if (isNaN(lineNumber)) {
-            return "Please enter a valid number";
-          }
+          const targetLine = parseAbsoluteLineInput(value, totalLines);
 
-          if (lineNumber < 1 || lineNumber > totalLines) {
+          if (targetLine === null) {
             return `Line number must be between 1 and ${totalLines}`;
           }
 
+          // Show preview of what will happen
+          gotoLinePreview.previewAbsoluteLineSelection(editor, targetLine, args);
+
           return null; // No error
-        }
+        },
       });
 
       // Handle the result
       if (result !== undefined) {
+        // Clear preview before executing
+        gotoLinePreview.clearPreview();
+
         try {
           vscode.commands.executeCommand("vstoys.hyper.deactivateAll");
         } catch (error) {
           console.error("Error executing hyper command:", error);
         }
 
-        const lineNumber = parseInt(result.trim());
-        if (!isNaN(lineNumber) && lineNumber >= 1 && lineNumber <= totalLines) {
-          navigateToLine(editor, lineNumber, args, printGotoLineOutput);
+        const targetLine = parseAbsoluteLineInput(result, totalLines);
+        if (targetLine !== null) {
+          navigateToLine(editor, targetLine, args, printGotoLineOutput);
         }
+      } else {
+        // Clear preview if user cancelled
+        gotoLinePreview.clearPreview();
       }
     })
   );
@@ -82,58 +107,39 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
       const currentLine = editor.selection.active.line + 1; // VS Code uses 0-based indexing
 
       // Store current line number settings
-      const config = vscode.workspace.getConfiguration('editor');
-      const originalLineNumbers = config.get('lineNumbers');
+      const config = vscode.workspace.getConfiguration("editor");
+      const originalLineNumbers = config.get("lineNumbers");
 
       try {
         // Temporarily enable relative line numbers
-        await config.update('lineNumbers', 'relative', vscode.ConfigurationTarget.Global);
+        await config.update("lineNumbers", "relative", vscode.ConfigurationTarget.Global);
 
         // Show input box for relative line offset
         const result = await vscode.window.showInputBox({
           prompt: `Go to relative line (+/- offset)`,
-          placeHolder: `Enter relative offset (e.g., +5, -3, 10, ${args?.upCharacter || 'k'}5, ${args?.downCharacter || 'j'}5) (current: ${currentLine}/${totalLines})`,
+          placeHolder: `Enter relative offset (e.g., +5, -3, 10, ${settingsManager.settings.upCharacter}5, ${settingsManager.settings.downCharacter}5) (current: ${currentLine}/${totalLines})`,
           validateInput: (value: string) => {
+            // Clear previous preview
+            gotoLinePreview.clearPreview();
+
             if (!value.trim()) {
               return "Please enter a relative offset";
             }
 
             const trimmedValue = value.trim();
-            let offset: number;
 
-            // Get configured characters (with defaults)
-            const upChar = args?.upCharacter || 'k';
-            const downChar = args?.downCharacter || 'j';
+            // Get configured characters from settings
+            const upChar = settingsManager.settings.upCharacter;
+            const downChar = settingsManager.settings.downCharacter;
 
             // Handle single character inputs (allow them without error)
-            if (trimmedValue === '+' || trimmedValue === '-' || trimmedValue === upChar || trimmedValue === downChar) {
+            if (trimmedValue === "+" || trimmedValue === "-" || trimmedValue === upChar || trimmedValue === downChar) {
               return null; // Allow incomplete input
             }
 
-            // Handle various prefixes
-            if (trimmedValue.startsWith('+')) {
-              const numStr = trimmedValue.substring(1);
-              offset = parseInt(numStr);
-            } else if (trimmedValue.startsWith('-')) {
-              const numStr = trimmedValue.substring(1);
-              offset = parseInt(numStr);
-              if (!isNaN(offset)) {
-                offset = -offset; // make it negative
-              }
-            } else if (trimmedValue.startsWith(upChar)) {
-              const numStr = trimmedValue.substring(upChar.length);
-              const num = parseInt(numStr);
-              offset = isNaN(num) ? NaN : -num; // negative for up
-            } else if (trimmedValue.startsWith(downChar)) {
-              const numStr = trimmedValue.substring(downChar.length);
-              const num = parseInt(numStr);
-              offset = isNaN(num) ? NaN : num; // positive for down
-            } else {
-              // Plain number defaults to positive (down)
-              offset = parseInt(trimmedValue);
-            }
+            const offset = parseRelativeLineInput(value, settingsManager.settings);
 
-            if (isNaN(offset)) {
+            if (offset === null) {
               return `Please enter a valid number with optional +/-, ${upChar} (up), or ${downChar} (down) prefix`;
             }
 
@@ -146,53 +152,114 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
               return `Target line ${targetLineDisplay} is out of bounds (1-${totalLines})`;
             }
 
+            // Show preview of what will happen
+            gotoLinePreview.previewRelativeLineSelection(editor, offset, args);
+
             return null; // No error
-          }
+          },
         });
 
         // Handle the result
         if (result !== undefined) {
+          // Clear preview before executing
+          gotoLinePreview.clearPreview();
+
           try {
             vscode.commands.executeCommand("vstoys.hyper.deactivateAll");
           } catch (error) {
             console.error("Error executing hyper command:", error);
           }
 
-          const trimmedValue = result.trim();
-          let offset: number;
-
-          // Get configured characters (with defaults)
-          const upChar = args?.upCharacter || 'k';
-          const downChar = args?.downCharacter || 'j';
-
-          // Parse the offset
-          if (trimmedValue.startsWith('+')) {
-            offset = parseInt(trimmedValue.substring(1));
-          } else if (trimmedValue.startsWith('-')) {
-            offset = parseInt(trimmedValue);
-          } else if (trimmedValue.startsWith(upChar)) {
-            const numStr = trimmedValue.substring(upChar.length);
-            const num = parseInt(numStr);
-            offset = isNaN(num) ? NaN : -num; // negative for up
-          } else if (trimmedValue.startsWith(downChar)) {
-            const numStr = trimmedValue.substring(downChar.length);
-            const num = parseInt(numStr);
-            offset = isNaN(num) ? NaN : num; // positive for down
-          } else {
-            // Plain number defaults to positive (down)
-            offset = parseInt(trimmedValue);
-          }
-
-          if (!isNaN(offset)) {
+          const offset = parseRelativeLineInput(result, settingsManager.settings);
+          if (offset !== null) {
             navigateToRelativeLine(editor, offset, args, printGotoLineOutput);
           }
+        } else {
+          // Clear preview if user cancelled
+          gotoLinePreview.clearPreview();
         }
       } finally {
-        // Always restore the original line number setting
-        await config.update('lineNumbers', originalLineNumbers, vscode.ConfigurationTarget.Global);
+        // Always restore the original line number setting and clear preview
+        await config.update("lineNumbers", originalLineNumbers, vscode.ConfigurationTarget.Global);
+        gotoLinePreview.clearPreview();
       }
     })
   );
 
   printGotoLineOutput(`${name} activated`, false);
+}
+
+/**
+ * Parse user input for absolute line navigation and return the target line number
+ * @param input The user input string
+ * @param totalLines Total number of lines in the document
+ * @returns The target line number (1-based) or null if invalid
+ */
+function parseAbsoluteLineInput(input: string, totalLines: number): number | null {
+  if (!input.trim()) {
+    return null;
+  }
+
+  const lineNumber = parseInt(input.trim());
+  if (isNaN(lineNumber) || lineNumber < 1 || lineNumber > totalLines) {
+    return null;
+  }
+
+  return lineNumber;
+}
+
+/**
+ * Parse user input for relative line navigation and return the offset
+ * @param input The user input string
+ * @param settings Settings containing up/down characters
+ * @returns The relative offset or null if invalid
+ */
+function parseRelativeLineInput(
+  input: string,
+  settings: { upCharacter: string; downCharacter: string }
+): number | null {
+  if (!input.trim()) {
+    return null;
+  }
+
+  const trimmedValue = input.trim();
+  let offset: number;
+
+  // Get configured characters from settings
+  const upChar = settings.upCharacter;
+  const downChar = settings.downCharacter;
+
+  // Handle single character inputs (return null for incomplete input)
+  if (trimmedValue === "+" || trimmedValue === "-" || trimmedValue === upChar || trimmedValue === downChar) {
+    return null;
+  }
+
+  // Handle various prefixes
+  if (trimmedValue.startsWith("+")) {
+    const numStr = trimmedValue.substring(1);
+    offset = parseInt(numStr);
+  } else if (trimmedValue.startsWith("-")) {
+    const numStr = trimmedValue.substring(1);
+    offset = parseInt(numStr);
+    if (!isNaN(offset)) {
+      offset = -offset; // make it negative
+    }
+  } else if (trimmedValue.startsWith(upChar)) {
+    const numStr = trimmedValue.substring(upChar.length);
+    const num = parseInt(numStr);
+    offset = isNaN(num) ? NaN : -num; // negative for up
+  } else if (trimmedValue.startsWith(downChar)) {
+    const numStr = trimmedValue.substring(downChar.length);
+    const num = parseInt(numStr);
+    offset = isNaN(num) ? NaN : num; // positive for down
+  } else {
+    // Plain number defaults to positive (down)
+    offset = parseInt(trimmedValue);
+  }
+
+  if (isNaN(offset)) {
+    return null;
+  }
+
+  return offset;
 }
