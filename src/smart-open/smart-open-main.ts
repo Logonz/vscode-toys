@@ -4,6 +4,7 @@ import { GetAllFilesInWorkspace, updateFilesExcludeCache, updateSearchExcludeCac
 import { showDebugQuickPick } from "./debugQuickPick";
 import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelService";
 import { showQuickPickWithInlineSearch } from "./picks/fileListWithFuzzy";
+import { coChangeScores } from "./git";
 
 export function activateSmartOpen(name: string, context: vscode.ExtensionContext) {
 
@@ -46,6 +47,25 @@ export function activateSmartOpen(name: string, context: vscode.ExtensionContext
   // Initialize exclude listeners
   updateSearchExcludeCache();
   updateFilesExcludeCache();
+
+  // Safely access the first workspace folder (workspaceFolders may be undefined)
+  const firstWorkspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (firstWorkspaceFolder) {
+    const workspacePath = firstWorkspaceFolder.uri.fsPath;
+    console.log(workspacePath);
+    // Initialize the git change scorer
+    console.log(
+      await coChangeScores({
+        // repoRoot: workspacePath,
+        // targetRelPath: "approle.tf",
+        repoRoot: "/Users/david.holmstedt/projects/vscode-toys",
+        targetRelPath: "package.json",
+      })
+    );
+  } else {
+    // No workspace open; skip git-based initialization
+    // console.debug("No workspace folder available; skipping git co-change scorer initialization.");
+  }
 
   // Initialize the custom editor label service
   updateCustomLabelConfiguration();
