@@ -92,15 +92,8 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
       // description: icon ? `Has icon (${iconTime.toFixed(1)}ms)` : `No icon (${iconTime.toFixed(1)}ms)`,
       description: `(${Math.round(fileScore.finalScore)}) `,
       file: fileInfo.uri,
-      // filePath: fileInfo.fsPath,
-      // relativePath: fileInfo.relativePath,
       iconPath: icon ? icon : new vscode.ThemeIcon("file"),
       score: fileScore, // Store the complete score object
-      // rawScore: 0,
-      // recencyScore: 0,
-      // frequencyScore: 0,
-      // closeScore: 0,
-      // finalScore: 0
     });
 
     if (i % 10 === 0) {

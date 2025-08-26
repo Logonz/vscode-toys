@@ -86,7 +86,7 @@ export class ScoreCalculator {
       finalScore += score * weight;
       totalWeight += weight;
     }
-    console.log(`Final scores for ${file.fsPath}:`, scores);
+    // console.log(`Final scores for ${file.fsPath}:`, scores);
 
     // Normalize final score
     scores.finalScore = totalWeight > 0 ? finalScore / totalWeight : 0;
@@ -228,6 +228,7 @@ export class ScoreCalculator {
         item.description += `Freq: ${score.frequencyScore?.toFixed(1)} `;
       }
       // ! NEW-SCORER-INSERT-HERE
+      console.log(`Final Normalized scores for ${item.file}:`, score);
     }
 
     return items;
