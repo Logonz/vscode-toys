@@ -86,17 +86,25 @@ export function navigateToLine(
 
     if (args?.delete === true) {
       // Delete the selected text
-      editor.edit((editBuilder) => {
-        editBuilder.delete(newSelection);
-      });
-      const direction = targetLineNumber > currentLineNumber ? "down" : "up";
-      printOutput?.(
-        `Selected and deleted from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`
-      );
-
-      // ! Reindent the lines during delete. (Do we need a setting here?)
-      // vscode.commands.executeCommand("editor.action.reindentlines");
-      vscode.commands.executeCommand("editor.action.reindentselectedlines");
+      editor
+        .edit((editBuilder) => {
+          editBuilder.delete(newSelection);
+        })
+        .then((applied) => {
+          const direction = targetLineNumber > currentLineNumber ? "down" : "up";
+          if (applied) {
+            printOutput?.(
+              `Selected and deleted from line ${
+                currentPosition.line + 1
+              } to line ${displayLineNumber} (${direction}ward)`
+            );
+            // ! Reindent the lines during delete. (Do we need a setting here?)
+            // Reindent after delete completes
+            vscode.commands.executeCommand("editor.action.reindentselectedlines");
+          } else {
+            printOutput?.("Delete operation did not apply; skipped reindent");
+          }
+        });
     } else {
       const direction = targetLineNumber > currentLineNumber ? "down" : "up";
       printOutput?.(`Selected from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);
