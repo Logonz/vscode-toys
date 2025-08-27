@@ -173,19 +173,40 @@ function FastGetIconForFileSync(file: vscode.Uri): vscode.Uri | undefined {
 
   let icon: vscode.Uri | undefined;
 
+  // TODO: Remove this debug output
+  let whereFound = "";
+
   // Check for full file name match
   if (iconFileNames.has(fileName)) {
+    whereFound = "fileName";
     icon = iconFileNames.get(fileName);
   }
-  // Test for things such as .vscodeignore and other files that start with a dot
-  else if (dotFileNameWithoutDot && iconFileNames.has(dotFileNameWithoutDot)) {
-    icon = iconFileNames.get(dotFileNameWithoutDot);
+  // Test for things such as .vscodeignore, gitlab-ci.yml and other files that start with a dot
+  else if (dotFileNameWithoutDot && extensionToIcon.has(dotFileNameWithoutDot)) {
+    whereFound = "dotFileNameExtension";
+    icon = extensionToIcon.get(dotFileNameWithoutDot);
+    iconCacheStats.extensionHits++;
+  }
+  // Test if the full filename exists in extensionToIcon (Some files do)
+  else if (fileName && extensionToIcon.has(fileName)) {
+    whereFound = "fileNameExtension";
+    icon = extensionToIcon.get(fileName);
     iconCacheStats.extensionHits++;
   }
   // Check for learned extension match
   else if (extensionToIcon.has(fileExtensionWithoutDot)) {
+    whereFound = "extension";
     icon = extensionToIcon.get(fileExtensionWithoutDot);
     iconCacheStats.extensionHits++;
+  }
+
+  if (icon == undefined) {
+    // Output all variables we use to search
+    console.log(`[vstoys-icons] File: ${file.fsPath} - Search variables:`);
+    console.log(`[vstoys-icons]   fileExtension: ${fileExtension}`);
+    console.log(`[vstoys-icons]   fileExtensionWithoutDot: ${fileExtensionWithoutDot}`);
+    console.log(`[vstoys-icons]   fileName: ${fileName}`);
+    console.log(`[vstoys-icons]   dotFileNameWithoutDot: ${dotFileNameWithoutDot}`);
   }
 
   if (icon) {
