@@ -101,14 +101,14 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
     }
     const currentInterval = this.refreshInterval + this.additionalDelay;
     const minInterval = Math.max(currentInterval, 1000); // Ensure minimum interval of 1 second
-    
+
     if (this.additionalDelay > 0) {
       console.log(`[vstoys] Scheduling periodic refresh every ${minInterval} ms (base: ${this.refreshInterval} + delay: ${this.additionalDelay})`);
     }
     // else {
     //   console.log(`[vstoys] Scheduling periodic refresh every ${minInterval} ms`);
     // }
-    
+
     this.refreshTimeout = setTimeout(() => {
       if (this.isEnabled()) {
         this.refreshCache();
@@ -165,7 +165,7 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
         .map((line) => line.trim());
 
       console.log(`[vstoys] Git cache refreshed.`);
-      
+
       // Reset delay on successful refresh
       this.additionalDelay = 0;
     } catch (error) {
@@ -174,7 +174,7 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
       } else {
         console.error(`[vstoys] Error refreshing Git cache:`, error);
       }
-      
+
       // Increase delay by increment on failure, cap at maximum delay
       this.additionalDelay = Math.min(this.additionalDelay + this.DELAY_INCREMENT, this.MAX_BACKOFF_DELAY);
       if (this.additionalDelay > 0) {
@@ -210,7 +210,7 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
         this.gitDiffCache.includes(relativeFilePath) &&
         !this.gitStatusCache.some((statusLine) => statusLine.endsWith(relativeFilePath))
       ) {
-        console.log(`[vstoys] File ${filePath} differs from ${this.targetBranch} and has no unstaged changes, applying decoration.`);
+        // console.log(`[vstoys] File ${filePath} differs from ${this.targetBranch} and has no unstaged changes, applying decoration.`);
         return {
           color: this.enableColor ? new vscode.ThemeColor("button.foreground") : undefined,
           badge: this.enableBadge ? "C" : undefined,

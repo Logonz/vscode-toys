@@ -2,17 +2,34 @@
   "contributes": {
     "commands": [
       {
-        "command": "vstoys.paste-replace.replaceLineWithClipboard",
+        "command": "vstoys.paste-replace.clipboardPasteReplace",
         "category": "VsToys",
-        "title": "Paste Replace: Replace Line with Clipboard"
+        "title": "Paste Replace"
+      },
+      {
+        "command": "vstoys.paste-replace.clipboardPasteSmart",
+        "category": "VsToys",
+        "title": "Paste Smart"
       }
     ],
     "keybindings": [
       {
-        "command": "vstoys.paste-replace.replaceLineWithClipboard",
+        "command": "vstoys.paste-replace.clipboardPasteReplace",
         "key": "ctrl+shift+v",
-        "mac": "cmd+shift+v", 
+        "mac": "cmd+shift+v",
         "when": "editorTextFocus && vstoys.paste-replace.active"
+      },
+      {
+        "command": "vstoys.paste-replace.clipboardPasteSmart",
+        "key": "ctrl+v",
+        "mac": "cmd+v",
+        "when": "editorTextFocus && vstoys.paste-replace.active"
+      },
+      {
+        "command": "editor.action.clipboardPasteAction",
+        "key": "ctrl+k ctrl+v",
+        "mac": "ctrl+k cmd+v",
+        "when": "vstoys.paste-replace.active"
       }
     ],
     "configuration": {

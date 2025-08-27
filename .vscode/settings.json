@@ -27,6 +27,8 @@
   // the values you've explicitly set, above.
   "editor.detectIndentation": false,
 
+  "editor.formatOnSave": true,
+
   // Default end of line
   "files.eol": "\n",
 }
