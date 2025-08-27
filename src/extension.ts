@@ -11,6 +11,7 @@ import { activateGotoLine } from "./goto-line/main";
 import { activatePasteReplace } from "./paste-replace/main";
 import { activateSmartOpen } from "./smart-open/smart-open-main";
 import { activateHyper } from "./hyper/main";
+import { activateMotions } from "./motions/main";
 
 try {
   require("./debug");
@@ -85,6 +86,12 @@ let vsToys: {
     name: "Smart Open",
     moduleContext: "smart-open",
     activator: activateSmartOpen,
+    deactivator: () => {},
+  },
+  {
+    name: "Motions",
+    moduleContext: "motions",
+    activator: (name, context) => activateMotions(name, context, createOutputChannel),
     deactivator: () => {},
   },
 ];
