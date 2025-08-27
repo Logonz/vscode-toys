@@ -42,7 +42,10 @@ export function LoadIcons() {
   for (let index = 0; index < vscode.extensions.all.length; index++) {
     const ext = vscode.extensions.all[index];
     const iconThemes = ext.packageJSON?.contributes?.iconThemes;
-    if (ext.id.includes(configuration.workbench.iconTheme) || (iconThemes && iconThemes.length > 0 && iconThemes[0]?.id?.includes(configuration.workbench.iconTheme))) {
+    if (
+      ext.id.includes(configuration.workbench.iconTheme) ||
+      (iconThemes && iconThemes.length > 0 && iconThemes[0]?.id?.includes(configuration.workbench.iconTheme))
+    ) {
       // Print extensions, this contains packageJSON and the path to the extension
       console.log("Extension found:", ext);
       iconTheme = ext;
@@ -82,7 +85,8 @@ export function LoadIcons() {
         });
       }
       if (warnUserThatIconPackIsNotSupported) {
-        vscode.window.showErrorMessage(deindent`Icon packs that use fonts rather than SVGs are not supported (e.g. vscode-seti which is default)
+        vscode.window
+          .showErrorMessage(deindent`Icon packs that use fonts rather than SVGs are not supported (e.g. vscode-seti which is default)
 
           Use something like "Material Icon Theme" or "vscode-icons" instead.
 
@@ -167,8 +171,6 @@ function FastGetIconForFileSync(file: vscode.Uri): vscode.Uri | undefined {
   const fileName = path.basename(file.fsPath);
   const dotFileNameWithoutDot = fileName.startsWith(".") ? fileName.slice(1) : undefined;
 
-
-
   let icon: vscode.Uri | undefined;
 
   // Check for full file name match
@@ -176,8 +178,8 @@ function FastGetIconForFileSync(file: vscode.Uri): vscode.Uri | undefined {
     icon = iconFileNames.get(fileName);
   }
   // Test for things such as .vscodeignore and other files that start with a dot
-  else if (dotFileNameWithoutDot && extensionToIcon.has(dotFileNameWithoutDot)) {
-    icon = extensionToIcon.get(dotFileNameWithoutDot);
+  else if (dotFileNameWithoutDot && iconFileNames.has(dotFileNameWithoutDot)) {
+    icon = iconFileNames.get(dotFileNameWithoutDot);
     iconCacheStats.extensionHits++;
   }
   // Check for learned extension match
