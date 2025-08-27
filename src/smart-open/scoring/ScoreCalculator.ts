@@ -192,8 +192,8 @@ export class ScoreCalculator {
       if (range.min === Infinity) return (val: number) => val;
       const weight = this.getWeight(type);
       const rangeSize = range.max - range.min;
-      // If all values are the same, return MAX_VALUE for all
-      if (rangeSize === 0) return (val: number) => MAX_VALUE;
+      // If all values are the same, return 0 for all
+      if (rangeSize === 0) return (val: number) => 0;
 
       // TODO: Look into this
       // Choose normalization strategy based on score type
