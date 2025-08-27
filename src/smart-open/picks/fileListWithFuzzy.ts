@@ -101,9 +101,9 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
     const fileInfo = internalFiles[i];
 
     // Do not include the current file in the suggestions
-    if (activeFilePath && fileInfo.fsPath === activeFilePath) {
-      continue;
-    }
+    // if (activeFilePath && fileInfo.fsPath === activeFilePath) {
+    //   continue;
+    // }
 
     // Get the precached icons
     const icon = await GetIconForFile(fileInfo.uri);
