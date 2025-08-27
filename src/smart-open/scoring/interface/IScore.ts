@@ -52,14 +52,25 @@ export interface ScoreConfig {
  * Default scoring configuration
  */
 export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
+  // Old weights
+  // weights: {
+  //   fuzzy: 1.0, // Primary scoring mechanism
+  //   recency: 0.3, // Recently opened files
+  //   frequency: 0.2, // Frequently accessed files
+  //   // length: 0.1, // Prefer shorter paths
+  //   // path: 0.1, // Path-based bonuses
+  //   closeness: 0.5, // Path closeness to active editor
+  //   git: 0.4, // Git co-change scoring
+  //   // ! NEW-SCORER-INSERT-HERE
+  // },
   weights: {
-    fuzzy: 1.0, // Primary scoring mechanism
-    recency: 0.3, // Recently opened files
-    frequency: 0.2, // Frequently accessed files
+    fuzzy: 0.4, // Primary scoring mechanism (40% of total)
+    recency: 0.15, // Recently opened files (15% of total)
+    frequency: 0.15, // Frequently accessed files (15% of total)
     // length: 0.1, // Prefer shorter paths
     // path: 0.1, // Path-based bonuses
-    closeness: 0.5, // Path closeness to active editor
-    git: 0.4, // Git co-change scoring
+    closeness: 0.2, // Path closeness to active editor (20% of total)
+    git: 0.1, // Git co-change scoring (10% of total)
     // ! NEW-SCORER-INSERT-HERE
   },
   enabled: {

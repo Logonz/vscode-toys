@@ -184,16 +184,54 @@ export class ScoreCalculator {
       // ! NEW-SCORER-INSERT-HERE
     }
 
+    // Between 0-MAX_VALUE, example: 0-100 if MAX_VALUE is 100
+    const MAX_VALUE = 100;
     // Create normalization functions for each score type
     const createNormalizer = (type: string, range: { min: number; max: number }) => {
       // If min is still Infinity, no values were processed
       if (range.min === Infinity) return (val: number) => val;
       const weight = this.getWeight(type);
       const rangeSize = range.max - range.min;
-      // If all values are the same, return 0 for all
-      if (rangeSize === 0) return (val: number) => 0;
-      // Normalize to 0-1 range
-      return (val: number) => ((val - range.min) / rangeSize) * weight;
+      // If all values are the same, return MAX_VALUE for all
+      if (rangeSize === 0) return (val: number) => MAX_VALUE;
+
+      // TODO: Look into this
+      // Choose normalization strategy based on score type
+      switch (type) {
+        case "fuzzy":
+          // Fuzzy scores are already well-distributed, use linear normalization
+          return (val: number) => ((val - range.min) / rangeSize) * MAX_VALUE * weight;
+
+        case "frequency":
+        case "git":
+          // Count-based scores benefit from logarithmic normalization
+          return (val: number) => {
+            const logVal = Math.log(val + 1);
+            const logMin = Math.log(range.min + 1);
+            const logMax = Math.log(range.max + 1);
+            const logRange = logMax - logMin;
+            if (logRange === 0) return 0;
+            return ((logVal - logMin) / logRange) * MAX_VALUE * weight;
+          };
+
+        case "recency":
+          // Recency scores benefit from square root normalization (between linear and log)
+          return (val: number) => {
+            const sqrtVal = Math.sqrt(val);
+            const sqrtMin = Math.sqrt(range.min);
+            const sqrtMax = Math.sqrt(range.max);
+            const sqrtRange = sqrtMax - sqrtMin;
+            if (sqrtRange === 0) return 0;
+            return ((sqrtVal - sqrtMin) / sqrtRange) * MAX_VALUE * weight;
+          };
+
+        case "closeness":
+        default:
+          // Default to linear normalization with slight smoothing
+          const smoothingFactor = rangeSize * 0.1; // 10% smoothing
+          const adjustedRange = rangeSize + smoothingFactor;
+          return (val: number) => ((val - range.min) / adjustedRange) * MAX_VALUE * weight;
+      }
     };
 
     const normalizeFuzzy = createNormalizer("fuzzy", scoreRanges.fuzzy);
