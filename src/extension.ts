@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import { activateDotRepeat } from "./dot-repeat/main";
+// import { activateDotRepeat } from "./dot-repeat/main";
 import { activateGit } from "./git/main";
 import { activateCopyHighlight } from "./copy-highlight/main";
 import { activateClearLine } from "./clear-line/main";
@@ -10,6 +10,7 @@ import { activateRegisters } from "./registers/main";
 import { activateGotoLine } from "./goto-line/main";
 import { activatePasteReplace } from "./paste-replace/main";
 import { activateHyper } from "./hyper/main";
+import { activateMotions } from "./motions/main";
 
 try {
   require("./debug");
@@ -78,6 +79,12 @@ let vsToys: {
     name: "Paste Replace",
     moduleContext: "paste-replace",
     activator: activatePasteReplace,
+    deactivator: () => {},
+  },
+  {
+    name: "Motions",
+    moduleContext: "motions",
+    activator: (name, context) => activateMotions(name, context, createOutputChannel),
     deactivator: () => {},
   },
 ];
