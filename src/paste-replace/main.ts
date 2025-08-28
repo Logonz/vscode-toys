@@ -89,6 +89,16 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
       return;
     }
 
+    // Check if we have actual text selections (not just cursors)
+    const hasSelections = editor.selections.some((selection) => !selection.isEmpty);
+
+    if (hasSelections) {
+      printPasteReplaceOutput("Using custom replace for selected text");
+      // Use our custom replace functionality for selections
+      await replaceLineWithClipboard();
+      return;
+    }
+
     // Check if any cursor is on a line with only whitespace
     const shouldUseReplaceMode = editor.selections.some((selection) => {
       const currentLine = selection.active.line;
@@ -126,47 +136,96 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
       const lineEnding = detectLineEnding(editor.document);
       const clipboardLines = clipboardText.split(/\r?\n/);
 
-      // Collect all cursor positions and sort them in reverse order (bottom to top)
+      // Separate selections from cursors, and sort selections in reverse order (bottom to top)
       // This prevents line number shifts from affecting subsequent operations
-      const cursors = editor.selections.map((selection) => selection.active.line).sort((a, b) => b - a); // Sort in descending order
+      const selections = editor.selections.filter((selection) => !selection.isEmpty);
+      const cursors = editor.selections.filter((selection) => selection.isEmpty);
 
-      // Remove duplicates (in case multiple cursors are on the same line)
-      const uniqueCursors = [...new Set(cursors)];
+      // Sort selections by start position in reverse order
+      selections.sort((a, b) => b.start.compareTo(a.start));
 
-      // Process each cursor position
       await editor.edit((editBuilder) => {
-        for (const currentLine of uniqueCursors) {
-          const lineText = editor.document.lineAt(currentLine);
+        // Handle actual text selections first
+        for (const selection of selections) {
+          // For selections, determine indentation based on selection position
+          const startLine = editor.document.lineAt(selection.start.line);
 
-          // Extract leading whitespace (indentation) for this line
-          const leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
+          // Check if selection starts at the beginning of the line (after whitespace only)
+          const linePrefix = startLine.text.substring(0, selection.start.character);
+          const isStartOfLine = linePrefix.trim() === "";
 
-          // Process multi-line clipboard content with relative indentation for this cursor
+          let leadingWhitespace = "";
+          if (isStartOfLine) {
+            // Selection starts at beginning of line - use line's indentation
+            leadingWhitespace = linePrefix;
+          }
+          // If not at start of line, don't add any indentation (leadingWhitespace stays "")
+
+          // Process multi-line clipboard content with relative indentation
           const processedLines = processMultiLineContent(clipboardLines, leadingWhitespace);
 
-          const fullLineRange = lineText.range;
-
           if (processedLines.length === 1) {
-            // Single line: simple replacement
-            editBuilder.replace(fullLineRange, processedLines[0]);
+            // Single line: simple replacement of selection
+            editBuilder.replace(selection, processedLines[0]);
           } else {
-            // Multi-line: replace first line, then insert additional lines
-            editBuilder.replace(fullLineRange, processedLines[0]);
+            // Multi-line: replace selection with first line, then insert additional lines
+            editBuilder.replace(selection, processedLines[0]);
 
-            // Insert additional lines after the current line using document's line ending
-            const endOfCurrentLine = fullLineRange.end;
+            // Insert additional lines after the selection using document's line ending
+            const endOfSelection = selection.end;
             const additionalLines = lineEnding + processedLines.slice(1).join(lineEnding);
-            editBuilder.insert(endOfCurrentLine, additionalLines);
+            editBuilder.insert(endOfSelection, additionalLines);
+          }
+        }
+
+        // Handle cursor positions (no selection) - keep original logic
+        if (cursors.length > 0) {
+          // Collect all cursor positions and sort them in reverse order (bottom to top)
+          const cursorLines = cursors.map((selection) => selection.active.line).sort((a, b) => b - a);
+
+          // Remove duplicates (in case multiple cursors are on the same line)
+          const uniqueCursorLines = [...new Set(cursorLines)];
+
+          // Process each cursor position
+          for (const currentLine of uniqueCursorLines) {
+            const lineText = editor.document.lineAt(currentLine);
+
+            // Extract leading whitespace (indentation) for this line
+            const leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
+
+            // Process multi-line clipboard content with relative indentation for this cursor
+            const processedLines = processMultiLineContent(clipboardLines, leadingWhitespace);
+
+            const fullLineRange = lineText.range;
+
+            if (processedLines.length === 1) {
+              // Single line: simple replacement
+              editBuilder.replace(fullLineRange, processedLines[0]);
+            } else {
+              // Multi-line: replace first line, then insert additional lines
+              editBuilder.replace(fullLineRange, processedLines[0]);
+
+              // Insert additional lines after the current line using document's line ending
+              const endOfCurrentLine = fullLineRange.end;
+              const additionalLines = lineEnding + processedLines.slice(1).join(lineEnding);
+              editBuilder.insert(endOfCurrentLine, additionalLines);
+            }
           }
         }
       });
 
-      const cursorCount = uniqueCursors.length;
-      const lineNumbers = uniqueCursors
-        .sort((a, b) => a - b)
-        .map((line) => line + 1)
-        .join(", ");
-      printPasteReplaceOutput(`Replaced ${cursorCount} line(s) [${lineNumbers}] with clipboard content`);
+      // Log what was done
+      if (selections.length > 0) {
+        printPasteReplaceOutput(`Replaced ${selections.length} selection(s) with clipboard content`);
+      }
+      if (cursors.length > 0) {
+        const uniqueCursorLines = [...new Set(cursors.map((s) => s.active.line))];
+        const lineNumbers = uniqueCursorLines
+          .sort((a, b) => a - b)
+          .map((line) => line + 1)
+          .join(", ");
+        printPasteReplaceOutput(`Replaced ${uniqueCursorLines.length} line(s) [${lineNumbers}] with clipboard content`);
+      }
     } catch (error) {
       vscode.window.showErrorMessage(`Paste replace failed: ${error}`);
       printPasteReplaceOutput(`Error: ${error}`);
