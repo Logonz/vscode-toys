@@ -94,7 +94,14 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
 
     if (hasSelections) {
       printPasteReplaceOutput("Using custom replace for selected text");
-      // Use our custom replace functionality for selections
+
+      // First delete the selected text to create empty/whitespace-only lines
+      await vscode.commands.executeCommand("deleteRight");
+
+      // Reindent the now empty/whitespace lines
+      await vscode.commands.executeCommand("editor.action.reindentselectedlines");
+
+      // Use our custom replace functionality for the now empty lines
       await replaceLineWithClipboard();
       return;
     }
@@ -109,6 +116,10 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
 
     if (shouldUseReplaceMode) {
       printPasteReplaceOutput("Using custom replace for whitespace-only lines");
+
+      // Reindent the whitespace-only lines before pasting
+      await vscode.commands.executeCommand("editor.action.reindentselectedlines");
+
       // Use our custom replace functionality for whitespace-only lines
       await replaceLineWithClipboard();
     } else {
