@@ -181,7 +181,7 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   printPasteReplaceOutput = createOutputChannel(`${name}`);
   printPasteReplaceOutput(`${name} activating`);
 
-  const smartPaste = async () => {
+  const smartPaste = async (useSmartSelectionLogic: boolean = true) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       vscode.window.showErrorMessage("No active editor");
@@ -196,20 +196,65 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
     const hasSelections = editor.selections.some((selection) => !selection.isEmpty);
 
     if (hasSelections) {
-      printPasteReplaceOutput("Using custom replace for selected text");
+      let shouldUseCustomReplacement = false;
 
-      // First delete the selected text to create empty/whitespace-only lines
-      await vscode.commands.executeCommand("deleteRight");
+      if (useSmartSelectionLogic) {
+        // Smart logic: Check if selections should use custom line replacement logic
+        shouldUseCustomReplacement = editor.selections.some((selection) => {
+          if (selection.isEmpty) return false;
 
-      // Reindent the now empty/whitespace lines if enabled
-      if (shouldReindent) {
-        printPasteReplaceOutput("Executing editor.action.reindentselectedlines");
-        await vscode.commands.executeCommand("editor.action.reindentselectedlines");
+          // For single-line selections, only use custom replacement if selection spans entire line content
+          if (selection.start.line === selection.end.line) {
+            const line = editor.document.lineAt(selection.start.line);
+            const linePrefix = line.text.substring(0, selection.start.character);
+            const lineSuffix = line.text.substring(selection.end.character);
+
+            // Use custom replacement only if selection starts at line beginning (after whitespace)
+            // and ends at line end (or only whitespace after)
+            return linePrefix.trim() === "" && lineSuffix.trim() === "";
+          }
+
+          // For multi-line selections, check if they start/end at line boundaries
+          const startLine = editor.document.lineAt(selection.start.line);
+          const endLine = editor.document.lineAt(selection.end.line);
+
+          // Check if selection starts at the beginning of the line (after whitespace only)
+          const startLinePrefix = startLine.text.substring(0, selection.start.character);
+          const startsAtLineBeginning = startLinePrefix.trim() === "";
+
+          // Check if selection ends at the end of the line or line boundary
+          const endsAtLineEnd = selection.end.character >= endLine.text.length || selection.end.character === 0;
+
+          // Use custom replacement only if selection starts at line beginning AND ends at line boundary
+          return startsAtLineBeginning && endsAtLineEnd;
+        });
+      } else {
+        // Old behavior: Always use custom replacement for any selection
+        shouldUseCustomReplacement = true;
       }
 
-      // Use our custom replace functionality for the now empty lines
-      await replaceLineWithClipboard(true); // true = use smart indentation
-      return;
+      if (shouldUseCustomReplacement) {
+        const behaviorType = useSmartSelectionLogic ? "smart full-line selections" : "selected text (classic behavior)";
+        printPasteReplaceOutput(`Using custom replace for ${behaviorType}`);
+
+        // First delete the selected text to create empty/whitespace-only lines
+        await vscode.commands.executeCommand("deleteRight");
+
+        // Reindent the now empty/whitespace lines if enabled
+        if (shouldReindent) {
+          await vscode.commands.executeCommand("editor.action.reindentselectedlines");
+        }
+
+        // Use our custom replace functionality for the now empty lines
+        const useSmartIndentation = useSmartSelectionLogic; // Smart paste uses smart indentation, Replace uses simple matching
+        await replaceLineWithClipboard(useSmartIndentation);
+        return;
+      } else {
+        printPasteReplaceOutput("Using standard paste for partial selections");
+        // For partial selections (mid-line start/end), use VSCode's default paste behavior
+        await vscode.commands.executeCommand("editor.action.clipboardPasteAction");
+        return;
+      }
     }
 
     // Check if any cursor is on a line with only whitespace
@@ -227,7 +272,8 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
       // No need to reindent since we'll calculate the correct indentation anyway
 
       // Use our custom replace functionality for whitespace-only lines
-      await replaceLineWithClipboard(true); // true = use smart indentation
+      const useSmartIndentation = useSmartSelectionLogic; // Smart paste uses smart indentation, Replace uses simple matching
+      await replaceLineWithClipboard(useSmartIndentation);
     } else {
       printPasteReplaceOutput("Using standard paste for non-empty lines");
       // Use VSCode's default paste action for lines with content
@@ -380,10 +426,8 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", () =>
-      replaceLineWithClipboard(false)
-    ), // false = match existing indentation
-    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", smartPaste)
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", () => smartPaste(false)), // false = old behavior, always replace entire lines for selections
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", () => smartPaste(true)) // true = smart behavior, respect partial selections
   );
 
   vscode.commands.executeCommand("setContext", "vstoys.paste-replace.active", true);
