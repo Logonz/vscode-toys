@@ -89,6 +89,10 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
       return;
     }
 
+    // Get configuration setting for reindent behavior
+    const config = vscode.workspace.getConfiguration("vstoys.paste-replace");
+    const shouldReindent = config.get<boolean>("reindentBeforePaste", true);
+
     // Check if we have actual text selections (not just cursors)
     const hasSelections = editor.selections.some((selection) => !selection.isEmpty);
 
@@ -98,8 +102,10 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
       // First delete the selected text to create empty/whitespace-only lines
       await vscode.commands.executeCommand("deleteRight");
 
-      // Reindent the now empty/whitespace lines
-      await vscode.commands.executeCommand("editor.action.reindentselectedlines");
+      // Reindent the now empty/whitespace lines if enabled
+      if (shouldReindent) {
+        await vscode.commands.executeCommand("editor.action.reindentselectedlines");
+      }
 
       // Use our custom replace functionality for the now empty lines
       await replaceLineWithClipboard();
@@ -117,8 +123,10 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
     if (shouldUseReplaceMode) {
       printPasteReplaceOutput("Using custom replace for whitespace-only lines");
 
-      // Reindent the whitespace-only lines before pasting
-      await vscode.commands.executeCommand("editor.action.reindentselectedlines");
+      // Reindent the whitespace-only lines before pasting if enabled
+      if (shouldReindent) {
+        await vscode.commands.executeCommand("editor.action.reindentselectedlines");
+      }
 
       // Use our custom replace functionality for whitespace-only lines
       await replaceLineWithClipboard();

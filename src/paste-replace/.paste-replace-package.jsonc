@@ -39,6 +39,12 @@
           "default": true,
           "description": "Enable the Paste Replace module in VSCode Toys",
           "order": 7000
+        },
+        "vstoys.paste-replace.reindentBeforePaste": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically reindent lines before pasting content when using smart paste",
+          "order": 7001
         }
       }
     }
