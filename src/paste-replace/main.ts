@@ -4,6 +4,105 @@ import { createOutputChannel } from "../extension";
 let printPasteReplaceOutput: (content: string, reveal?: boolean) => void;
 
 /**
+ * Detect what indentation should be used for a line at the given position
+ * by analyzing the surrounding context and using VSCode's formatting engine
+ * @param editor The active text editor
+ * @param position The position to check indentation for
+ * @returns The indentation string that should be used
+ */
+async function detectSmartIndentation(editor: vscode.TextEditor, position: vscode.Position): Promise<string> {
+  try {
+    const document = editor.document;
+    const lineNumber = position.line;
+
+    // First, try to use VSCode's formatting engine if we have context
+    if (lineNumber > 0) {
+      // Look for the nearest non-empty line above to provide context
+      let contextLineNumber = lineNumber - 1;
+      while (contextLineNumber >= 0) {
+        const line = document.lineAt(contextLineNumber);
+        if (line.text.trim().length > 0) {
+          // Found context line, try to format an empty line after it
+          try {
+            // Create a temporary range that includes the context line and target line
+            const formatRange = new vscode.Range(
+              contextLineNumber,
+              0,
+              lineNumber,
+              document.lineAt(lineNumber).text.length
+            );
+
+            // Get formatting options from editor
+            const options = {
+              tabSize: (editor.options.tabSize as number) || 2,
+              insertSpaces: editor.options.insertSpaces as boolean,
+            };
+
+            // Try to get formatting edits for this range
+            const edits = await vscode.commands.executeCommand<vscode.TextEdit[]>(
+              "vscode.executeFormatRangeProvider",
+              document.uri,
+              formatRange,
+              options
+            );
+
+            // If we got formatting edits, analyze what indentation would be applied
+            if (edits && edits.length > 0) {
+              // Look for edits that affect our target line
+              for (const edit of edits) {
+                if (edit.range.start.line === lineNumber) {
+                  // Extract indentation from the formatted text
+                  const formattedText = edit.newText;
+                  const indentMatch = formattedText.match(/^(\s*)/);
+                  return indentMatch ? indentMatch[1] : "";
+                }
+              }
+            }
+
+            // Fallback: analyze context manually
+            const contextLine = document.lineAt(contextLineNumber);
+            const contextIndent = contextLine.text.match(/^(\s*)/)?.[0] || "";
+            const trimmedText = contextLine.text.trim();
+
+            // Check if this line indicates we should increase indentation
+            const shouldIncreaseIndent = /[{\[\(:]$/.test(trimmedText);
+
+            if (shouldIncreaseIndent) {
+              const indentUnit = options.insertSpaces ? " ".repeat(options.tabSize) : "\t";
+              return contextIndent + indentUnit;
+            } else {
+              return contextIndent;
+            }
+          } catch (formatError) {
+            // Formatting failed, fall back to context analysis
+            const contextLine = document.lineAt(contextLineNumber);
+            return contextLine.text.match(/^(\s*)/)?.[0] || "";
+          }
+        }
+        contextLineNumber--;
+      }
+    }
+
+    // No context above, check below
+    let contextLineNumber = lineNumber + 1;
+    while (contextLineNumber < document.lineCount) {
+      const line = document.lineAt(contextLineNumber);
+      if (line.text.trim().length > 0) {
+        // Found a non-empty line below, use its indentation
+        return line.text.match(/^(\s*)/)?.[0] || "";
+      }
+      contextLineNumber++;
+    }
+
+    // No context found, return empty indentation
+    return "";
+  } catch (error) {
+    // Fallback: return empty indentation
+    return "";
+  }
+}
+
+/**
  * Detect the line ending format used in the document
  * @param document The VSCode text document
  * @returns The line ending string (either '\r\n' or '\n')
@@ -104,11 +203,12 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
 
       // Reindent the now empty/whitespace lines if enabled
       if (shouldReindent) {
+        printPasteReplaceOutput("Executing editor.action.reindentselectedlines");
         await vscode.commands.executeCommand("editor.action.reindentselectedlines");
       }
 
       // Use our custom replace functionality for the now empty lines
-      await replaceLineWithClipboard();
+      await replaceLineWithClipboard(true); // true = use smart indentation
       return;
     }
 
@@ -123,13 +223,11 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
     if (shouldUseReplaceMode) {
       printPasteReplaceOutput("Using custom replace for whitespace-only lines");
 
-      // Reindent the whitespace-only lines before pasting if enabled
-      if (shouldReindent) {
-        await vscode.commands.executeCommand("editor.action.reindentselectedlines");
-      }
+      // For whitespace-only lines, our smart indentation detection handles proper indentation
+      // No need to reindent since we'll calculate the correct indentation anyway
 
       // Use our custom replace functionality for whitespace-only lines
-      await replaceLineWithClipboard();
+      await replaceLineWithClipboard(true); // true = use smart indentation
     } else {
       printPasteReplaceOutput("Using standard paste for non-empty lines");
       // Use VSCode's default paste action for lines with content
@@ -137,7 +235,7 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
     }
   };
 
-  const replaceLineWithClipboard = async () => {
+  const replaceLineWithClipboard = async (useSmartIndentation: boolean = false) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       vscode.window.showErrorMessage("No active editor");
@@ -162,6 +260,38 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
 
       // Sort selections by start position in reverse order
       selections.sort((a, b) => b.start.compareTo(a.start));
+
+      // Pre-calculate indentation for cursor positions
+      const cursorIndentations: Map<number, string> = new Map();
+
+      if (cursors.length > 0) {
+        const cursorLines = cursors.map((selection) => selection.active.line);
+        const uniqueCursorLines = [...new Set(cursorLines)];
+
+        for (const currentLine of uniqueCursorLines) {
+          const lineText = editor.document.lineAt(currentLine);
+          const cursorPosition = new vscode.Position(currentLine, 0);
+
+          let leadingWhitespace = "";
+
+          if (useSmartIndentation && lineText.text.trim() === "") {
+            printPasteReplaceOutput("Detecting smart indentation");
+            // For smart paste on empty/whitespace lines, detect smart indentation
+            try {
+              leadingWhitespace = await detectSmartIndentation(editor, cursorPosition);
+            } catch (error) {
+              // Fallback to existing logic
+              leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
+            }
+          } else {
+            printPasteReplaceOutput("Using existing indentation");
+            // For replace paste or non-empty lines, use existing indentation
+            leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
+          }
+
+          cursorIndentations.set(currentLine, leadingWhitespace);
+        }
+      }
 
       await editor.edit((editBuilder) => {
         // Handle actual text selections first
@@ -197,7 +327,7 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
           }
         }
 
-        // Handle cursor positions (no selection) - keep original logic
+        // Handle cursor positions (no selection) - use pre-calculated indentations
         if (cursors.length > 0) {
           // Collect all cursor positions and sort them in reverse order (bottom to top)
           const cursorLines = cursors.map((selection) => selection.active.line).sort((a, b) => b - a);
@@ -205,12 +335,10 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
           // Remove duplicates (in case multiple cursors are on the same line)
           const uniqueCursorLines = [...new Set(cursorLines)];
 
-          // Process each cursor position
+          // Process each cursor position using pre-calculated indentations
           for (const currentLine of uniqueCursorLines) {
             const lineText = editor.document.lineAt(currentLine);
-
-            // Extract leading whitespace (indentation) for this line
-            const leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
+            const leadingWhitespace = cursorIndentations.get(currentLine) || "";
 
             // Process multi-line clipboard content with relative indentation for this cursor
             const processedLines = processMultiLineContent(clipboardLines, leadingWhitespace);
@@ -252,7 +380,9 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", replaceLineWithClipboard),
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", () =>
+      replaceLineWithClipboard(false)
+    ), // false = match existing indentation
     vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", smartPaste)
   );
 
