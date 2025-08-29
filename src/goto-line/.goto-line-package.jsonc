@@ -48,7 +48,8 @@
         },
         "vstoys.goto-line.deleteColor": {
           "type": "string",
-          "default": "inputValidation.errorBackground",
+          // "default": "inputValidation.errorBackground",
+          "default": "editorMarkerNavigationError.headerBackground",
           "description": "Color for highlighting lines during delete operations (theme color ID or hex color)",
           "order": 3005
         },
@@ -60,7 +61,8 @@
         },
         "vstoys.goto-line.cutColor": {
           "type": "string",
-          "default": "editor.findMatchHighlightBackground",
+          // "default": "editor.findMatchHighlightBackground",
+          "default": "editorMarkerNavigationWarning.headerBackground",
           "description": "Color for highlighting lines during cut (args: 'delete' and 'copy' operations create cut) (theme color ID or hex color)",
           "order": 3007
         }
