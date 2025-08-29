@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
+import { pasteReplace } from "./pasteReplace";
 
 let printPasteReplaceOutput: (content: string, reveal?: boolean) => void;
 
@@ -181,6 +182,20 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   printPasteReplaceOutput = createOutputChannel(`${name}`);
   printPasteReplaceOutput(`${name} activating`);
 
+  /**
+   * Simple wrapper for the separated paste replace functionality
+   */
+  const pasteReplaceCommand = async () => {
+    await pasteReplace((content: string) => printPasteReplaceOutput(content));
+  };
+
+  /**
+   * Smart Paste: Intelligent, context-aware pasting
+   * - Analyzes selection type to determine behavior
+   * - Uses smart indentation detection for empty lines
+   * - Falls back to standard paste for partial selections
+   * - Context-aware behavior
+   */
   const smartPaste = async (useSmartSelectionLogic: boolean = true) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -426,10 +441,8 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", () =>
-      replaceLineWithClipboard(false)
-    ), // false = match existing indentation
-    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", () => smartPaste(true)) // true = smart behavior, respect partial selections
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", pasteReplaceCommand),
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", () => smartPaste(true))
   );
 
   vscode.commands.executeCommand("setContext", "vstoys.paste-replace.active", true);
