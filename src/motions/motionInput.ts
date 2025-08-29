@@ -24,6 +24,10 @@ export class MotionInput {
     this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
     this.updateStatusBar(this.props.operation);
 
+    // TODO: Do we want to make this configurable?
+    // Disable all hyper layers
+    commands.executeCommand("vstoys.hyper.deactivateAll");
+
     // Set context to enable escape key binding
     commands.executeCommand("setContext", "vstoys.motions.inputActive", true);
   }
@@ -49,10 +53,10 @@ export class MotionInput {
       return;
     }
 
-    // Check if it's a number (for count)
-    if (/\d/.test(char) && this.input === "") {
+    // Check if it's a number (for count) - now accepts digits after operation is set
+    if (/\d/.test(char)) {
       this.count += char;
-      this.updateStatusBar(this.count + this.props.operation);
+      this.updateStatusBar(this.props.operation + this.count);
       return;
     }
 
@@ -94,6 +98,10 @@ export class InteractiveMotionInput {
 
     this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
     this.updateStatusBar("");
+
+    // TODO: Do we want to make this configurable?
+    // Disable all hyper layers
+    commands.executeCommand("vstoys.hyper.deactivateAll");
 
     // Set context to enable escape key binding
     commands.executeCommand("setContext", "vstoys.motions.inputActive", true);
