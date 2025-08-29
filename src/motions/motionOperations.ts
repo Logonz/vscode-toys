@@ -89,7 +89,6 @@ async function performDelete(editor: any, ranges: { range: Range; isInner: boole
   printMotionOutput(`Deleted ${ranges.length} text object(s)`);
 }
 
-
 async function performYank(editor: any, ranges: { range: Range; isInner: boolean }[]): Promise<void> {
   const texts = ranges.map(({ range }) => editor.document.getText(range));
   const combinedText = texts.join("\n");
@@ -120,7 +119,6 @@ function performSelect(editor: any, selections: Selection[]): void {
   editor.selections = selections;
   printMotionOutput(`Selected ${selections.length} text object(s)`);
 }
-
 
 /**
  * @param inputColor Takes a theme ID (like `editor.background`) or color string (like `#ffffff`) and returns vscode.ThemeColor or unchanged color string

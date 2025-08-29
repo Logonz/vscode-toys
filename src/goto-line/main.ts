@@ -188,16 +188,37 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
           clearTimeout(lineNumberSettingTimeout);
         }
 
-        // Double check that the setting has been restored.
-        lineNumberSettingTimeout = setTimeout(() => {
+        // Recursively check that the setting has been restored
+        const ensureSettingRestored = async (attemptCount = 0, maxAttempts = 10) => {
+          const config = vscode.workspace.getConfiguration("editor");
           const currentLineNumbers = config.get("lineNumbers");
           if (currentLineNumbers !== originalLineNumbers) {
             console.warn(
-              `Line numbers setting was not restored correctly. Current: ${currentLineNumbers}, Original: ${originalLineNumbers}`
+              `Line numbers setting was not restored correctly (attempt ${
+                attemptCount + 1
+              }/${maxAttempts}). Current: ${currentLineNumbers}, Original: ${originalLineNumbers}`
             );
-            // Restore original setting if needed
-            config.update("lineNumbers", originalLineNumbers, vscode.ConfigurationTarget.Global);
+
+            if (attemptCount < maxAttempts) {
+              // Restore original setting if needed
+              await config.update("lineNumbers", originalLineNumbers, vscode.ConfigurationTarget.Global);
+
+              // Schedule next check
+              lineNumberSettingTimeout = setTimeout(() => {
+                ensureSettingRestored(attemptCount + 1, maxAttempts);
+              }, 50);
+            } else {
+              console.error(
+                `Failed to restore line numbers setting after ${maxAttempts} attempts. Current: ${currentLineNumbers}, Original: ${originalLineNumbers}`
+              );
+            }
+          } else {
+            console.log(`Line numbers setting successfully restored to: ${originalLineNumbers}`);
           }
+        };
+
+        lineNumberSettingTimeout = setTimeout(() => {
+          ensureSettingRestored();
         }, 50);
         gotoLinePreview.clearPreview();
       }
