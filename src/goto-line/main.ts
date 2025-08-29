@@ -93,6 +93,7 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
     })
   );
 
+  let lineNumberSettingTimeout: NodeJS.Timeout;
   context.subscriptions.push(
     vscode.commands.registerCommand("vstoys.goto-line.goto-relative", async (args) => {
       console.log(args);
@@ -181,6 +182,23 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
       } finally {
         // Always restore the original line number setting and clear preview
         await config.update("lineNumbers", originalLineNumbers, vscode.ConfigurationTarget.Global);
+
+        // Clear timeout if it exists
+        if (lineNumberSettingTimeout) {
+          clearTimeout(lineNumberSettingTimeout);
+        }
+
+        // Double check that the setting has been restored.
+        lineNumberSettingTimeout = setTimeout(() => {
+          const currentLineNumbers = config.get("lineNumbers");
+          if (currentLineNumbers !== originalLineNumbers) {
+            console.warn(
+              `Line numbers setting was not restored correctly. Current: ${currentLineNumbers}, Original: ${originalLineNumbers}`
+            );
+            // Restore original setting if needed
+            config.update("lineNumbers", originalLineNumbers, vscode.ConfigurationTarget.Global);
+          }
+        }, 50);
         gotoLinePreview.clearPreview();
       }
     })

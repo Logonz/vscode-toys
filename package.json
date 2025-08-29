@@ -280,6 +280,18 @@
           "description": "Color for highlighting lines during delete operations (theme color ID or hex color)",
           "order": 3005
         },
+        "vstoys.goto-line.copyColor": {
+          "type": "string",
+          "default": "editor.findRangeHighlightBackground",
+          "description": "Color for highlighting lines during copy operations (theme color ID or hex color)",
+          "order": 3006
+        },
+        "vstoys.goto-line.cutColor": {
+          "type": "string",
+          "default": "editor.findMatchHighlightBackground",
+          "description": "Color for highlighting lines during cut (args: 'delete' and 'copy' operations create cut) (theme color ID or hex color)",
+          "order": 3007
+        },
         "vstoys.git.fileDecorator.enabled": {
           "type": "boolean",
           "default": true,

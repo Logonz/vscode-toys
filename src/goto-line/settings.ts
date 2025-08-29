@@ -7,6 +7,8 @@ export interface GotoLineSettings {
   highlightingEnabled: boolean;
   selectColor: string;
   deleteColor: string;
+  copyColor: string;
+  cutColor: string;
 }
 
 /**
@@ -22,6 +24,8 @@ export function getGotoLineSettings(): GotoLineSettings {
     highlightingEnabled: config.get("highlightingEnabled", true),
     selectColor: config.get("selectColor", "editor.wordHighlightBackground"),
     deleteColor: config.get("deleteColor", "inputValidation.errorBackground"),
+    copyColor: config.get("copyColor", "editor.findRangeHighlightBackground"),
+    cutColor: config.get("cutColor", "editor.findMatchHighlightBackground"),
   };
 }
 
@@ -61,7 +65,7 @@ export class GotoLineSettingsManager {
   private updateSettings(): void {
     const newSettings = getGotoLineSettings();
 
-    // Check if settings actually changed
+    // Check if settings actually changeda
     const settingsChanged = JSON.stringify(this._settings) !== JSON.stringify(newSettings);
 
     if (settingsChanged) {

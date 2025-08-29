@@ -84,8 +84,24 @@ export function navigateToLine(
     editor.selection = newSelection;
     editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
 
+    // Copy selected text to clipboard
+    if (args?.copy === true) {
+      // Copy the selected text to clipboard
+      const selectedText = editor.document.getText(newSelection);
+      vscode.env.clipboard.writeText(selectedText).then(() => {
+        const direction = targetLineNumber > currentLineNumber ? "down" : "up";
+        printOutput?.(
+          `Selected and copied from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`
+        );
+        // Unselect after copy and restore the cursor position
+        // But only if not deleting
+        if (args?.delete === false) {
+          editor.selection = new vscode.Selection(currentPosition, currentPosition);
+        }
+      });
+    }
+    // Delete the selected text
     if (args?.delete === true) {
-      // Delete the selected text
       editor
         .edit((editBuilder) => {
           editBuilder.delete(newSelection);
@@ -105,17 +121,49 @@ export function navigateToLine(
             printOutput?.("Delete operation did not apply; skipped reindent");
           }
         });
-    } else {
+    }
+    // Handle selection without copy or delete
+    if (!args?.delete && !args?.copy) {
       const direction = targetLineNumber > currentLineNumber ? "down" : "up";
       printOutput?.(`Selected from line ${currentPosition.line + 1} to line ${displayLineNumber} (${direction}ward)`);
     }
   } else {
-    // Just move cursor to the target line
-    newSelection = new vscode.Selection(position, position);
-    // Move cursor to the line (or create selection)
-    editor.selection = newSelection;
-    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-    printOutput?.(`Navigated to line ${displayLineNumber}`);
+    // Handle copy and delete operations on target line without selection
+    if (args?.copy === true) {
+      // Copy the entire target line to clipboard
+      // we do the selection dance to emulate vscode copy line behavior
+      const selections = editor.selections;
+      editor.selection = new vscode.Selection(position, position);
+      vscode.commands.executeCommand("editor.action.clipboardCopyAction").then(() => {
+        editor.selections = selections;
+      });
+    }
+    if (args?.delete === true) {
+      // Delete the entire target line
+      const targetLineRange = editor.document.lineAt(position.line).rangeIncludingLineBreak;
+      editor
+        .edit((editBuilder) => {
+          editBuilder.delete(targetLineRange);
+        })
+        .then((applied) => {
+          if (applied) {
+            printOutput?.(`Deleted line ${displayLineNumber}`);
+            // Reindent after delete completes
+            // vscode.commands.executeCommand("editor.action.reindentselectedlines");
+          } else {
+            printOutput?.("Delete operation did not apply; skipped reindent");
+          }
+        });
+    }
+
+    if (!args?.delete && !args?.copy) {
+      // Just move cursor to the target line
+      newSelection = new vscode.Selection(position, position);
+      // Move cursor to the line
+      editor.selection = newSelection;
+      editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+      printOutput?.(`Navigated to line ${displayLineNumber}`);
+    }
   }
 
   // Execute command after goto if specified

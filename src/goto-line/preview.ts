@@ -18,8 +18,12 @@ function pickColorType(inputColor: string): vscode.ThemeColor | string {
 export class GotoLinePreview {
   private normalDecorationType!: vscode.TextEditorDecorationType;
   private deleteDecorationType!: vscode.TextEditorDecorationType;
+  private copyDecorationType!: vscode.TextEditorDecorationType;
+  private cutDecorationType!: vscode.TextEditorDecorationType;
   private normalCharDecorationType!: vscode.TextEditorDecorationType;
   private deleteCharDecorationType!: vscode.TextEditorDecorationType;
+  private copyCharDecorationType!: vscode.TextEditorDecorationType;
+  private cutCharDecorationType!: vscode.TextEditorDecorationType;
   private activeEditor: vscode.TextEditor | undefined;
   private settings: GotoLineSettings;
 
@@ -51,6 +55,23 @@ export class GotoLinePreview {
       overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
 
+    // Create decoration type for copy preview highlighting (whole lines)
+    this.copyDecorationType = vscode.window.createTextEditorDecorationType({
+      backgroundColor: pickColorType(this.settings.copyColor),
+      isWholeLine: true,
+      overviewRulerColor: pickColorType(this.settings.copyColor),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
+    });
+
+    // Create decoration type for cut preview highlighting (whole lines)
+    // Delete + copy create cut
+    this.cutDecorationType = vscode.window.createTextEditorDecorationType({
+      backgroundColor: pickColorType(this.settings.cutColor),
+      isWholeLine: true,
+      overviewRulerColor: pickColorType(this.settings.cutColor),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
+    });
+
     // Create decoration type for normal preview highlighting (character-level)
     this.normalCharDecorationType = vscode.window.createTextEditorDecorationType({
       backgroundColor: pickColorType(this.settings.selectColor),
@@ -62,6 +83,21 @@ export class GotoLinePreview {
     this.deleteCharDecorationType = vscode.window.createTextEditorDecorationType({
       backgroundColor: pickColorType(this.settings.deleteColor),
       overviewRulerColor: pickColorType(this.settings.deleteColor),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
+    });
+
+    // Create decoration type for copy preview highlighting (character-level)
+    this.copyCharDecorationType = vscode.window.createTextEditorDecorationType({
+      backgroundColor: pickColorType(this.settings.copyColor),
+      overviewRulerColor: pickColorType(this.settings.copyColor),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
+    });
+
+    // Create decoration type for cut preview highlighting (character-level)
+    // Delete + copy create cut
+    this.cutCharDecorationType = vscode.window.createTextEditorDecorationType({
+      backgroundColor: pickColorType(this.settings.cutColor),
+      overviewRulerColor: pickColorType(this.settings.cutColor),
       overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
   }
@@ -76,11 +112,23 @@ export class GotoLinePreview {
     if (this.deleteDecorationType) {
       this.deleteDecorationType.dispose();
     }
+    if (this.copyDecorationType) {
+      this.copyDecorationType.dispose();
+    }
+    if (this.cutDecorationType) {
+      this.cutDecorationType.dispose();
+    }
     if (this.normalCharDecorationType) {
       this.normalCharDecorationType.dispose();
     }
     if (this.deleteCharDecorationType) {
       this.deleteCharDecorationType.dispose();
+    }
+    if (this.copyCharDecorationType) {
+      this.copyCharDecorationType.dispose();
+    }
+    if (this.cutCharDecorationType) {
+      this.cutCharDecorationType.dispose();
     }
   }
 
@@ -106,7 +154,7 @@ export class GotoLinePreview {
 
     this.activeEditor = editor;
 
-    if (!args?.select && !args?.delete) {
+    if (!args?.select && !args?.delete && !args?.copy) {
       // Just show the target line
       this.showSingleLinePreview(editor, targetLine, args);
       return;
@@ -134,7 +182,7 @@ export class GotoLinePreview {
     const currentLine = editor.selection.active.line + 1; // Convert to 1-based
     const targetLine = currentLine + relativeOffset;
 
-    if (!args?.select && !args?.delete) {
+    if (!args?.select) {
       // Just show the target line
       this.showSingleLinePreview(editor, targetLine, args);
       return;
@@ -159,7 +207,16 @@ export class GotoLinePreview {
     const range = new vscode.Range(targetLineIndex, 0, targetLineIndex, 0);
 
     // Use appropriate decoration type
-    const decorationType = args?.delete ? this.deleteDecorationType : this.normalDecorationType;
+    let decorationType: vscode.TextEditorDecorationType;
+    if (args?.delete && args?.copy) {
+      decorationType = this.cutDecorationType;
+    } else if (args?.delete) {
+      decorationType = this.deleteDecorationType;
+    } else if (args?.copy) {
+      decorationType = this.copyDecorationType;
+    } else {
+      decorationType = this.normalDecorationType;
+    }
     editor.setDecorations(decorationType, [{ range }]);
   }
 
@@ -182,9 +239,29 @@ export class GotoLinePreview {
     const wholeLineDecorations: vscode.DecorationOptions[] = [];
     const charLevelDecorations: vscode.DecorationOptions[] = [];
 
-    // Choose decoration types based on delete flag
-    const wholeLineDecorationType = args?.delete ? this.deleteDecorationType : this.normalDecorationType;
-    const charLevelDecorationType = args?.delete ? this.deleteCharDecorationType : this.normalCharDecorationType;
+    // Choose decoration types based on delete/copy flags
+    let wholeLineDecorationType: vscode.TextEditorDecorationType;
+    // Delete + copy create cut
+    if (args?.delete && args?.copy) {
+      wholeLineDecorationType = this.cutDecorationType;
+    } else if (args?.delete) {
+      wholeLineDecorationType = this.deleteDecorationType;
+    } else if (args?.copy) {
+      wholeLineDecorationType = this.copyDecorationType;
+    } else {
+      wholeLineDecorationType = this.normalDecorationType;
+    }
+    let charLevelDecorationType: vscode.TextEditorDecorationType;
+    // Delete + copy create cut
+    if (args?.delete && args?.copy) {
+      charLevelDecorationType = this.cutCharDecorationType;
+    } else if (args?.delete) {
+      charLevelDecorationType = this.deleteCharDecorationType;
+    } else if (args?.copy) {
+      charLevelDecorationType = this.copyCharDecorationType;
+    } else {
+      charLevelDecorationType = this.normalCharDecorationType;
+    }
 
     if (targetLineNumber > currentLineNumber) {
       // Downward selection: from cursor position to end of target line
@@ -250,8 +327,12 @@ export class GotoLinePreview {
     if (this.activeEditor) {
       this.activeEditor.setDecorations(this.normalDecorationType, []);
       this.activeEditor.setDecorations(this.deleteDecorationType, []);
+      this.activeEditor.setDecorations(this.copyDecorationType, []);
+      this.activeEditor.setDecorations(this.cutDecorationType, []);
       this.activeEditor.setDecorations(this.normalCharDecorationType, []);
       this.activeEditor.setDecorations(this.deleteCharDecorationType, []);
+      this.activeEditor.setDecorations(this.copyCharDecorationType, []);
+      this.activeEditor.setDecorations(this.cutCharDecorationType, []);
       this.activeEditor = undefined;
     }
   }

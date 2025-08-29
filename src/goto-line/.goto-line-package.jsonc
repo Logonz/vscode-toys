@@ -30,7 +30,7 @@
         },
         "vstoys.goto-line.downCharacter": {
           "type": "string",
-          "default": "j",
+          "default": "j", // J being down is crazy to me, but lets lean to learning people neovim bindings.
           "description": "Character prefix for moving down in relative goto (e.g., 'j5' to go down 5 lines)",
           "order": 3002
         },
@@ -51,6 +51,18 @@
           "default": "inputValidation.errorBackground",
           "description": "Color for highlighting lines during delete operations (theme color ID or hex color)",
           "order": 3005
+        },
+        "vstoys.goto-line.copyColor": {
+          "type": "string",
+          "default": "editor.findRangeHighlightBackground",
+          "description": "Color for highlighting lines during copy operations (theme color ID or hex color)",
+          "order": 3006
+        },
+        "vstoys.goto-line.cutColor": {
+          "type": "string",
+          "default": "editor.findMatchHighlightBackground",
+          "description": "Color for highlighting lines during cut (args: 'delete' and 'copy' operations create cut) (theme color ID or hex color)",
+          "order": 3007
         }
       }
     },
