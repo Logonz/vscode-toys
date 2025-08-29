@@ -426,7 +426,9 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", () => smartPaste(false)), // false = old behavior, always replace entire lines for selections
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", () =>
+      replaceLineWithClipboard(false)
+    ), // false = match existing indentation
     vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", () => smartPaste(true)) // true = smart behavior, respect partial selections
   );
 
