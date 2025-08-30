@@ -24,10 +24,7 @@ export class ActionContext {
     private onDeactivate: (contextId: string) => void,
     private onActivate?: (contextId: string) => void
   ) {
-    printChannelOutput(
-      `  Creating context: ${contextId} timeout: ${timeoutSeconds}`,
-      false
-    );
+    printChannelOutput(`  Creating context: ${contextId} timeout: ${timeoutSeconds}`, false);
     this.contextId = contextId;
     this.timeoutSeconds = timeoutSeconds;
   }
@@ -56,10 +53,7 @@ export class ActionContext {
       this.startRepeatTimeout();
     } else {
       // Create and show the status bar item
-      this.statusBarItem = vscode.window.createStatusBarItem(
-        vscode.StatusBarAlignment.Right,
-        1000
-      );
+      this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 10000);
       this.statusBarItem.text = `░ ${this.contextId} ░`;
       this.statusBarItem.show();
     }
@@ -135,10 +129,7 @@ export class ActionContext {
       this.repeatTimeoutIds.push(
         setTimeout(() => {
           if (this.statusBarItem) {
-            const remainingSeconds = (
-              ((totalUpdates - i) * updateInterval) /
-              1000
-            ).toFixed(1);
+            const remainingSeconds = (((totalUpdates - i) * updateInterval) / 1000).toFixed(1);
             this.statusBarItem.text = `░ ${this.contextId} ░ ${remainingSeconds}`;
           }
         }, i * updateInterval - 5)
