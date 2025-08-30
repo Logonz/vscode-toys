@@ -21,7 +21,7 @@ export class MotionInput {
       window.onDidChangeTextEditorSelection(this._onCancel)
     );
 
-    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
+    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 10000);
     this.updateStatusBar(this.props.operation);
 
     // TODO: Do we want to make this configurable?
@@ -33,7 +33,7 @@ export class MotionInput {
   }
 
   public updateStatusBar = (text: string): void => {
-    this.statusBarItem.text = `${text}`;
+    this.statusBarItem.text = `░ ${text} ░`;
     this.statusBarItem.show();
   };
 
@@ -96,7 +96,7 @@ export class InteractiveMotionInput {
       window.onDidChangeTextEditorSelection(this._onCancel)
     );
 
-    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
+    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 10000);
     this.updateStatusBar("");
 
     // TODO: Do we want to make this configurable?
@@ -108,7 +108,7 @@ export class InteractiveMotionInput {
   }
 
   public updateStatusBar = (text: string): void => {
-    this.statusBarItem.text = `Motion: ${text}`;
+    this.statusBarItem.text = `░ Motion: ${text} ░`;
     this.statusBarItem.show();
   };
 
