@@ -52,10 +52,6 @@
           "type": "array",
           "default": [
             {
-              "name": "hyper-layer",
-              "enabled": true
-            },
-            {
               "name": "commit-layer",
               "timeout": 900,
               "enabled": true
@@ -90,7 +86,7 @@
       // Insert your keybindings here
       // ? Hyper Layer initializer
       {
-        "command": "vstoys.hyper.layerSwitch.hyper-layer",
+        "command": "vstoys.hyper.layerActivate.hyper-layer",
         "key": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
         "mac": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
         "when": "vstoys.hyper.active"
