@@ -1,4 +1,9 @@
 import { Position, Range, TextDocument } from "vscode";
+import { printMotionOutput } from "./main";
+
+// Performance optimization: limit search range for very large files (>50MB)
+const FILE_SIZE_LIMIT = 50 * 1024 * 1024; // 50MB in bytes
+const SEARCH_RANGE = 100000; // Search ±100k characters around cursor for large files
 
 /**
  * Represents a pair of characters that define a text object boundary.
@@ -58,6 +63,8 @@ export function findTextObject(
   if (!pair) {
     return null;
   }
+
+  printMotionOutput(`Finding text object for ${count}${textObject} at ${position.line}:${position.character}`);
 
   const text = document.getText();
   const offset = document.offsetAt(position);
@@ -147,65 +154,55 @@ function findQuoteTextObject(
   quote: string,
   count: number
 ): TextObjectRange | null {
-  let quotePositions: number[] = [];
+  const quotesBeforeCursor: number[] = [];
+  const quotesAfterCursor: number[] = [];
 
-  // Find all unescaped quote positions in the document
-  for (let i = 0; i < text.length; i++) {
+  let searchStart = 0;
+  let searchEnd = text.length;
+
+  if (text.length > FILE_SIZE_LIMIT) {
+    searchStart = Math.max(0, offset - SEARCH_RANGE);
+    searchEnd = Math.min(text.length, offset + SEARCH_RANGE);
+  }
+
+  // Single pass: collect quotes before and after cursor position within search range
+  for (let i = searchStart; i < searchEnd; i++) {
     if (text[i] === quote && (i === 0 || text[i - 1] !== "\\")) {
-      quotePositions.push(i);
-    }
-  }
-
-  // Need at least 2 quotes to form a pair
-  if (quotePositions.length < 2) {
-    return null;
-  }
-
-  // Find which quote pair the cursor is inside
-  // Quotes are paired sequentially: [0,1], [2,3], [4,5], etc.
-  let pairIndex = -1;
-  for (let i = 0; i < quotePositions.length - 1; i += 2) {
-    const openPos = quotePositions[i];
-    const closePos = quotePositions[i + 1];
-
-    // Check if cursor is inside this quote pair (including being on the quotes themselves)
-    // This matches vim behavior where di" works when cursor is on either quote
-    if (offset >= openPos && offset <= closePos) {
-      pairIndex = i;
-      break;
-    }
-  }
-
-  // If cursor is not inside any quotes, find the nearest quote pair
-  if (pairIndex === -1) {
-    // Find the closest quote pair by measuring distance to either quote in each pair
-    let closestDistance = Infinity;
-    for (let i = 0; i < quotePositions.length - 1; i += 2) {
-      const openPos = quotePositions[i];
-      const closePos = quotePositions[i + 1];
-      const distance = Math.min(Math.abs(offset - openPos), Math.abs(offset - closePos));
-
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        pairIndex = i;
+      if (i < offset) {
+        quotesBeforeCursor.push(i);
+      } else if (i >= offset) {
+        quotesAfterCursor.push(i);
       }
     }
   }
 
-  if (pairIndex === -1) {
+  // Need at least one quote on each side to form a pair
+  if (quotesBeforeCursor.length === 0 || quotesAfterCursor.length === 0) {
     return null;
   }
 
-  // Apply count to go to outer quote pairs (though this is less common with quotes)
-  // For count > 1, we move backward to earlier quote pairs
-  const targetIndex = Math.max(0, pairIndex - (count - 1) * 2);
+  // Create pairs by taking quotes from the end of "before" list and start of "after" list
+  // This ensures we get the closest quotes to the cursor
+  // By using Math.min we ensure balanced pairs are created
+  const maxPairs = Math.min(quotesBeforeCursor.length, quotesAfterCursor.length);
+  const pairs: { openPos: number; closePos: number }[] = [];
 
-  if (targetIndex + 1 >= quotePositions.length) {
+  for (let i = 0; i < maxPairs; i++) {
+    const openPos = quotesBeforeCursor[quotesBeforeCursor.length - 1 - i]; // Take from end (closest to cursor)
+    const closePos = quotesAfterCursor[i]; // Take from start (closest to cursor)
+    pairs.push({ openPos, closePos });
+  }
+
+  // Apply count - get the nth pair from cursor outward
+  if (count > pairs.length) {
     return null;
   }
 
-  const openPos = quotePositions[targetIndex];
-  const closePos = quotePositions[targetIndex + 1];
+  const targetPair = pairs[count - 1]; // count is 1-based, array is 0-based
+  const openPos = targetPair.openPos;
+  const closePos = targetPair.closePos;
+
+  printMotionOutput(`Found quote pair: openPos=${openPos}, closePos=${closePos}, pairs=${pairs.length}`);
 
   // Create ranges for both inner (content only) and outer (including quotes)
   const innerStart = document.positionAt(openPos + 1);
