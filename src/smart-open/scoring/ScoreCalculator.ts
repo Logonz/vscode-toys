@@ -44,8 +44,9 @@ export class ScoreCalculator {
 
   /**
    * Calculate comprehensive score for a file
+   * @returns FileScore or null if file should be hidden
    */
-  calculateScore(input: string, file: UriExt, context?: ScoringContext): FileScore {
+  calculateScore(input: string, file: UriExt, context?: ScoringContext): FileScore | null {
     const scores: Partial<FileScore> = {
       input,
       scoredAt: Date.now(),
@@ -61,13 +62,17 @@ export class ScoreCalculator {
       }
 
       // const scorerStart = performance.now();
-      const score = scorer.calculateScore(input, file, context);
+      const result = scorer.calculateScore(input, file, context);
       // const scorerEnd = performance.now();
       // console.log(`Scorer ${type} calculated score in ${(scorerEnd - scorerStart).toFixed(2)} ms`);
 
-      const weight = this.getWeight(type);
+      // If any scorer returns null, hide the file immediately
+      if (result === null) {
+        return null;
+      }
 
-      // Store individual score
+      const score = result;
+      const weight = this.getWeight(type); // Store individual score
       switch (type) {
         case "fuzzy":
           scores.fuzzyScore = score;
@@ -119,7 +124,10 @@ export class ScoreCalculator {
 
     for (const file of files) {
       const score = this.calculateScore(input, file, enhancedContext);
-      scores.set(file.fsPath, score);
+      // Only add files that aren't hidden
+      if (score !== null) {
+        scores.set(file.fsPath, score);
+      }
     }
 
     return scores;

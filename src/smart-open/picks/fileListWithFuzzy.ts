@@ -68,9 +68,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   files.forEach((file) => {
     // Filter the files by the input, we want to filter by custom labels.
     const customLabel = GetCustomLabelForFile(file);
-    if (input && !customLabel.toLowerCase().includes(input.toLowerCase())) {
-      return; // Skip files that don't match the input
-    }
+
     const fileObject: UriExt = {
       uri: file,
       fsPath: file.fsPath,
@@ -110,6 +108,11 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
 
     // Calculate comprehensive score using the new scoring system
     const fileScore = scoreCalculator.calculateScore(input, fileInfo, context);
+
+    // Skip files that are marked as hidden by scorers
+    if (fileScore === null) {
+      continue;
+    }
 
     items.push({
       label: fileInfo.customLabel,

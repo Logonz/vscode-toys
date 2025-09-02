@@ -20,38 +20,89 @@ export class FuzzyScorer implements IScorer {
     this.context = context;
   }
 
-  calculateScore(input: string, file: UriExt, context?: ScoringContext): number {
+  calculateScore(input: string, file: UriExt, context?: ScoringContext): number | null {
     // Return early if no search input provided
     if (!input || input.trim() === "") {
-      return 0;
+      return 0; // No input means show all files with neutral score
     }
 
     // Extract just the filename (without path) for separate scoring
     const filename = path.basename(file.fsPath);
 
-    // Score against both custom label AND filename to ensure comprehensive matching
-    // Custom labels are user-defined in VS Code and may not contain the actual filename
-    // e.g., "src/UserProfile.tsx" might have custom label "Profile Component"
-    // We need to score both to catch matches against either the user's label or actual filename
-    const rawLabelScore = score(input, file.customLabel);
-    const rawFileScore = score(input, filename);
+    // Split input on whitespace to enable multi-term fuzzy searching
+    // This allows searches like "dep cc" to match "deploy_cpp"
+    const searchTerms = input
+      .trim()
+      .split(/\s+/)
+      .filter((term) => term.length > 0);
+
+    console.log(`Calculating fuzzy score for input: "${input}" -> terms:`, searchTerms);
+
+    // Calculate multi-term fuzzy scores for both label and filename
+    const labelScore = this.calculateMultiTermScore(searchTerms, file.customLabel);
+    const fileScore = this.calculateMultiTermScore(searchTerms, filename);
 
     console.log(`Fuzzy scores for "${filename}":`, {
-      label: rawLabelScore,
-      file: rawFileScore,
+      label: labelScore,
+      file: fileScore,
+      terms: searchTerms,
     });
 
-    // Protect against NaN/Infinity values that could break scoring calculations
-    // The fzy algorithm might return non-finite values in edge cases
-    const safeLabelScore = Number.isFinite(rawLabelScore) ? rawLabelScore : 0;
-    const safeFileScore = Number.isFinite(rawFileScore) ? rawFileScore : 0;
+    // If both targets fail to match all terms, hide the file
+    if (labelScore === null && fileScore === null) {
+      console.log(`Hiding file "${filename}" - no fuzzy match for terms:`, searchTerms);
+      return null; // Hide this file
+    }
 
-    // Combine both scores to get comprehensive fuzzy matching
-    // This ensures we can match either:
-    // 1. Custom label (user-defined names)
-    // 2. Actual filename (for technical searches like file extensions)
-    // The normalization process later will scale all fuzzy scores to 0-1 range
-    // so absolute values don't matter - only relative scoring between files
-    return safeLabelScore + safeFileScore;
+    // Combine both scores (treating null as 0)
+    const combinedScore = (labelScore || 0) + (fileScore || 0);
+    return combinedScore;
+  }
+
+  /**
+   * Calculate fuzzy score for multiple search terms against a target string
+   * All terms must match for a non-zero score (AND logic)
+   * @returns number score if match found, null if no match (hide file)
+   */
+  private calculateMultiTermScore(searchTerms: string[], target: string): number | null {
+    if (searchTerms.length === 0) {
+      return null; // No terms means hide
+    }
+
+    // For single term, use simple logic
+    if (searchTerms.length === 1) {
+      const rawScore = score(searchTerms[0], target);
+      const safeScore = Number.isFinite(rawScore) ? rawScore : 0;
+
+      // Hide file if single term doesn't match
+      if (safeScore <= 0) {
+        return null;
+      }
+
+      return safeScore;
+    }
+
+    // For multiple terms, each term must have a positive score
+    const termScores: number[] = [];
+
+    for (const term of searchTerms) {
+      const rawScore = score(term, target);
+      const safeScore = Number.isFinite(rawScore) ? rawScore : 0;
+
+      console.log(`Term "${term}" vs "${target}": score = ${safeScore}`);
+
+      // If any term doesn't match (score <= 0), the entire match fails
+      if (safeScore <= 0) {
+        console.log(`Multi-term search failed: term "${term}" didn't match "${target}"`);
+        return null; // Hide this file for this target
+      }
+
+      termScores.push(safeScore);
+    }
+
+    // Combine scores: use simple average for predictable results
+    const avgScore = termScores.reduce((acc, score) => acc + score, 0) / termScores.length;
+    console.log(`Multi-term scores for "${target}":`, termScores, `-> avg: ${avgScore}`);
+    return avgScore;
   }
 }

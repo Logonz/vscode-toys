@@ -11,9 +11,9 @@ export interface IScorer {
    * @param input The search query string
    * @param file The file information
    * @param context Optional context for enhanced scoring
-   * @returns A numerical score (higher is better)
+   * @returns A numerical score (higher is better), or null to hide the file completely
    */
-  calculateScore(input: string, file: UriExt, context?: ScoringContext): number;
+  calculateScore(input: string, file: UriExt, context?: ScoringContext): number | null;
 
   /**
    * A unique identifier for this scorer type
