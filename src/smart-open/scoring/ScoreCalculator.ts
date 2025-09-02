@@ -56,15 +56,13 @@ export class ScoreCalculator {
     let totalWeight = 0;
 
     // Calculate individual scores
+    // const scorersStart = performance.now();
     for (const [type, scorer] of this.scorers.entries()) {
       if (!this.isEnabled(type)) {
         continue;
       }
 
-      // const scorerStart = performance.now();
       const result = scorer.calculateScore(input, file, context);
-      // const scorerEnd = performance.now();
-      // console.log(`Scorer ${type} calculated score in ${(scorerEnd - scorerStart).toFixed(2)} ms`);
 
       // If any scorer returns null, hide the file immediately
       if (result === null) {
@@ -103,7 +101,8 @@ export class ScoreCalculator {
       totalWeight += weight;
     }
     // console.log(`Final scores for ${file.fsPath}:`, scores);
-
+    // const scorersEnd = performance.now();
+    // console.log(`Scorers took ${(scorersEnd - scorersStart).toFixed(2)}ms for ${file.fsPath}`);
     // Normalize final score
     scores.finalScore = totalWeight > 0 ? finalScore / totalWeight : 0;
 

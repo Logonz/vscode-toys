@@ -48,6 +48,14 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
 
   console.log("=== Performance Profile: showFileListWithFuzzy ===");
 
+  // Get the currently active editor for context-aware scoring
+  const activeEditor = vscode.window.activeTextEditor;
+  const activeFilePath = activeEditor?.document.uri.fsPath;
+
+  const activeWorkspaceFolder = activeEditor
+    ? vscode.workspace.getWorkspaceFolder(activeEditor.document.uri)
+    : undefined;
+
   const fileLoadStart = performance.now();
   const files = await GetAllFilesInWorkspace();
   const fileLoadEnd = performance.now();
@@ -69,6 +77,18 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
     // Filter the files by the input, we want to filter by custom labels.
     const customLabel = GetCustomLabelForFile(file);
 
+    // Quick check if the file should even be included.
+    if (input && input.includes(" ")) {
+      const parts = input.split(/\s+/);
+      // Check if the custom label contains all parts of the input
+      const matches = parts.every((part) => customLabel.toLowerCase().includes(part.toLowerCase()));
+      if (!matches) {
+        return; // Skip files that don't match the input
+      }
+    } else if (input && customLabel.toLocaleLowerCase().includes(input.toLocaleLowerCase())) {
+      return;
+    }
+
     const fileObject: UriExt = {
       uri: file,
       fsPath: file.fsPath,
@@ -85,13 +105,6 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
 
   const items: FileQuickPickItem[] = [];
 
-  // Get the currently active editor for context-aware scoring
-  const activeEditor = vscode.window.activeTextEditor;
-  const activeFilePath = activeEditor?.document.uri.fsPath;
-
-  const activeWorkspaceFolder = activeEditor
-    ? vscode.workspace.getWorkspaceFolder(activeEditor.document.uri)
-    : undefined;
   const context = activeEditor ? { activeEditor, activeWorkspaceFolder } : undefined;
 
   const fileProcessingStart = performance.now();

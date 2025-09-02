@@ -36,21 +36,21 @@ export class FuzzyScorer implements IScorer {
       .split(/\s+/)
       .filter((term) => term.length > 0);
 
-    console.log(`Calculating fuzzy score for input: "${input}" -> terms:`, searchTerms);
+    // console.log(`Calculating fuzzy score for input: "${input}" -> terms:`, searchTerms);
 
     // Calculate multi-term fuzzy scores for both label and filename
     const labelScore = this.calculateMultiTermScore(searchTerms, file.customLabel);
     const fileScore = this.calculateMultiTermScore(searchTerms, filename);
 
-    console.log(`Fuzzy scores for "${filename}":`, {
-      label: labelScore,
-      file: fileScore,
-      terms: searchTerms,
-    });
+    // console.log(`Fuzzy scores for "${filename}":`, {
+    //   label: labelScore,
+    //   file: fileScore,
+    //   terms: searchTerms,
+    // });
 
     // If both targets fail to match all terms, hide the file
     if (labelScore === null && fileScore === null) {
-      console.log(`Hiding file "${filename}" - no fuzzy match for terms:`, searchTerms);
+      // console.log(`Hiding file "${filename}" - no fuzzy match for terms:`, searchTerms);
       return null; // Hide this file
     }
 
@@ -89,11 +89,11 @@ export class FuzzyScorer implements IScorer {
       const rawScore = score(term, target);
       const safeScore = Number.isFinite(rawScore) ? rawScore : 0;
 
-      console.log(`Term "${term}" vs "${target}": score = ${safeScore}`);
+      // console.log(`Term "${term}" vs "${target}": score = ${safeScore}`);
 
       // If any term doesn't match (score <= 0), the entire match fails
       if (safeScore <= 0) {
-        console.log(`Multi-term search failed: term "${term}" didn't match "${target}"`);
+        // console.log(`Multi-term search failed: term "${term}" didn't match "${target}"`);
         return null; // Hide this file for this target
       }
 
@@ -102,7 +102,7 @@ export class FuzzyScorer implements IScorer {
 
     // Combine scores: use simple average for predictable results
     const avgScore = termScores.reduce((acc, score) => acc + score, 0) / termScores.length;
-    console.log(`Multi-term scores for "${target}":`, termScores, `-> avg: ${avgScore}`);
+    // console.log(`Multi-term scores for "${target}":`, termScores, `-> avg: ${avgScore}`);
     return avgScore;
   }
 }
