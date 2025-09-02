@@ -38,17 +38,17 @@ export class ClosenessScorer implements IContextScorer {
 
     // Additional bonuses for specific types of closeness
 
-    // 1. Same directory bonus
-    const activeDir = activeEditorPathParts.slice(0, -1).join("/");
-    const fileDir = fileParts.slice(0, -1).join("/");
-    if (activeDir === fileDir && activeDir.length > 0) {
-      closeScore += 10; // Strong bonus for same directory
-    }
+    // // 1. Same directory bonus
+    // const activeDir = activeEditorPathParts.slice(0, -1).join("/");
+    // const fileDir = fileParts.slice(0, -1).join("/");
+    // if (activeDir === fileDir && activeDir.length > 0) {
+    //   closeScore += 10; // Strong bonus for same directory
+    // }
 
-    // 2. Parent/child directory relationships
-    if (activeDir.startsWith(fileDir) || fileDir.startsWith(activeDir)) {
-      closeScore += 5; // Bonus for parent/child relationship
-    }
+    // // 2. Parent/child directory relationships
+    // if (activeDir.startsWith(fileDir) || fileDir.startsWith(activeDir)) {
+    //   closeScore += 5; // Bonus for parent/child relationship
+    // }
 
     // 3. Same file extension bonus
     const activeExt = this.getFileExtension(activeEditorPath);
@@ -64,9 +64,9 @@ export class ClosenessScorer implements IContextScorer {
       closeScore += 5; // Bonus for similar file names
     }
 
-    // 5. Distance penalty - files further away in the directory tree get penalized
-    const pathDistance = this.calculatePathDistance(activeEditorPathParts, fileParts);
-    closeScore = Math.max(0, closeScore - pathDistance * 0.5);
+    // // 5. Distance penalty - files further away in the directory tree get penalized
+    // const pathDistance = this.calculatePathDistance(activeEditorPathParts, fileParts);
+    // closeScore = Math.max(0, closeScore - pathDistance * 0.5);
 
     // If we are the same file reduce the score to 50%
     if (closeScore > 0 && activeEditorPath === file.relativePath) {
@@ -132,26 +132,26 @@ export class ClosenessScorer implements IContextScorer {
     return false;
   }
 
-  /**
-   * Calculate "distance" between two paths in the directory tree
-   */
-  private calculatePathDistance(pathParts1: string[], pathParts2: string[]): number {
-    // Find common prefix length
-    let commonPrefixLength = 0;
-    const minLength = Math.min(pathParts1.length, pathParts2.length);
+  // /**
+  //  * Calculate "distance" between two paths in the directory tree
+  //  */
+  // private calculatePathDistance(pathParts1: string[], pathParts2: string[]): number {
+  //   // Find common prefix length
+  //   let commonPrefixLength = 0;
+  //   const minLength = Math.min(pathParts1.length, pathParts2.length);
 
-    for (let i = 0; i < minLength; i++) {
-      if (pathParts1[i] === pathParts2[i]) {
-        commonPrefixLength++;
-      } else {
-        break;
-      }
-    }
+  //   for (let i = 0; i < minLength; i++) {
+  //     if (pathParts1[i] === pathParts2[i]) {
+  //       commonPrefixLength++;
+  //     } else {
+  //       break;
+  //     }
+  //   }
 
-    // Distance is the sum of unique parts after the common prefix
-    const distance1 = pathParts1.length - commonPrefixLength;
-    const distance2 = pathParts2.length - commonPrefixLength;
+  //   // Distance is the sum of unique parts after the common prefix
+  //   const distance1 = pathParts1.length - commonPrefixLength;
+  //   const distance2 = pathParts2.length - commonPrefixLength;
 
-    return distance1 + distance2;
-  }
+  //   return distance1 + distance2;
+  // }
 }
