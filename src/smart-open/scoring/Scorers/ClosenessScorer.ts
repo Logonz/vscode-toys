@@ -64,6 +64,9 @@ export class ClosenessScorer implements IContextScorer {
       closeScore += 5; // Bonus for similar file names
     }
 
+    // 5. Distance penalty - files further away in the directory tree get penalized
+    const pathDistance = this.calculatePathDistance(activeEditorPathParts, fileParts);
+    closeScore = Math.max(0, closeScore - pathDistance * 0.5);
 
     // If we are the same file reduce the score to 50%
     if (closeScore > 0 && activeEditorPath === file.relativePath) {
