@@ -150,9 +150,9 @@ export async function GetAllFilesInWorkspace(filterString: string = ""): Promise
     const findEnd = performance.now();
     console.log(`  File finding: ${(findEnd - findStart).toFixed(2)}ms (found ${files.length} files)`);
 
-    // If filterString was plain text (not glob), do a substring match here
+    // Only apply filtering if filterString has content and is not a glob pattern
     const filteredFiles =
-      filterString && !/[*?]/.test(filterString)
+      filterString.length > 0 && !/[*?]/.test(filterString)
         ? files.filter((f) => f.fsPath.toLowerCase().includes(filterString.toLowerCase()))
         : files;
 
