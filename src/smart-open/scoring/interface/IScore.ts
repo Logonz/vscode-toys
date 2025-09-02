@@ -63,13 +63,24 @@ export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
   //   git: 0.4, // Git co-change scoring
   //   // ! NEW-SCORER-INSERT-HERE
   // },
+  // Old Weights 2, before closeness tuning
+  // weights: {
+  //   fuzzy: 0.4, // Primary scoring mechanism (40% of total)
+  //   recency: 0.15, // Recently opened files (15% of total)
+  //   frequency: 0.15, // Frequently accessed files (15% of total)
+  //   // length: 0.1, // Prefer shorter paths
+  //   // path: 0.1, // Path-based bonuses
+  //   closeness: 0.2, // Path closeness to active editor (20% of total)
+  //   git: 0.1, // Git co-change scoring (10% of total)
+  //   // ! NEW-SCORER-INSERT-HERE
+  // },
   weights: {
-    fuzzy: 0.4, // Primary scoring mechanism (40% of total)
+    fuzzy: 0.5, // Primary scoring mechanism (40% of total)
     recency: 0.15, // Recently opened files (15% of total)
     frequency: 0.15, // Frequently accessed files (15% of total)
     // length: 0.1, // Prefer shorter paths
     // path: 0.1, // Path-based bonuses
-    closeness: 0.2, // Path closeness to active editor (20% of total)
+    closeness: 0.5, // Path closeness to active editor (50% of total)
     git: 0.1, // Git co-change scoring (10% of total)
     // ! NEW-SCORER-INSERT-HERE
   },
