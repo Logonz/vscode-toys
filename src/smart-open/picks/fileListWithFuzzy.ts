@@ -150,8 +150,22 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   console.log(`5. Score normalization: ${(normalizeEnd - normalizeStart).toFixed(2)}ms`);
 
   const sortingStart = performance.now();
-  // Sort by final score (or fallback to fuzzy score)
-  const sortedItems = normalizedItems.sort((a, b) => b.score.finalScore - a.score.finalScore);
+  // Sort by final score (or fallback to fuzzy score), then by filename length, lastly by path
+  // This is to avoid jumping lines in different cases
+  const sortedItems = normalizedItems.sort((a, b) => {
+    const scoreDiff = b.score.finalScore - a.score.finalScore;
+    if (scoreDiff !== 0) {
+      return scoreDiff;
+    }
+    // If scores are equal, sort by filename length (shorter first)
+    const lengthDiff = a.file.path.length - b.file.path.length;
+    if (lengthDiff !== 0) {
+      return lengthDiff;
+    }
+
+    // Finally, sort alphabetically by path
+    return a.file.path.localeCompare(b.file.path);
+  });
   const sortingEnd = performance.now();
   console.log(`6. Sorting: ${(sortingEnd - sortingStart).toFixed(2)}ms`);
 
