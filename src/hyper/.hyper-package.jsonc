@@ -91,6 +91,11 @@
         "mac": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
         "when": "vstoys.hyper.active"
       },
+      {
+        "key": "f20",
+        "command": "vstoys.hyper.layerDeactivate.hyper-layer",
+        "when": "vstoys.hyper.active && vstoys.hyper.global && hyper-layer"
+      },
       // ! Global Exit
       // ? Will exit all and any active repeat contexts
       {

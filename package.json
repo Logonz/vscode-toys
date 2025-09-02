@@ -185,7 +185,7 @@
               "enabled": true
             }
           ],
-          "description": "List of active Hyper layers to register, activates a layer.",
+          "description": "List of active Hyper layers to register, activates a layer without deactivating others.",
           "items": {
             "type": "object",
             "properties": {
@@ -219,7 +219,7 @@
               "enabled": true
             }
           ],
-          "description": "List of active Hyper layers to register, activates a layer.",
+          "description": "List of active Hyper layers to register, deactivates all other layers then activates a layer.",
           "items": {
             "type": "object",
             "properties": {
@@ -276,7 +276,7 @@
         },
         "vstoys.goto-line.deleteColor": {
           "type": "string",
-          "default": "inputValidation.errorBackground",
+          "default": "editorMarkerNavigationError.headerBackground",
           "description": "Color for highlighting lines during delete operations (theme color ID or hex color)",
           "order": 3005
         },
@@ -288,7 +288,7 @@
         },
         "vstoys.goto-line.cutColor": {
           "type": "string",
-          "default": "editor.findMatchHighlightBackground",
+          "default": "editorMarkerNavigationWarning.headerBackground",
           "description": "Color for highlighting lines during cut (args: 'delete' and 'copy' operations create cut) (theme color ID or hex color)",
           "order": 3007
         },
@@ -404,6 +404,11 @@
         "key": "f20",
         "mac": "f20",
         "when": "vstoys.hyper.active"
+      },
+      {
+        "key": "f20",
+        "command": "vstoys.hyper.layerDeactivate.hyper-layer",
+        "when": "vstoys.hyper.active && vstoys.hyper.global && hyper-layer"
       },
       {
         "command": "vstoys.hyper.deactivateAll",
