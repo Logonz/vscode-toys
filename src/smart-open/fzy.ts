@@ -30,23 +30,29 @@
 // // export const SCORE_MIN = Number.MIN_SAFE_INTEGER;
 // const MATCH_MAX_LENGTH = 1024;
 
-
 export const SCALE_FACTOR = 1000;
 
+// Penalty for each non-matching character before the first match
 const SCORE_GAP_LEADING = -5; // -0.005 * 1000
+// Penalty for each non-matching character after the last match
 const SCORE_GAP_TRAILING = -5; // -0.005 * 1000
+// Penalty for each non-matching character between matches
 const SCORE_GAP_INNER = -10; // -0.01 * 1000
+
+// Bonus when characters match consecutively (e.g., "ab" in "abc")
 const SCORE_MATCH_CONSECUTIVE = 1000; // 1.0 * 1000
+// Bonus when character matches right after a path separator "/"
 const SCORE_MATCH_SLASH = 900; // 0.9 * 1000
+// Bonus when character matches after word boundary (-, _, space)
 const SCORE_MATCH_WORD = 800; // 0.8 * 1000
+// Bonus when character matches at camelCase boundary (lowercase->uppercase)
 const SCORE_MATCH_CAPITAL = 700; // 0.7 * 1000
+// Bonus when character matches right after a dot "."
 const SCORE_MATCH_DOT = 600; // 0.6 * 1000
+
+// Maximum and minimum possible scores
 const SCORE_MAX = Number.POSITIVE_INFINITY;
-// export const SCORE_MAX = 10000000000000;
-// export const SCORE_MAX = Number.MAX_SAFE_INTEGER;
 const SCORE_MIN = Number.NEGATIVE_INFINITY;
-// export const SCORE_MIN = -10000000000000;
-// export const SCORE_MIN = Number.MIN_SAFE_INTEGER;
 const MATCH_MAX_LENGTH = 1024;
 const pathSep = "/";
 
