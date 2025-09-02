@@ -85,7 +85,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
       if (!matches) {
         return; // Skip files that don't match the input
       }
-    } else if (input && customLabel.toLocaleLowerCase().includes(input.toLocaleLowerCase())) {
+    } else if (input && !customLabel.toLocaleLowerCase().includes(input.toLocaleLowerCase())) {
       return;
     }
 
