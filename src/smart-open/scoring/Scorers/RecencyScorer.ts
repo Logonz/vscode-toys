@@ -92,7 +92,7 @@ export class RecencyScorer implements IScorer {
     if (!this.context) return;
 
     try {
-      const persistedData = this.context.globalState.get<Record<string, number>>("vstoys.recency.files");
+      const persistedData = this.context.workspaceState.get<Record<string, number>>("vstoys.recency.files");
       if (persistedData) {
         // Convert object back to Map and cleanup old entries
         this.recentFiles = new Map(Object.entries(persistedData));
@@ -127,7 +127,7 @@ export class RecencyScorer implements IScorer {
     try {
       // Convert Map to plain object for storage
       const dataToSave = Object.fromEntries(this.recentFiles);
-      this.context.globalState.update("vstoys.recency.files", dataToSave);
+      this.context.workspaceState.update("vstoys.recency.files", dataToSave);
     } catch (error) {
       console.warn("Failed to save recency data:", error);
     }
