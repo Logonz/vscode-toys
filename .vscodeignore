@@ -22,4 +22,11 @@ vsc-extension-quickstart.md
 *.stackdump
 material-icons.json
 
+.shit
+.claude
+.github
+
+CLAUDE.md
+PLAN.md
+
 !VsCodeToys-icon-512x512.png
