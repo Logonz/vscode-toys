@@ -135,9 +135,9 @@ export class FrequencyScorer implements IScorer {
     if (!this.context) return;
 
     try {
-      const persistedData = this.context.globalState.get<Record<string, number>>("vstoys.frequency.files");
-      const globalAccessCount = this.context.globalState.get<number>("vstoys.frequency.globalAccessCount");
-      const lastDecayAtAccess = this.context.globalState.get<number>("vstoys.frequency.lastDecayAtAccess");
+      const persistedData = this.context.workspaceState.get<Record<string, number>>("vstoys.frequency.files", {});
+      const globalAccessCount = this.context.workspaceState.get<number>("vstoys.frequency.globalAccessCount", 0);
+      const lastDecayAtAccess = this.context.workspaceState.get<number>("vstoys.frequency.lastDecayAtAccess", 0);
 
       if (persistedData) {
         // Convert object back to Map
@@ -183,9 +183,9 @@ export class FrequencyScorer implements IScorer {
     try {
       // Convert Map to plain object for storage
       const dataToSave = Object.fromEntries(this.fileFrequency);
-      this.context.globalState.update("vstoys.frequency.files", dataToSave);
-      this.context.globalState.update("vstoys.frequency.globalAccessCount", this.globalFileAccessCount);
-      this.context.globalState.update("vstoys.frequency.lastDecayAtAccess", this.lastDecayAtAccessCount);
+      this.context.workspaceState.update("vstoys.frequency.files", dataToSave);
+      this.context.workspaceState.update("vstoys.frequency.globalAccessCount", this.globalFileAccessCount);
+      this.context.workspaceState.update("vstoys.frequency.lastDecayAtAccess", this.lastDecayAtAccessCount);
     } catch (error) {
       console.warn("Failed to save frequency data:", error);
     }
