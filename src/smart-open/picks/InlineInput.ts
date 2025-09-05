@@ -55,16 +55,29 @@ export class InlineInput {
     return this.input;
   };
 
-  private readonly _onInput = ({ text }: { text: string }) => {
-    const char = text;
-
-    this.input += char;
-
-    if (cancellationChars.has(char)) {
-      this._onCancel();
-    } else {
-      return this.props.onInput(this.input, char);
+  public addInput = (newInput: string): void => {
+    // Check if the new input contains any cancellation characters
+    for (const char of newInput) {
+      if (cancellationChars.has(char)) {
+        this._onCancel();
+        return;
+      }
     }
+
+    // Update the input state with the new input
+    this.input += newInput;
+
+    // Call the onInput callback with the full input and the last character
+    const lastChar = newInput.length > 0 ? newInput[newInput.length - 1] : "";
+    this.props.onInput(this.input, lastChar);
+  };
+
+  public handleDirectInput = (newInput: string): void => {
+    this.addInput(newInput);
+  };
+
+  private readonly _onInput = ({ text }: { text: string }) => {
+    this.addInput(text);
   };
 
   private readonly _onCancel = (...args: any[]) => {

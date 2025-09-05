@@ -82,6 +82,46 @@
         "title": "Paste Smart"
       },
       {
+        "command": "vstoys.motions.start",
+        "category": "VsToys",
+        "title": "Motions: Start Interactive"
+      },
+      {
+        "command": "vstoys.motions.di",
+        "category": "VsToys",
+        "title": "Motions: Delete Inside"
+      },
+      {
+        "command": "vstoys.motions.da",
+        "category": "VsToys",
+        "title": "Motions: Delete Around"
+      },
+      {
+        "command": "vstoys.motions.yi",
+        "category": "VsToys",
+        "title": "Motions: Yank Inside"
+      },
+      {
+        "command": "vstoys.motions.ya",
+        "category": "VsToys",
+        "title": "Motions: Yank Around"
+      },
+      {
+        "command": "vstoys.motions.vi",
+        "category": "VsToys",
+        "title": "Motions: Select Inside"
+      },
+      {
+        "command": "vstoys.motions.va",
+        "category": "VsToys",
+        "title": "Motions: Select Around"
+      },
+      {
+        "command": "vstoys.motions.escape",
+        "category": "VsToys",
+        "title": "Motions: Escape/Cancel"
+      },
+      {
         "command": "vstoys.hyper.deactivateAll",
         "category": "VsToys",
         "title": "Hyper: Deactivate All"
@@ -170,6 +210,29 @@
           "default": true,
           "description": "Automatically reindent lines before pasting content when using smart paste",
           "order": 7001
+        },
+        "vstoys.motions.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Motions module in VSCode Toys",
+          "order": 3000
+        },
+        "vstoys.motions.foregroundColor": {
+          "type": "string",
+          "description": "Foreground color for yank highlighting",
+          "order": 3001
+        },
+        "vstoys.motions.backgroundColor": {
+          "type": "string",
+          "default": "editor.wordHighlightBackground",
+          "description": "Background color for yank highlighting\\nFor more information about color check out https://code.visualstudio.com/api/references/theme-color for more available colors\\nrgba(R, G, B, A) is also supported",
+          "order": 3002
+        },
+        "vstoys.motions.timeout": {
+          "type": "number",
+          "default": 100,
+          "description": "Highlight timeout duration in milliseconds for yank operations",
+          "order": 3003
         },
         "vstoys.hyper.enabled": {
           "type": "boolean",
@@ -398,6 +461,11 @@
         "key": "ctrl+k ctrl+v",
         "mac": "ctrl+k cmd+v",
         "when": "vstoys.paste-replace.active"
+      },
+      {
+        "command": "vstoys.motions.escape",
+        "key": "escape",
+        "when": "vstoys.motions.inputActive"
       },
       {
         "command": "vstoys.hyper.layerActivate.hyper-layer",

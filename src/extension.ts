@@ -12,6 +12,7 @@ import { activatePasteReplace } from "./paste-replace/main";
 import { activateSmartOpen } from "./smart-open/smart-open-main";
 import { activateHyper } from "./hyper/main";
 import { activateMotions } from "./motions/main";
+import { activateAlwaysActive } from "./always-active/main";
 
 try {
   require("./debug");
@@ -25,6 +26,12 @@ let vsToys: {
   activator: (name: string, context: vscode.ExtensionContext) => void;
   deactivator: () => void;
 }[] = [
+  {
+    name: "Always Active",
+    moduleContext: "always-active",
+    activator: activateAlwaysActive,
+    deactivator: () => {},
+  },
   {
     name: "Clear Line",
     moduleContext: "clear-line",

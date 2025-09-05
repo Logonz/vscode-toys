@@ -32,7 +32,7 @@ export async function showFileListWithCustomLabels(): Promise<void> {
       uri: file,
       fsPath: file.fsPath,
       relativePath: vscode.workspace.asRelativePath(file),
-      customLabel: GetCustomLabelForFile(file),
+      customLabel: GetCustomLabelForFile(file) || vscode.workspace.asRelativePath(file),
     };
     internalFiles.push(fileObject);
   });

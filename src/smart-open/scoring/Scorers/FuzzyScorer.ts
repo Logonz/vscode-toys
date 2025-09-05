@@ -3,7 +3,6 @@ import { IScorer } from "../interface/IScorer";
 import { UriExt } from "../../picks/interface/IUriExt";
 import { ScoringContext } from "../interface/IContextScorer";
 import { score } from "../../fzy";
-import path from "path";
 
 /**
  * Fuzzy matching scorer using the fzy algorithm
@@ -27,7 +26,8 @@ export class FuzzyScorer implements IScorer {
     }
 
     // Extract just the filename (without path) for separate scoring
-    const filename = path.basename(file.fsPath);
+    const filename = file.fileName;
+    const relativePath = file.relativePath;
 
     // Split input on whitespace to enable multi-term fuzzy searching
     // This allows searches like "dep cc" to match "deploy_cpp"
@@ -40,25 +40,30 @@ export class FuzzyScorer implements IScorer {
     let fileScore = 0;
 
     // Score all terms against the custom label
-    for (const term of searchTerms) {
-      const rawScore = score(term, file.customLabel);
-      const safeScore = Number.isFinite(rawScore) ? rawScore : 0;
-      // This normalizes the score by length not to not favor longer terms
-      // ! IN TESTING
-      const normalizedScore = term.length > 0 ? safeScore / Math.log(term.length + 1) : safeScore;
-      labelScore += normalizedScore;
-      // labelScore += safeScore;
-    }
-
-    // Score all terms against the filename
-    for (const term of searchTerms) {
-      const rawScore = score(term, filename);
-      const safeScore = Number.isFinite(rawScore) ? rawScore : 0;
-      // This normalizes the score by length not to not favor longer terms
-      // ! IN TESTING
-      const normalizedScore = term.length > 0 ? safeScore / Math.log(term.length + 1) : safeScore;
-      fileScore += normalizedScore;
-      // fileScore += safeScore;
+    // TODO: Should this be scored both on custom label and filename?
+    // TODO Or should it be scored like below?
+    if (file.customLabel) {
+      for (const term of searchTerms) {
+        const rawScore = score(term, file.customLabel);
+        const safeScore = Number.isFinite(rawScore) ? rawScore : 0;
+        // This normalizes the score by length not to not favor longer terms
+        // ! IN TESTING
+        const normalizedScore = term.length > 0 ? safeScore / Math.log(term.length + 1) : safeScore;
+        labelScore += normalizedScore;
+        // labelScore += safeScore;
+      }
+    } else {
+      // Score all terms against the filename
+      for (const term of searchTerms) {
+        // const rawScore = score(term, filename);
+        const rawScore = score(term, relativePath);
+        const safeScore = Number.isFinite(rawScore) ? rawScore : 0;
+        // This normalizes the score by length not to not favor longer terms
+        // ! IN TESTING
+        const normalizedScore = term.length > 0 ? safeScore / Math.log(term.length + 1) : safeScore;
+        fileScore += normalizedScore;
+        // fileScore += safeScore;
+      }
     }
 
     // Return the combined score

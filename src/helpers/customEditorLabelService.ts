@@ -16,15 +16,16 @@ interface ICustomEditorLabelPattern {
   isAbsolutePath: boolean;
 }
 
- /**
+/**
  * Gets a custom label for a file using cached configuration
  */
-export function GetCustomLabelForFile(file: vscode.Uri): string {
+export function GetCustomLabelForFile(file: vscode.Uri): string | undefined {
   if (customLabelsEnabledCache && customLabelService) {
     const label = customLabelService.getName(file);
-    return label ? label : vscode.workspace.asRelativePath(file);
+    return label;
   }
-  return vscode.workspace.asRelativePath(file);
+  // return vscode.workspace.asRelativePath(file);
+  return undefined;
 }
 
 let maxWorkspaceFiles: number = 5000;
@@ -45,9 +46,8 @@ export function IsCustomLabelsEnabled(): boolean {
  * Updates the custom labels enabled cache from VS Code configuration
  */
 function updateCustomLabelsEnabledCache(): void {
-  customLabelsEnabledCache = vscode.workspace
-    .getConfiguration("workbench")
-    .get<boolean>("editor.customLabels.enabled") || false;
+  customLabelsEnabledCache =
+    vscode.workspace.getConfiguration("workbench").get<boolean>("editor.customLabels.enabled") || false;
 }
 
 /**
@@ -103,9 +103,7 @@ export class CustomEditorLabelService {
     }
 
     // Sort patterns by weight
-    this.patterns.sort(
-      (a, b) => this.patternWeight(b.pattern) - this.patternWeight(a.pattern)
-    );
+    this.patterns.sort((a, b) => this.patternWeight(b.pattern) - this.patternWeight(a.pattern));
   }
 
   private patternWeight(pattern: string): number {
@@ -158,11 +156,7 @@ export class CustomEditorLabelService {
     /\$\{(dirname|filename|extname|extname\((?<extnameN>[-+]?\d+)\)|dirname\((?<dirnameN>[-+]?\d+)\))\}/g;
   private _filenameCaptureExpression = /(?<filename>^\.*[^.]*)/;
 
-  private applyTemplate(
-    template: string,
-    resource: vscode.Uri,
-    relevantPath: string
-  ): string {
+  private applyTemplate(template: string, resource: vscode.Uri, relevantPath: string): string {
     const parsedPath = path.parse(vscode.workspace.asRelativePath(resource));
 
     return template.replace(
@@ -173,9 +167,7 @@ export class CustomEditorLabelService {
         const extnameN = groups.extnameN || "0";
 
         if (variable === "filename") {
-          const filenameMatch = this._filenameCaptureExpression.exec(
-            parsedPath.base
-          );
+          const filenameMatch = this._filenameCaptureExpression.exec(parsedPath.base);
           const filename = filenameMatch?.groups?.filename;
           if (filename) {
             return filename;
@@ -230,8 +222,7 @@ export class CustomEditorLabelService {
 
   private getNthExtname(fullFileName: string, n: number): string | undefined {
     // file.ext1.ext2.ext3 -> [file, ext1, ext2, ext3]
-    const extensionNameFragments =
-      this.removeLeadingDot(fullFileName).split(".");
+    const extensionNameFragments = this.removeLeadingDot(fullFileName).split(".");
     extensionNameFragments.shift(); // remove the first element which is the file name
 
     return this.getNthFragment(extensionNameFragments, n);
