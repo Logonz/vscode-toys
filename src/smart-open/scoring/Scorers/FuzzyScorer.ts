@@ -3,7 +3,6 @@ import { IScorer } from "../interface/IScorer";
 import { UriExt } from "../../picks/interface/IUriExt";
 import { ScoringContext } from "../interface/IContextScorer";
 import { score } from "../../fzy";
-import path from "path";
 
 /**
  * Fuzzy matching scorer using the fzy algorithm
