@@ -7,6 +7,7 @@ import { UriExt } from "./interface/IUriExt";
 import { InlineInput } from "./InlineInput";
 import { GitScorer } from "../scoring";
 import { scoreCalculator } from "../smart-open-main";
+import path from "path";
 
 // Switch editor or file listener
 vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -16,6 +17,7 @@ vscode.window.onDidChangeActiveTextEditor((editor) => {
     const fileObject: UriExt = {
       uri: editor.document.uri,
       fsPath: editor.document.uri.fsPath,
+      fileName: path.basename(editor.document.uri.fsPath),
       relativePath: vscode.workspace.asRelativePath(editor.document.uri),
       customLabel: "",
     };
@@ -76,22 +78,24 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   files.forEach((file) => {
     // Filter the files by the input, we want to filter by custom labels.
     const customLabel = GetCustomLabelForFile(file);
+    const relativePath = vscode.workspace.asRelativePath(file);
 
     // Quick check if the file should even be included.
     if (input && input.includes(" ")) {
       const parts = input.split(/\s+/);
       // Check if the custom label contains all parts of the input
-      const matches = parts.every((part) => customLabel.toLowerCase().includes(part.toLowerCase()));
+      const matches = parts.every((part) => (customLabel || relativePath).toLowerCase().includes(part.toLowerCase()));
       if (!matches) {
         return; // Skip files that don't match the input
       }
-    } else if (input && !customLabel.toLocaleLowerCase().includes(input.toLocaleLowerCase())) {
+    } else if (input && !(customLabel || relativePath).toLocaleLowerCase().includes(input.toLocaleLowerCase())) {
       return;
     }
 
     const fileObject: UriExt = {
       uri: file,
       fsPath: file.fsPath,
+      fileName: path.basename(file.fsPath),
       relativePath: vscode.workspace.asRelativePath(file),
       customLabel: customLabel,
     };
@@ -127,9 +131,12 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
       continue;
     }
 
+    const pathWithoutFilename = vscode.workspace.asRelativePath(fileInfo.uri).replace(/\/[^\/]+$/, "");
+
     items.push({
-      label: fileInfo.customLabel,
-      description: `(${Math.round(fileScore.finalScore)}) `,
+      label: fileInfo.customLabel || fileInfo.fileName,
+      description: `${pathWithoutFilename}`,
+      detail: pathWithoutFilename,
       file: fileInfo.uri,
       iconPath: icon ? icon : new vscode.ThemeIcon("file"),
       score: fileScore, // Store the complete score object

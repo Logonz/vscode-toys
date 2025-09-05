@@ -52,8 +52,8 @@ export class ScoreCalculator {
       scoredAt: Date.now(),
     };
 
-    let finalScore = 0;
-    let totalWeight = 0;
+    // let finalScore = 0;
+    // let totalWeight = 0;
 
     // Calculate individual scores
     // const scorersStart = performance.now();
@@ -97,14 +97,14 @@ export class ScoreCalculator {
       }
 
       // Contribute to final weighted score
-      finalScore += score * weight;
-      totalWeight += weight;
+      // finalScore += score * weight;
+      // totalWeight += weight;
     }
     // console.log(`Final scores for ${file.fsPath}:`, scores);
     // const scorersEnd = performance.now();
     // console.log(`Scorers took ${(scorersEnd - scorersStart).toFixed(2)}ms for ${file.fsPath}`);
     // Normalize final score
-    scores.finalScore = totalWeight > 0 ? finalScore / totalWeight : 0;
+    // scores.finalScore = totalWeight > 0 ? finalScore / totalWeight : 0;
 
     return scores as FileScore;
   }
@@ -193,6 +193,9 @@ export class ScoreCalculator {
 
     // Between 0-MAX_VALUE, example: 0-100 if MAX_VALUE is 100
     const MAX_VALUE = 100;
+    // Threshold for switching from linear to square root normalization for frequency scores
+    // Do not use any value below 10 here, 100 is a good value imo.
+    const MAX_RAW_BEFORE_NORMALIZATION = MAX_VALUE;
     // Create normalization functions for each score type
     const createNormalizer = (type: string, range: { min: number; max: number }) => {
       // If min is still Infinity, no values were processed
@@ -202,7 +205,6 @@ export class ScoreCalculator {
       // If all values are the same, return 0 for all
       if (rangeSize === 0) return (val: number) => 0;
 
-      // TODO: Look into this
       // Choose normalization strategy based on score type
       switch (type) {
         case "fuzzy":
@@ -210,6 +212,23 @@ export class ScoreCalculator {
           return (val: number) => ((val - range.min) / rangeSize) * MAX_VALUE * weight;
 
         case "frequency":
+          // Hybrid normalization: use raw values for better granularity when max <= threshold,
+          // switch to logarithmic normalization for larger ranges to prevent score inflation
+          if (range.max <= MAX_RAW_BEFORE_NORMALIZATION) {
+            // return (val: number) => ((val - range.min) / rangeSize) * MAX_VALUE * weight;
+            return (val: number) => Math.min(Math.max(0, val * weight), MAX_VALUE); // We do min(MAX_VALUE) just for extra safety.
+          } else {
+            // Use logarithmic normalization for larger ranges to compress high values
+            return (val: number) => {
+              const logVal = Math.log(val + 1);
+              const logMin = Math.log(range.min + 1);
+              const logMax = Math.log(range.max + 1);
+              const logRange = logMax - logMin;
+              if (logRange === 0) return 0;
+              return ((logVal - logMin) / logRange) * MAX_VALUE * weight;
+            };
+          }
+
         case "git":
           // Count-based scores benefit from logarithmic normalization
           return (val: number) => {
@@ -258,45 +277,47 @@ export class ScoreCalculator {
 
       // Normalize each score type
       if (score.fuzzyScore !== undefined && !isNaN(score.fuzzyScore)) {
-        score.fuzzyScore = normalizeFuzzy(score.fuzzyScore);
+        score.fuzzyScore = Math.ceil(normalizeFuzzy(score.fuzzyScore)); // Ceil to avoid 0.1 scores
         score.finalScore += score.fuzzyScore;
       }
       if (score.recencyScore !== undefined && !isNaN(score.recencyScore)) {
-        score.recencyScore = normalizeRecency(score.recencyScore);
+        score.recencyScore = Math.ceil(normalizeRecency(score.recencyScore)); // Ceil to avoid 0.1 scores
         score.finalScore += score.recencyScore;
       }
       if (score.frequencyScore !== undefined && !isNaN(score.frequencyScore)) {
-        score.frequencyScore = normalizeFrequency(score.frequencyScore);
+        score.frequencyScore = Math.ceil(normalizeFrequency(score.frequencyScore)); // Ceil to avoid 0.1 scores
         score.finalScore += score.frequencyScore;
       }
       if (score.closenessScore !== undefined && !isNaN(score.closenessScore)) {
-        score.closenessScore = normalizeCloseness(score.closenessScore);
+        score.closenessScore = Math.ceil(normalizeCloseness(score.closenessScore)); // Ceil to avoid 0.1 scores
         score.finalScore += score.closenessScore;
       }
       if (score.gitScore !== undefined && !isNaN(score.gitScore)) {
-        score.gitScore = normalizeGit(score.gitScore);
+        score.gitScore = Math.ceil(normalizeGit(score.gitScore)); // Ceil to avoid 0.1 scores
         score.finalScore += score.gitScore;
       }
       // ! NEW-SCORER-INSERT-HERE
 
       // Create a description with all values
-      item.description = `(${score.finalScore?.toFixed(2)})`;
+      let scoreString = `${score.finalScore?.toFixed(2)} - `;
       if (score.fuzzyScore !== undefined) {
-        item.description += `Fuz: ${score.fuzzyScore?.toFixed(1)} `;
+        scoreString += `Fuz: ${score.fuzzyScore}|`;
       }
       if (score.closenessScore !== undefined) {
-        item.description += `Clo: ${score.closenessScore?.toFixed(1)} `;
+        scoreString += `Clo: ${score.closenessScore}|`;
       }
       if (score.recencyScore !== undefined) {
-        item.description += `Recent: ${score.recencyScore?.toFixed(1)} `;
+        scoreString += `Recent: ${score.recencyScore}|`;
       }
       if (score.frequencyScore !== undefined) {
-        item.description += `Freq: ${score.frequencyScore?.toFixed(1)} `;
+        scoreString += `Freq: ${score.frequencyScore}|`;
       }
       if (score.gitScore !== undefined) {
-        item.description += `Git: ${score.gitScore?.toFixed(1)} `;
+        scoreString += `Git: ${score.gitScore}`;
       }
       // ! NEW-SCORER-INSERT-HERE
+      item.detail = scoreString;
+
       // console.log(`Final Normalized scores for ${item.file}:`, score);
     }
 
