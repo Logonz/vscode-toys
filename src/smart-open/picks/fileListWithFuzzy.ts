@@ -40,7 +40,6 @@ picked.ignoreFocusOut = true;
 picked.title = "Smart Open";
 picked.placeholder = `Select file to open - Custom Labels ${IsCustomLabelsEnabled() ? "ENABLED" : "DISABLED"}`;
 
-picked.onDidChangeValue(showFileListWithFuzzy);
 picked.onDidChangeValue((value) => {
   console.log("Input changed:", value);
 
