@@ -6,7 +6,7 @@ import { FileQuickPickItem } from "./interface/IFileQuickPickItem";
 import { UriExt } from "./interface/IUriExt";
 import { InlineInput } from "./InlineInput";
 import { GitScorer } from "../scoring";
-import { scoreCalculator } from "../smart-open-main";
+import { scoreCalculator } from "../main";
 import path from "path";
 
 // Module-level reference to active InlineInput for forwarding QuickPick input

@@ -9,7 +9,7 @@ import { activateFileDecorator } from "./git-file-decorator/main";
 import { activateRegisters } from "./registers/main";
 import { activateGotoLine } from "./goto-line/main";
 import { activatePasteReplace } from "./paste-replace/main";
-import { activateSmartOpen } from "./smart-open/smart-open-main";
+import { activateSmartOpen } from "./smart-open/main";
 import { activateHyper } from "./hyper/main";
 import { activateMotions } from "./motions/main";
 import { activateAlwaysActive } from "./always-active/main";
