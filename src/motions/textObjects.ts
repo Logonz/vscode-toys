@@ -79,8 +79,8 @@ export function findTextObject(
 
 /**
  * Finds bracket-based text objects like (), [], {}, <>.
- * First tries to find if cursor is inside a bracket pair, then falls back to nearest pair.
- * Supports nested brackets and count parameter for expanding to outer pairs.
+ * Uses the same logic as findQuoteTextObject: single pass collection and proximity-based pairing.
+ * This approach is more reliable than depth tracking and fixes nesting issues.
  *
  * @param document - The VS Code text document
  * @param text - Full document text as string
@@ -96,32 +96,53 @@ function findBracketTextObject(
   pair: TextObjectPair,
   count: number
 ): TextObjectRange | null {
-  // First, try to find if cursor is inside (or on) a bracket pair
-  let currentPair = findEnclosingBracketPair(text, offset, pair);
+  const openBracketsBeforeCursor: number[] = [];
+  const closeBracketsAfterCursor: number[] = [];
 
-  if (!currentPair && count === 1) {
-    // If not inside brackets, find the nearest bracket pair
-    currentPair = findNearestBracketPair(text, offset, pair);
+  let searchStart = 0;
+  let searchEnd = text.length;
+
+  if (text.length > FILE_SIZE_LIMIT) {
+    searchStart = Math.max(0, offset - SEARCH_RANGE);
+    searchEnd = Math.min(text.length, offset + SEARCH_RANGE);
   }
 
-  if (!currentPair) {
+  // Single pass: collect opening brackets before cursor and closing brackets after cursor
+  for (let i = searchStart; i < searchEnd; i++) {
+    if (text[i] === pair.open && i < offset) {
+      openBracketsBeforeCursor.push(i);
+    } else if (text[i] === pair.close && i >= offset) {
+      closeBracketsAfterCursor.push(i);
+    }
+  }
+
+  // Need at least one bracket on each side to form a pair
+  if (openBracketsBeforeCursor.length === 0 || closeBracketsAfterCursor.length === 0) {
     return null;
   }
 
-  let openPos = currentPair.openPos;
-  let closePos = currentPair.closePos;
+  // Create pairs by taking brackets from the end of "before" list and start of "after" list
+  // This ensures we get the closest brackets to the cursor
+  // By using Math.min we ensure balanced pairs are created
+  const maxPairs = Math.min(openBracketsBeforeCursor.length, closeBracketsAfterCursor.length);
+  const pairs: { openPos: number; closePos: number }[] = [];
 
-  // Apply count by expanding outward to enclosing pairs
-  // For example, with count=2 and cursor inside (inner), find the outer (outer) pair
-  for (let i = 1; i < count; i++) {
-    // Start just before the current opening pos to find the next outer opener
-    const outerPair = findEnclosingBracketPair(text, openPos - 1, pair);
-    if (!outerPair) {
-      break; // No more outer pairs found
-    }
-    openPos = outerPair.openPos;
-    closePos = outerPair.closePos;
+  for (let i = 0; i < maxPairs; i++) {
+    const openPos = openBracketsBeforeCursor[openBracketsBeforeCursor.length - 1 - i]; // Take from end (closest to cursor)
+    const closePos = closeBracketsAfterCursor[i]; // Take from start (closest to cursor)
+    pairs.push({ openPos, closePos });
   }
+
+  // Apply count - get the nth pair from cursor outward
+  if (count > pairs.length) {
+    return null;
+  }
+
+  const targetPair = pairs[count - 1]; // count is 1-based, array is 0-based
+  const openPos = targetPair.openPos;
+  const closePos = targetPair.closePos;
+
+  printMotionOutput(`Found bracket pair: openPos=${openPos}, closePos=${closePos}, pairs=${pairs.length}`);
 
   // Create ranges for both inner (content only) and outer (including brackets)
   const innerStart = document.positionAt(openPos + 1);
@@ -214,119 +235,4 @@ function findQuoteTextObject(
     inner: new Range(innerStart, innerEnd),
     outer: new Range(outerStart, outerEnd),
   };
-}
-
-/**
- * Finds the bracket pair that encloses the given offset position.
- * Searches backward for an opening bracket, then forward for its matching closing bracket.
- * Handles nested brackets correctly by tracking bracket depth.
- *
- * @param text - Full document text as string
- * @param offset - Position to search from
- * @param pair - The bracket pair to search for
- * @returns Object with openPos and closePos, or null if no enclosing pair found
- */
-function findEnclosingBracketPair(
-  text: string,
-  offset: number,
-  pair: TextObjectPair
-): { openPos: number; closePos: number } | null {
-  // Search backward for opening bracket from the current position
-  const openPos = findMatchingBracket(text, offset, pair.open, pair.close, true);
-  if (openPos === -1) {
-    return null;
-  }
-
-  // Search forward from the opening bracket for its matching closing bracket
-  const closePos = findMatchingBracket(text, openPos + 1, pair.open, pair.close, false);
-  if (closePos === -1) {
-    return null;
-  }
-
-  // Treat the cursor being ON a bracket as "inside" (inclusive check)
-  // This matches vim behavior where di( works when cursor is on ( or )
-  if (offset >= openPos && offset <= closePos) {
-    return { openPos, closePos };
-  }
-
-  return null;
-}
-
-/**
- * Finds the nearest bracket pair to the given offset when cursor is not inside any brackets.
- * Searches through all bracket pairs in the document and returns the closest one.
- *
- * @param text - Full document text as string
- * @param offset - Position to search from
- * @param pair - The bracket pair to search for
- * @returns Object with openPos and closePos of nearest pair, or null if none found
- */
-function findNearestBracketPair(
-  text: string,
-  offset: number,
-  pair: TextObjectPair
-): { openPos: number; closePos: number } | null {
-  let nearestPair: { openPos: number; closePos: number } | null = null;
-  let closestDistance = Infinity;
-
-  // Scan through the entire document looking for opening brackets
-  for (let i = 0; i < text.length; i++) {
-    if (text[i] === pair.open) {
-      // For each opening bracket, find its matching closing bracket
-      const closePos = findMatchingBracket(text, i + 1, pair.open, pair.close, false);
-      if (closePos !== -1) {
-        // Calculate distance from cursor to either bracket in the pair
-        const distance = Math.min(Math.abs(offset - i), Math.abs(offset - closePos));
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          nearestPair = { openPos: i, closePos };
-        }
-      }
-    }
-  }
-
-  return nearestPair;
-}
-
-/**
- * Finds a matching bracket by searching in the specified direction while tracking nesting depth.
- * This function handles nested brackets correctly by maintaining a depth counter.
- *
- * @param text - Full document text as string
- * @param startPos - Position to start searching from
- * @param openChar - The opening bracket character (e.g., '(')
- * @param closeChar - The closing bracket character (e.g., ')')
- * @param searchBackward - If true, search backward for opening bracket; if false, search forward for closing bracket
- * @returns Position of the matching bracket, or -1 if not found
- */
-function findMatchingBracket(
-  text: string,
-  startPos: number,
-  openChar: string,
-  closeChar: string,
-  searchBackward: boolean
-): number {
-  let pos = startPos;
-  let depth = 0;
-  const step = searchBackward ? -1 : 1;
-  const targetChar = searchBackward ? openChar : closeChar;
-  const counterChar = searchBackward ? closeChar : openChar;
-
-  while (pos >= 0 && pos < text.length) {
-    const char = text[pos];
-
-    if (char === targetChar) {
-      if (depth === 0) {
-        // Found our target bracket at depth 0 (not nested)
-        return pos;
-      }
-      depth--; // We're coming out of a nested level
-    } else if (char === counterChar) {
-      depth++; // We're going into a nested level
-    }
-
-    pos += step;
-  }
-
-  return -1; // No matching bracket found
 }
