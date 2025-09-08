@@ -1,9 +1,28 @@
 import { TextDocument } from "vscode";
+import { LANGUAGE_COMMENT_MAP } from "./textCommentLangIds";
 
-// Comment patterns to recognize different types of comments
-const patterns = ["//", "#", "--", ";"];
+/**
+ * Get comment patterns for a specific language ID
+ */
+function getCommentPatternsForLanguage(languageId: string): string[] {
+  const commentInfo = LANGUAGE_COMMENT_MAP[languageId] || LANGUAGE_COMMENT_MAP["plaintext"];
+  return commentInfo.line || [];
+}
 
-// TODO: Implement support for block comments
+/**
+ * Get block comment patterns for a specific language ID
+ */
+function getBlockCommentPatternsForLanguage(languageId: string): { start: string; end: string } | null {
+  const commentInfo = LANGUAGE_COMMENT_MAP[languageId] || LANGUAGE_COMMENT_MAP["plaintext"];
+  return commentInfo.block || null;
+}
+
+/**
+ * Export the language comment mapping for external use
+ */
+export { LANGUAGE_COMMENT_MAP, getCommentPatternsForLanguage, getBlockCommentPatternsForLanguage };
+
+// TODO: Implement support for block comments using the block patterns in the lookup table
 
 /**
  * Helper class to efficiently track comment positions during sequential scanning.
@@ -12,8 +31,19 @@ const patterns = ["//", "#", "--", ";"];
 export class CommentTracker {
   private currentCommentStart = -1;
   private lastProcessedLine = -1;
+  private commentPatterns: string[];
 
-  constructor(private document: TextDocument, private commentPatterns: string[] = patterns) {}
+  constructor(private document: TextDocument, commentPatterns?: string[]) {
+    // Use provided patterns or auto-detect from language ID
+    this.commentPatterns = commentPatterns || getCommentPatternsForLanguage(document.languageId);
+  }
+
+  /**
+   * Get the block comment patterns for the document's language
+   */
+  getBlockCommentPatterns(): { start: string; end: string } | null {
+    return getBlockCommentPatternsForLanguage(this.document.languageId);
+  }
 
   /**
    * Check if a position is inside a line comment.
