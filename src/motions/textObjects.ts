@@ -166,7 +166,7 @@ function findQuotePairs(
         const closePos = i;
 
         // Only consider this pair if the cursor is between the quotes (inside the pair)
-        if (offset > currentOpenPos && offset < closePos) {
+        if (offset >= currentOpenPos && offset <= closePos) {
           const distance = Math.min(Math.abs(offset - currentOpenPos), Math.abs(offset - closePos));
           validPairs.push({ openPos: currentOpenPos, closePos, distance });
         }
