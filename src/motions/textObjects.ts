@@ -31,6 +31,8 @@ export const TEXT_OBJECTS: Record<string, TextObjectPair> = {
   '"': { open: '"', close: '"' },
   "'": { open: "'", close: "'" },
   "`": { open: "`", close: "`" },
+  i: { open: "auto", close: "auto" },
+  a: { open: "auto", close: "auto" },
 };
 
 /**
@@ -78,7 +80,9 @@ export function findTextObject(
   const offset = document.offsetAt(position);
 
   // Quotes use the same character for open and close, brackets use different characters
-  if (pair.open === pair.close) {
+  if (pair.open === "auto" && pair.close === "auto") {
+    return findAnyTextObject(document, text, offset, count);
+  } else if (pair.open === pair.close) {
     return findQuoteTextObject(document, text, offset, pair.open, count);
   } else {
     return findBracketTextObject(document, text, offset, pair, count);
@@ -246,27 +250,24 @@ function findQuoteTextObject(
 }
 
 /**
- * Finds all supported text objects at a given position.
- * Performs a single pass through the document to find all text object types efficiently.
+ * Finds all supported text objects at a given position and returns them sorted by proximity to cursor.
+ * Works like findQuoteTextObject but for ANY text object type - finds the closest, then next closest, etc.
+ * This enables "automatic" text object selection where 'a' means "any closest text object".
  *
  * @param document - The VS Code text document
  * @param position - The cursor position
  * @param count - How many levels outward to expand (default 1)
  * @param textObjects - The text object definitions to search for (defaults to TEXT_OBJECTS)
- * @returns AllTextObjectsResult mapping text object characters to their ranges
+ * @returns TextObjectRange The found text object range at the specified count level, or null if none found
  */
-export function findAllTextObjects(
+export function findAnyTextObject(
   document: TextDocument,
-  position: Position,
+  text: string,
+  offset: number,
   count: number = 1,
   textObjects: Record<string, TextObjectPair> = TEXT_OBJECTS
-): AllTextObjectsResult {
-  const result: AllTextObjectsResult = {};
-
-  printMotionOutput(`Finding all text objects with count ${count} at ${position.line}:${position.character}`);
-
-  const text = document.getText();
-  const offset = document.offsetAt(position);
+): TextObjectRange | null {
+  printMotionOutput(`Finding automatic text object ${count} at offset ${offset}`);
 
   let searchStart = 0;
   let searchEnd = text.length;
@@ -289,77 +290,238 @@ export function findAllTextObjects(
     }
   }
 
-  // Single pass: collect all characters of interest with their positions
-  const beforeCursor = new Map<string, number[]>();
-  const afterCursor = new Map<string, number[]>();
+  // Collect all possible text object pairs with their types
+  interface TextObjectCandidate {
+    openPos: number;
+    closePos: number;
+    type: string;
+    distanceToClosest: number;
+  }
 
-  for (let i = searchStart; i < searchEnd; i++) {
-    const char = text[i];
+  const allCandidates: TextObjectCandidate[] = [];
 
-    // Check quotes (handle escaping)
-    if (quoteChars.has(char) && (i === 0 || text[i - 1] !== "\\")) {
-      if (i < offset) {
-        if (!beforeCursor.has(char)) beforeCursor.set(char, []);
-        beforeCursor.get(char)!.push(i);
-      } else if (i >= offset) {
-        if (!afterCursor.has(char)) afterCursor.set(char, []);
-        afterCursor.get(char)!.push(i);
+  // Process quotes
+  for (const quoteChar of quoteChars) {
+    const quotesBeforeCursor: number[] = [];
+    const quotesAfterCursor: number[] = [];
+
+    // Collect quotes of this type
+    for (let i = searchStart; i < searchEnd; i++) {
+      if (text[i] === quoteChar && (i === 0 || text[i - 1] !== "\\")) {
+        if (i < offset) {
+          quotesBeforeCursor.push(i);
+        } else if (i >= offset) {
+          quotesAfterCursor.push(i);
+        }
       }
     }
 
-    // Check bracket pairs
-    for (const [openChar, pair] of bracketPairs) {
-      if (char === pair.open && i < offset) {
-        if (!beforeCursor.has(openChar)) beforeCursor.set(openChar, []);
-        beforeCursor.get(openChar)!.push(i);
-      } else if (char === pair.close && i >= offset) {
-        if (!afterCursor.has(openChar)) afterCursor.set(openChar, []);
-        afterCursor.get(openChar)!.push(i);
+    // Create quote pairs
+    if (quotesBeforeCursor.length > 0 && quotesAfterCursor.length > 0) {
+      const maxPairs = Math.min(quotesBeforeCursor.length, quotesAfterCursor.length);
+
+      for (let i = 0; i < maxPairs; i++) {
+        const openPos = quotesBeforeCursor[quotesBeforeCursor.length - 1 - i];
+        const closePos = quotesAfterCursor[i];
+        const distanceToClosest = Math.min(Math.abs(offset - openPos), Math.abs(offset - closePos));
+
+        allCandidates.push({
+          openPos,
+          closePos,
+          type: quoteChar,
+          distanceToClosest,
+        });
       }
     }
   }
 
-  // Process each text object type to create pairs and apply count
-  const allChars = new Set([...quoteChars, ...bracketPairs.keys()]);
+  // Process bracket pairs
+  for (const [openChar, pair] of bracketPairs) {
+    const openBracketsBeforeCursor: number[] = [];
+    const closeBracketsAfterCursor: number[] = [];
 
-  for (const char of allChars) {
-    const beforePositions = beforeCursor.get(char) || [];
-    const afterPositions = afterCursor.get(char) || [];
-
-    if (beforePositions.length === 0 || afterPositions.length === 0) {
-      continue;
+    // Collect brackets of this type
+    for (let i = searchStart; i < searchEnd; i++) {
+      if (text[i] === pair.open && i < offset) {
+        openBracketsBeforeCursor.push(i);
+      } else if (text[i] === pair.close && i >= offset) {
+        closeBracketsAfterCursor.push(i);
+      }
     }
 
-    // Create pairs using the same logic as individual functions
-    const maxPairs = Math.min(beforePositions.length, afterPositions.length);
-    const pairs: { openPos: number; closePos: number }[] = [];
+    // Create bracket pairs
+    if (openBracketsBeforeCursor.length > 0 && closeBracketsAfterCursor.length > 0) {
+      const maxPairs = Math.min(openBracketsBeforeCursor.length, closeBracketsAfterCursor.length);
 
-    for (let i = 0; i < maxPairs; i++) {
-      const openPos = beforePositions[beforePositions.length - 1 - i]; // Take from end (closest to cursor)
-      const closePos = afterPositions[i]; // Take from start (closest to cursor)
-      pairs.push({ openPos, closePos });
-    }
+      for (let i = 0; i < maxPairs; i++) {
+        const openPos = openBracketsBeforeCursor[openBracketsBeforeCursor.length - 1 - i];
+        const closePos = closeBracketsAfterCursor[i];
+        const distanceToClosest = Math.min(Math.abs(offset - openPos), Math.abs(offset - closePos));
 
-    // Apply count - get the nth pair from cursor outward
-    if (count <= pairs.length) {
-      const targetPair = pairs[count - 1]; // count is 1-based, array is 0-based
-      const openPos = targetPair.openPos;
-      const closePos = targetPair.closePos;
-
-      // Create ranges for both inner and outer
-      const innerStart = document.positionAt(openPos + 1);
-      const innerEnd = document.positionAt(closePos);
-      const outerStart = document.positionAt(openPos);
-      const outerEnd = document.positionAt(closePos + 1);
-
-      result[char] = {
-        inner: new Range(innerStart, innerEnd),
-        outer: new Range(outerStart, outerEnd),
-      };
+        allCandidates.push({
+          openPos,
+          closePos,
+          type: openChar,
+          distanceToClosest,
+        });
+      }
     }
   }
 
-  printMotionOutput(`Found ${Object.keys(result).length} text objects: ${Object.keys(result).join(", ")}`);
+  if (allCandidates.length === 0) {
+    return null;
+  }
 
-  return result;
+  // Sort by distance to cursor (closest first), then by opening position for consistency
+  allCandidates.sort((a, b) => {
+    if (a.distanceToClosest !== b.distanceToClosest) {
+      return a.distanceToClosest - b.distanceToClosest;
+    }
+    // If distances are equal, prefer the one with the opening position closer to cursor
+    return Math.abs(offset - a.openPos) - Math.abs(offset - b.openPos);
+  });
+
+  // Apply count - get the nth closest text object
+  if (count > allCandidates.length) {
+    return null;
+  }
+
+  const targetCandidate = allCandidates[count - 1]; // count is 1-based, array is 0-based
+  const openPos = targetCandidate.openPos;
+  const closePos = targetCandidate.closePos;
+
+  printMotionOutput(
+    `Found automatic text object: type=${targetCandidate.type}, openPos=${openPos}, closePos=${closePos}, distance=${targetCandidate.distanceToClosest}, total=${allCandidates.length}`
+  );
+
+  // Create ranges for both inner (content only) and outer (including delimiters)
+  const innerStart = document.positionAt(openPos + 1);
+  const innerEnd = document.positionAt(closePos);
+  const outerStart = document.positionAt(openPos);
+  const outerEnd = document.positionAt(closePos + 1);
+
+  return {
+    inner: new Range(innerStart, innerEnd),
+    outer: new Range(outerStart, outerEnd),
+  };
 }
+
+// ! Works but is not in use.
+/**
+ * Finds all supported text objects at a given position.
+ * Performs a single pass through the document to find all text object types efficiently.
+ *
+ * @param document - The VS Code text document
+ * @param position - The cursor position
+ * @param count - How many levels outward to expand (default 1)
+ * @param textObjects - The text object definitions to search for (defaults to TEXT_OBJECTS)
+ * @returns AllTextObjectsResult mapping text object characters to their ranges
+ */
+// export function findAllTextObjects(
+//   document: TextDocument,
+//   position: Position,
+//   count: number = 1,
+//   textObjects: Record<string, TextObjectPair> = TEXT_OBJECTS
+// ): AllTextObjectsResult {
+//   const result: AllTextObjectsResult = {};
+
+//   printMotionOutput(`Finding all text objects with count ${count} at ${position.line}:${position.character}`);
+
+//   const text = document.getText();
+//   const offset = document.offsetAt(position);
+
+//   let searchStart = 0;
+//   let searchEnd = text.length;
+
+//   if (text.length > FILE_SIZE_LIMIT) {
+//     searchStart = Math.max(0, offset - SEARCH_RANGE);
+//     searchEnd = Math.min(text.length, offset + SEARCH_RANGE);
+//   }
+
+//   // Group text objects by their behavior: quotes vs brackets
+//   const quoteChars = new Set<string>();
+//   const bracketPairs = new Map<string, TextObjectPair>();
+
+//   for (const [char, pair] of Object.entries(textObjects)) {
+//     if (pair.open === pair.close) {
+//       quoteChars.add(pair.open);
+//     } else {
+//       // Use opening character as key to avoid duplicates
+//       bracketPairs.set(pair.open, pair);
+//     }
+//   }
+
+//   // Single pass: collect all characters of interest with their positions
+//   const beforeCursor = new Map<string, number[]>();
+//   const afterCursor = new Map<string, number[]>();
+
+//   for (let i = searchStart; i < searchEnd; i++) {
+//     const char = text[i];
+
+//     // Check quotes (handle escaping)
+//     if (quoteChars.has(char) && (i === 0 || text[i - 1] !== "\\")) {
+//       if (i < offset) {
+//         if (!beforeCursor.has(char)) beforeCursor.set(char, []);
+//         beforeCursor.get(char)!.push(i);
+//       } else if (i >= offset) {
+//         if (!afterCursor.has(char)) afterCursor.set(char, []);
+//         afterCursor.get(char)!.push(i);
+//       }
+//     }
+
+//     // Check bracket pairs
+//     for (const [openChar, pair] of bracketPairs) {
+//       if (char === pair.open && i < offset) {
+//         if (!beforeCursor.has(openChar)) beforeCursor.set(openChar, []);
+//         beforeCursor.get(openChar)!.push(i);
+//       } else if (char === pair.close && i >= offset) {
+//         if (!afterCursor.has(openChar)) afterCursor.set(openChar, []);
+//         afterCursor.get(openChar)!.push(i);
+//       }
+//     }
+//   }
+
+//   // Process each text object type to create pairs and apply count
+//   const allChars = new Set([...quoteChars, ...bracketPairs.keys()]);
+
+//   for (const char of allChars) {
+//     const beforePositions = beforeCursor.get(char) || [];
+//     const afterPositions = afterCursor.get(char) || [];
+
+//     if (beforePositions.length === 0 || afterPositions.length === 0) {
+//       continue;
+//     }
+
+//     // Create pairs using the same logic as individual functions
+//     const maxPairs = Math.min(beforePositions.length, afterPositions.length);
+//     const pairs: { openPos: number; closePos: number }[] = [];
+
+//     for (let i = 0; i < maxPairs; i++) {
+//       const openPos = beforePositions[beforePositions.length - 1 - i]; // Take from end (closest to cursor)
+//       const closePos = afterPositions[i]; // Take from start (closest to cursor)
+//       pairs.push({ openPos, closePos });
+//     }
+
+//     // Apply count - get the nth pair from cursor outward
+//     if (count <= pairs.length) {
+//       const targetPair = pairs[count - 1]; // count is 1-based, array is 0-based
+//       const openPos = targetPair.openPos;
+//       const closePos = targetPair.closePos;
+
+//       // Create ranges for both inner and outer
+//       const innerStart = document.positionAt(openPos + 1);
+//       const innerEnd = document.positionAt(closePos);
+//       const outerStart = document.positionAt(openPos);
+//       const outerEnd = document.positionAt(closePos + 1);
+
+//       result[char] = {
+//         inner: new Range(innerStart, innerEnd),
+//         outer: new Range(outerStart, outerEnd),
+//       };
+//     }
+//   }
+
+//   printMotionOutput(`Found ${Object.keys(result).length} text objects: ${Object.keys(result).join(", ")}`);
+
+//   return result;
+// }

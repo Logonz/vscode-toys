@@ -1,6 +1,10 @@
 import { commands, Disposable, StatusBarAlignment, StatusBarItem, TextEditor, window } from "vscode";
 
 const cancellationChars = new Set(["\n"]);
+
+// 'a' and 'i' is a special case of "automatic" which means all text objects
+const validTextObjects = ["i", "a", "(", ")", "[", "]", "{", "}", "<", ">", '"', "'", "`"];
+
 export const subscriptions: Disposable[] = [];
 
 export interface MotionInputProps {
@@ -61,7 +65,6 @@ export class MotionInput {
     }
 
     // Check if it's a valid text object
-    const validTextObjects = ["(", ")", "[", "]", "{", "}", "<", ">", '"', "'", "`"];
     if (validTextObjects.includes(char)) {
       const count = this.count ? parseInt(this.count) : 1;
       this.destroy();
@@ -160,7 +163,6 @@ export class InteractiveMotionInput {
     this.count = countStr;
     this.operation = op + modifier;
 
-    const validTextObjects = ["(", ")", "[", "]", "{", "}", "<", ">", '"', "'", "`"];
     return validTextObjects.includes(textObj);
   }
 }
