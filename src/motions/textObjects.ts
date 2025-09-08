@@ -1,5 +1,6 @@
 import { Position, Range, TextDocument } from "vscode";
 import { printMotionOutput } from "./main";
+import { CommentTracker } from "./textComment";
 
 // Performance optimization: limit search range for very large files (>50MB)
 const FILE_SIZE_LIMIT = 50 * 1024 * 1024; // 50MB in bytes
@@ -57,13 +58,13 @@ interface TextObjectPairInfo {
 /**
  * Helper function to calculate search range for performance optimization.
  */
-function getSearchRange(text: string, offset: number): { searchStart: number; searchEnd: number } {
+function getSearchRange(textLength: number, offset: number): { searchStart: number; searchEnd: number } {
   let searchStart = 0;
-  let searchEnd = text.length;
+  let searchEnd = textLength;
 
-  if (text.length > FILE_SIZE_LIMIT) {
+  if (textLength > FILE_SIZE_LIMIT) {
     searchStart = Math.max(0, offset - SEARCH_RANGE);
-    searchEnd = Math.min(text.length, offset + SEARCH_RANGE);
+    searchEnd = Math.min(textLength, offset + SEARCH_RANGE);
   }
 
   return { searchStart, searchEnd };
@@ -74,16 +75,23 @@ function getSearchRange(text: string, offset: number): { searchStart: number; se
  * Uses proper bracket matching with depth tracking.
  */
 function findBracketPairs(
-  text: string,
+  document: TextDocument,
   offset: number,
   pair: TextObjectPair,
   searchStart: number,
   searchEnd: number
 ): TextObjectPairInfo[] {
   const validPairs: TextObjectPairInfo[] = [];
+  const commentTracker = new CommentTracker(document);
+  const text = document.getText();
 
   // For each opening bracket before the cursor, find its matching closing bracket
   for (let openPos = searchStart; openPos < offset; openPos++) {
+    // Skip characters inside line comments
+    if (commentTracker.isInComment(openPos)) {
+      continue;
+    }
+
     if (text[openPos] !== pair.open) {
       continue;
     }
@@ -93,6 +101,11 @@ function findBracketPairs(
     let closePos = -1;
 
     for (let i = openPos + 1; i < searchEnd; i++) {
+      // Skip characters inside line comments
+      if (commentTracker.isInComment(i)) {
+        continue;
+      }
+
       if (text[i] === pair.open) {
         depth++;
       } else if (text[i] === pair.close) {
@@ -121,19 +134,26 @@ function findBracketPairs(
  * Uses proper quote state tracking to handle quote pairing correctly.
  */
 function findQuotePairs(
-  text: string,
+  document: TextDocument,
   offset: number,
   quote: string,
   searchStart: number,
   searchEnd: number
 ): TextObjectPairInfo[] {
   const validPairs: TextObjectPairInfo[] = [];
+  const commentTracker = new CommentTracker(document);
+  const text = document.getText();
 
   // Scan for quote pairs by tracking quote state
   let insideQuotes = false;
   let currentOpenPos = -1;
 
   for (let i = searchStart; i < searchEnd; i++) {
+    // Skip characters inside line comments
+    if (commentTracker.isInComment(i)) {
+      continue;
+    }
+
     // Skip escaped quotes
     if (text[i] === quote && (i === 0 || text[i - 1] !== "\\")) {
       if (!insideQuotes) {
@@ -199,7 +219,7 @@ export function findTextObject(
 
   const text = document.getText();
   const offset = document.offsetAt(position);
-  const { searchStart, searchEnd } = getSearchRange(text, offset);
+  const { searchStart, searchEnd } = getSearchRange(text.length, offset);
 
   // Handle automatic text object selection
   if (pair.open === "auto" && pair.close === "auto") {
@@ -212,11 +232,11 @@ export function findTextObject(
   // Find pairs based on text object type
   if (pair.open === pair.close) {
     // Quote-based text object
-    validPairs = findQuotePairs(text, offset, pair.open, searchStart, searchEnd);
+    validPairs = findQuotePairs(document, offset, pair.open, searchStart, searchEnd);
     pairType = "quote";
   } else {
     // Bracket-based text object
-    validPairs = findBracketPairs(text, offset, pair, searchStart, searchEnd);
+    validPairs = findBracketPairs(document, offset, pair, searchStart, searchEnd);
     pairType = "bracket";
   }
 
@@ -268,7 +288,7 @@ export function findAnyTextObject(
 ): TextObjectRange | null {
   printMotionOutput(`Finding automatic text object ${count} at offset ${offset}`);
 
-  const { searchStart, searchEnd } = getSearchRange(text, offset);
+  const { searchStart, searchEnd } = getSearchRange(text.length, offset);
 
   // Group text objects by their behavior: quotes vs brackets
   const quoteChars = new Set<string>();
@@ -295,7 +315,7 @@ export function findAnyTextObject(
 
   // Process quotes using helper function
   for (const quoteChar of quoteChars) {
-    const quotePairs = findQuotePairs(text, offset, quoteChar, searchStart, searchEnd);
+    const quotePairs = findQuotePairs(document, offset, quoteChar, searchStart, searchEnd);
 
     for (const pair of quotePairs) {
       allCandidates.push({
@@ -309,7 +329,7 @@ export function findAnyTextObject(
 
   // Process bracket pairs using helper function
   for (const [openChar, pair] of bracketPairs) {
-    const bracketPairs = findBracketPairs(text, offset, pair, searchStart, searchEnd);
+    const bracketPairs = findBracketPairs(document, offset, pair, searchStart, searchEnd);
 
     for (const bracketPair of bracketPairs) {
       allCandidates.push({

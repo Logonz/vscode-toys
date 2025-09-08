@@ -22,3 +22,5 @@ There is a bug
 
 if you stand the cursor at the pipe and do `"di{"` or `"di}"` it will not work.
 !!!DONE!!!
+
+Implement support for block comments
