@@ -2,7 +2,9 @@ import { commands, Disposable, StatusBarAlignment, StatusBarItem, TextEditor, wi
 
 const cancellationChars = new Set(["\n"]);
 
-// 'a' and 'i' is a special case of "automatic" which means all text objects
+// ? 'a' and 'i' is a special case of "automatic" which means all text objects
+// ? We use 'a' and 'i' to make it natural to quickly press, i.e 'dii' or 'daa'.
+// ? 'i' and 'a' works for both inside and around but naturally 'i' will be used for inside and 'a' for around.
 const validTextObjects = ["i", "a", "(", ")", "[", "]", "{", "}", "<", ">", '"', "'", "`"];
 
 export const subscriptions: Disposable[] = [];
