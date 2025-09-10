@@ -1,11 +1,4 @@
-import {
-  commands,
-  Disposable,
-  StatusBarAlignment,
-  StatusBarItem,
-  TextEditor,
-  window,
-} from "vscode";
+import { commands, Disposable, StatusBarAlignment, StatusBarItem, TextEditor, window } from "vscode";
 
 const cancellationChars = new Set(["\n"]);
 // const cancellationChars = new Set(["\n", "o"]);
@@ -24,13 +17,10 @@ export class InlineInput {
   ) {
     subscriptions.push(
       commands.registerCommand("type", this._onInput),
-      // window.onDidChangeTextEditorSelection(this._onCancel)
+      window.onDidChangeTextEditorSelection(this._onCancel)
     );
 
-    this.statusBarItem = window.createStatusBarItem(
-      StatusBarAlignment.Right,
-      1000
-    );
+    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
   }
 
   public updateStatusBar = (

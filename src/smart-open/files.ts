@@ -2,32 +2,11 @@
 // Import the module and reference it with the alias vscode in your code below
 import path from "path/win32";
 import * as vscode from "vscode";
-import ignore from "ignore";
-import fs from "fs";
-import { globifyGitIgnoreFile, globifyGitIgnore } from "globify-gitignore";
-
-interface GitignoreRule {
-  negative: boolean;
-  origin: string;
-  pattern: string;
-  regex: RegExp;
-}
+import { getCachedGitignoreGlobs } from "./gitignoreCache";
 
 // Static cache for exclude settings
 let searchExcludeCache: string[] = [];
 let filesExcludeCache: string[] = [];
-
-function loadGitignore(folderPath: string): ReturnType<typeof ignore> {
-  const ig = ignore();
-  const gitignorePath = path.join(folderPath, ".gitignore");
-
-  if (fs.existsSync(gitignorePath)) {
-    const gitignoreContent = fs.readFileSync(gitignorePath, "utf8");
-    ig.add(gitignoreContent);
-  }
-
-  return ig;
-}
 
 /**
  * Creates a merged glob pattern using brace expansion from an array of glob patterns
@@ -54,18 +33,13 @@ function createMergedGlobPattern(patterns: string[]): string {
  */
 export async function createExcludeGlobPattern(folderPath: string): Promise<string | null> {
   try {
-    // const totalStart = performance.now();
-    // console.log(`=== Creating exclude glob pattern for: ${folderPath} ===`);
-
-    // const ig = loadGitignore(folderPath);
-
-    // const rules: GitignoreRule[] = (ig as any)._rules;
-    // console.log("Gitignore rules:", rules);
-
-    const globs = await globifyGitIgnoreFile(folderPath);
+    const globs = await getCachedGitignoreGlobs(folderPath);
 
     // console.log("Glob patterns from gitignore:", globs);
+    const excludeStart = performance.now();
     const excludeGlobsOnly = globs.filter((glob) => glob.included === false).map((glob) => glob.glob);
+    const excludeEnd = performance.now();
+    console.log(`   Exclude glob creation: ${(excludeEnd - excludeStart).toFixed(2)}ms`);
 
     // Add standard exclusions
     // excludeGlobsOnly.push("**/.git/**");
@@ -74,14 +48,11 @@ export async function createExcludeGlobPattern(folderPath: string): Promise<stri
 
     // console.log("Original excludeGlobsOnly:", excludeGlobsOnly);
 
-    // const mergeStart = performance.now();
+    const mergeStart = performance.now();
     const mergedExcludePattern = createMergedGlobPattern(excludeGlobsOnly);
-    // const mergeEnd = performance.now();
-    // console.log(`  Pattern merging: ${(mergeEnd - mergeStart).toFixed(2)}ms`);
+    const mergeEnd = performance.now();
+    console.log(`  Pattern merging: ${(mergeEnd - mergeStart).toFixed(2)}ms`);
     // console.log("Merged exclude pattern:", mergedExcludePattern);
-
-    // const totalEnd = performance.now();
-    // console.log(`=== createExcludeGlobPattern total: ${(totalEnd - totalStart).toFixed(2)}ms ===`);
 
     return mergedExcludePattern;
   } catch (error) {

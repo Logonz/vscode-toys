@@ -6,6 +6,12 @@ import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelServ
 import { showQuickPickWithInlineSearch } from "./picks/fileListWithFuzzy";
 import { createOutputChannel } from "../extension";
 import { ScoreCalculator } from "./scoring";
+import {
+  initializeGitignoreWatchers,
+  handleWorkspaceFoldersChanged,
+  disposeGitignoreWatchers,
+  clearGitignoreCache,
+} from "./gitignoreCache";
 
 export let scoreCalculator: ScoreCalculator;
 
@@ -51,10 +57,17 @@ export async function activateSmartOpen(name: string, context: vscode.ExtensionC
     }
   });
 
+  // Listen for workspace folder changes to handle gitignore cache
+  const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders((event) => {
+    printSmartOpenOutput("Workspace folders changed - updating gitignore watchers");
+    handleWorkspaceFoldersChanged(event);
+  });
+
   context.subscriptions.push(debugCommand);
   context.subscriptions.push(smartOpenCommand);
   context.subscriptions.push(configChangeListener);
   context.subscriptions.push(excludeListener);
+  context.subscriptions.push(workspaceListener);
 
   // Initialize all icons
   LoadIcons();
@@ -66,5 +79,18 @@ export async function activateSmartOpen(name: string, context: vscode.ExtensionC
   // Initialize the custom editor label service
   updateCustomLabelConfiguration();
 
+  // Initialize gitignore watchers
+  initializeGitignoreWatchers();
+
   scoreCalculator = new ScoreCalculator(context);
+
+  printSmartOpenOutput(`${name} activated`);
+}
+
+export function deactivateSmartOpen() {
+  printSmartOpenOutput("Smart Open deactivating - cleaning up caches");
+
+  // Clean up gitignore watchers and cache
+  disposeGitignoreWatchers();
+  clearGitignoreCache();
 }

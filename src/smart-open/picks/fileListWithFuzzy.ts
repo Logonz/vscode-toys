@@ -12,8 +12,10 @@ import path from "path";
 // Module-level reference to active InlineInput for forwarding QuickPick input
 let activeInlineInput: InlineInput | undefined;
 
+let filesCache: vscode.Uri[] = [];
+
 // Switch editor or file listener
-vscode.window.onDidChangeActiveTextEditor((editor) => {
+vscode.window.onDidChangeActiveTextEditor(async (editor) => {
   console.log("Active editor changed:", editor?.document.uri);
   if (editor?.document) {
     // The active file
@@ -30,6 +32,18 @@ vscode.window.onDidChangeActiveTextEditor((editor) => {
     // Re-evaluate the scoring when the active editor changes
     scoreCalculator.getScorer<GitScorer>("git")?.calculateScore("", fileObject, context);
   }
+
+  // TODO: Use a real file watcher here instead of doing it each time we change active editor
+  const fileLoadStart = performance.now();
+  filesCache = await GetAllFilesInWorkspace();
+  const fileLoadEnd = performance.now();
+  console.log(`  File loading: ${(fileLoadEnd - fileLoadStart).toFixed(2)}ms (${filesCache.length} files)`);
+
+  // TODO: Use a real file watcher here instead of doing it each time we change active editor
+  const iconLoadStart = performance.now();
+  await batchLoadIcons(filesCache);
+  const iconLoadEnd = performance.now();
+  console.log(`  Icon loading: ${(iconLoadEnd - iconLoadStart).toFixed(2)}ms (${filesCache.length} files)`);
 });
 
 const picked = vscode.window.createQuickPick<FileQuickPickItem>();
@@ -67,7 +81,8 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
     : undefined;
 
   const fileLoadStart = performance.now();
-  const files = await GetAllFilesInWorkspace();
+  // const files = await GetAllFilesInWorkspace();
+  const files: vscode.Uri[] = filesCache.length > 0 ? filesCache : await GetAllFilesInWorkspace();
   const fileLoadEnd = performance.now();
   console.log(`1. File loading: ${(fileLoadEnd - fileLoadStart).toFixed(2)}ms (${files.length} files)`);
 
@@ -76,7 +91,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   await batchLoadIcons(files);
   const iconLoadEnd = performance.now();
   console.log(`2. Icon loading: ${(iconLoadEnd - iconLoadStart).toFixed(2)}ms (${files.length} files)`);
-  console.log(`   Average per file: ${((iconLoadEnd - iconLoadStart) / files.length).toFixed(2)}ms`);
+  console.log(`   Icon: Average per file: ${((iconLoadEnd - iconLoadStart) / files.length).toFixed(2)}ms`);
 
   // Custom label processing using cached configuration
   const labelProcessStart = performance.now();
@@ -143,7 +158,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
 
     items.push({
       label: fileInfo.customLabel || fileInfo.fileName,
-      description: `${pathWithoutFilename}`,
+      description: pathWithoutFilename,
       detail: pathWithoutFilename,
       file: fileInfo.uri,
       iconPath: icon ? icon : new vscode.ThemeIcon("file"),

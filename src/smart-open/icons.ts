@@ -278,7 +278,6 @@ export async function GetIconForFile(file: vscode.Uri): Promise<vscode.Uri | und
  * @param files - Array of file URIs to process
  */
 export async function batchLoadIcons(files: vscode.Uri[]): Promise<void> {
-  const startTime = performance.now();
   const processedExtensions = new Set<string>();
 
   for (const file of files) {
@@ -302,9 +301,6 @@ export async function batchLoadIcons(files: vscode.Uri[]): Promise<void> {
     }
     processedExtensions.add(fileExtensionWithoutDot);
   }
-
-  const endTime = performance.now();
-  console.log(`Batch icon loading took ${endTime - startTime}ms for ${files.length} files`);
 }
 
 /**
