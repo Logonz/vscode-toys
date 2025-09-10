@@ -190,6 +190,7 @@ export class ScoreCalculator {
       }
       // ! NEW-SCORER-INSERT-HERE
     }
+    console.log(scoreRanges);
 
     // Between 0-MAX_VALUE, example: 0-100 if MAX_VALUE is 100
     const MAX_VALUE = 100;

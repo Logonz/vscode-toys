@@ -14,7 +14,8 @@ const iconFileExtensions = new Map<string, vscode.Uri>();
 // Runtime performance caches
 const extensionToIcon = new Map<string, vscode.Uri>(); // Smart cache: theme definitions + learned mappings
 const filePathToIcon = new Map<string, vscode.Uri>(); // File path → icon cache for instant lookups
-let iconCacheStats = { hits: 0, misses: 0, extensionHits: 0 };
+const extensionsWithoutIcons = new Set<string>(); // Extensions we've checked but found no icon for
+let iconCacheStats = { hits: 0, misses: 0, extensionHits: 0, quickExits: 0 };
 
 /**
  * Loads icon theme from VS Code and populates static mapping caches.
@@ -29,7 +30,8 @@ export function LoadIcons() {
   iconFileExtensions.clear();
   extensionToIcon.clear();
   filePathToIcon.clear();
-  iconCacheStats = { hits: 0, misses: 0, extensionHits: 0 };
+  extensionsWithoutIcons.clear();
+  iconCacheStats = { hits: 0, misses: 0, extensionHits: 0, quickExits: 0 };
 
   printChannelOutput("Loading icons", false);
   const configuration = vscode.workspace.getConfiguration();
@@ -166,6 +168,11 @@ function FastGetIconForFileSync(file: vscode.Uri): vscode.Uri | undefined {
   if (binaryFileExtensions.has(fileExtension)) {
     return undefined;
   }
+  // Quick exit if we've already determined this extension has no icon
+  if (extensionsWithoutIcons.has(fileExtension)) {
+    iconCacheStats.quickExits++;
+    return undefined;
+  }
   // Create all possible variations for lookup
   const fileExtensionWithoutDot = fileExtension.slice(1); // Remove the dot
   const fileName = path.basename(file.fsPath);
@@ -238,6 +245,12 @@ export async function GetIconForFile(file: vscode.Uri): Promise<vscode.Uri | und
     return undefined;
   }
 
+  // Quick exit if we've already determined this extension has no icon
+  if (extensionsWithoutIcons.has(fileExtension)) {
+    iconCacheStats.quickExits++;
+    return undefined;
+  }
+
   try {
     console.log(`Opening file: ${file.fsPath}` + (fileExtension ? ` (ext: ${fileExtensionWithoutDot})` : ""));
     const fileDoc = await vscode.workspace.openTextDocument(file);
@@ -264,9 +277,39 @@ export async function GetIconForFile(file: vscode.Uri): Promise<vscode.Uri | und
       return gIcon;
     } else {
       console.log(`No icon found for ${fileDoc.fileName}`);
+      // Cache this extension as having no icon to avoid future expensive lookups
+      if (fileExtension) {
+        extensionsWithoutIcons.add(fileExtension);
+      }
       return undefined;
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Check if this is a binary file error from VS Code
+    // We check multiple indicators to be locale-independent:
+    // 1. Error name/code (should be consistent across locales)
+    // 2. Common English keywords in message (fallback)
+    const errorMessage = error.message?.toLowerCase() || "";
+    const isBinaryFileError =
+      // Primary indicators (should be locale-independent)
+      error.name === "CodeExpectedError" ||
+      error.code === "BINARY_FILE_NOT_DISPLAYABLE" ||
+      // Secondary indicators (English keywords as fallback)
+      errorMessage.includes("binary") ||
+      errorMessage.includes("cannot be opened as text") ||
+      errorMessage.includes("seems to be binary");
+
+    if (isBinaryFileError && fileExtension) {
+      console.log(
+        `[vstoys-icons] Detected binary file format: ${fileExtension} (${path.basename(
+          file.fsPath
+        )}) - adding to blacklist`
+      );
+      binaryFileExtensions.add(fileExtension);
+
+      // Log for debugging and potential future static list updates
+      printChannelOutput(`Auto-detected binary extension: ${fileExtension} from ${path.basename(file.fsPath)}`, false);
+    }
+
     console.error(`Error opening file: ${error}`);
     return undefined;
   }
@@ -284,7 +327,11 @@ export async function batchLoadIcons(files: vscode.Uri[]): Promise<void> {
     const fileExtension = path.extname(file.fsPath).toLowerCase();
     const fileExtensionWithoutDot = fileExtension.slice(1); // Remove the dot
 
-    if (binaryFileExtensions.has(fileExtension) || processedExtensions.has(fileExtensionWithoutDot)) {
+    if (
+      binaryFileExtensions.has(fileExtension) ||
+      extensionsWithoutIcons.has(fileExtension) ||
+      processedExtensions.has(fileExtensionWithoutDot)
+    ) {
       continue;
     }
 
@@ -318,13 +365,14 @@ export function getIconCacheStats(): typeof iconCacheStats {
 export function clearIconCache(): void {
   filePathToIcon.clear();
   extensionToIcon.clear();
+  extensionsWithoutIcons.clear(); // Clear the "no icon" cache
 
   // Restore base theme mappings to extensionToIcon
   iconFileExtensions.forEach((icon, extension) => {
     extensionToIcon.set(extension, icon);
   });
 
-  iconCacheStats = { hits: 0, misses: 0, extensionHits: 0 };
+  iconCacheStats = { hits: 0, misses: 0, extensionHits: 0, quickExits: 0 };
 }
 
 // List of binary file extensions
@@ -447,4 +495,16 @@ const binaryFileExtensions = new Set([
   ".xcf",
   ".indd",
   ".psb",
+  // Game/Specialized formats
+  ".blp", // Blizzard Picture (WoW textures)
+  ".tga", // Targa image format
+  ".dds", // DirectDraw Surface
+  ".m2", // Blizzard model format
+  ".wmo", // World Model Object (WoW)
+  ".mpq", // Mo'PaQ archive (Blizzard)
+  ".pak", // Package archive
+  ".wad", // Where's All the Data (game archive)
+  ".vpk", // Valve Package format
+  ".bsp", // Binary Space Partition (game maps)
+  ".mdx", // Warcraft model format
 ]);

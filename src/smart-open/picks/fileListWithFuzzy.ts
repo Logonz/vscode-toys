@@ -33,17 +33,28 @@ vscode.window.onDidChangeActiveTextEditor(async (editor) => {
     scoreCalculator.getScorer<GitScorer>("git")?.calculateScore("", fileObject, context);
   }
 
-  // TODO: Use a real file watcher here instead of doing it each time we change active editor
-  const fileLoadStart = performance.now();
-  filesCache = await GetAllFilesInWorkspace();
-  const fileLoadEnd = performance.now();
-  console.log(`  File loading: ${(fileLoadEnd - fileLoadStart).toFixed(2)}ms (${filesCache.length} files)`);
+  // Clear existing debounce timer
+  if (fileLoadDebounceTimer) {
+    clearTimeout(fileLoadDebounceTimer);
+  }
 
-  // TODO: Use a real file watcher here instead of doing it each time we change active editor
-  const iconLoadStart = performance.now();
-  await batchLoadIcons(filesCache);
-  const iconLoadEnd = performance.now();
-  console.log(`  Icon loading: ${(iconLoadEnd - iconLoadStart).toFixed(2)}ms (${filesCache.length} files)`);
+  // Debounce file and icon loading
+  fileLoadDebounceTimer = setTimeout(() => {
+    // TODO: Use a real file watcher here instead of doing it each time we change active editor
+    const fileLoadStart = performance.now();
+    GetAllFilesInWorkspace().then((files) => {
+      filesCache = files;
+      const fileLoadEnd = performance.now();
+      console.log(`  File loading: ${(fileLoadEnd - fileLoadStart).toFixed(2)}ms (${filesCache.length} files)`);
+
+      // TODO: Use a real file watcher here instead of doing it each time we change active editor
+      const iconLoadStart = performance.now();
+      batchLoadIcons(filesCache).then(() => {
+        const iconLoadEnd = performance.now();
+        console.log(`  Icon loading: ${(iconLoadEnd - iconLoadStart).toFixed(2)}ms (${filesCache.length} files)`);
+      });
+    });
+  }, 200); // 200ms debounce delay
 });
 
 const picked = vscode.window.createQuickPick<FileQuickPickItem>();
@@ -94,41 +105,64 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   console.log(`   Icon: Average per file: ${((iconLoadEnd - iconLoadStart) / files.length).toFixed(2)}ms`);
 
   // Custom label processing using cached configuration
-  const labelProcessStart = performance.now();
   let internalFiles: UriExt[] = [];
+
+  // Profiling variables
+  const totalProcessingStart = performance.now();
+  let totalLabelProcessingTime = 0;
+  let totalFilterProcessingTime = 0;
 
   // Use cached configuration instead of reading from workspace every time
   files.forEach((file) => {
     // Filter the files by the input, we want to filter by custom labels.
+    const labelProcessStart = performance.now();
     const customLabel = GetCustomLabelForFile(file);
+    const labelProcessEnd = performance.now();
+    totalLabelProcessingTime += labelProcessEnd - labelProcessStart;
+
     const relativePath = vscode.workspace.asRelativePath(file);
 
     // Quick check if the file should even be included.
+    const filterProcessingStart = performance.now();
+
     if (input && input.includes(" ")) {
       const parts = input.split(/\s+/);
       // Check if the custom label contains all parts of the input
       const matches = parts.every((part) => (customLabel || relativePath).toLowerCase().includes(part.toLowerCase()));
       if (!matches) {
+        // ? Profiling
+        const filterProcessingEnd = performance.now();
+        totalFilterProcessingTime += filterProcessingEnd - filterProcessingStart;
+        // ?-Profiling
         return; // Skip files that don't match the input
       }
     } else if (input && !(customLabel || relativePath).toLocaleLowerCase().includes(input.toLocaleLowerCase())) {
+      // ? Profiling
+      const filterProcessingEnd = performance.now();
+      totalFilterProcessingTime += filterProcessingEnd - filterProcessingStart;
       return;
+      // ?-Profiling
     }
+    // Add profiling for filter processing time
+    const filterProcessingEnd = performance.now();
+    totalFilterProcessingTime += filterProcessingEnd - filterProcessingStart;
 
     const fileObject: UriExt = {
       uri: file,
       fsPath: file.fsPath,
       fileName: path.basename(file.fsPath),
-      relativePath: vscode.workspace.asRelativePath(file),
+      relativePath: relativePath,
       customLabel: customLabel,
     };
     internalFiles.push(fileObject);
   });
 
-  const labelProcessEnd = performance.now();
+  const totalProcessingEnd = performance.now();
   console.log(
-    `3. Custom label processing: ${(labelProcessEnd - labelProcessStart).toFixed(2)}ms (${internalFiles.length} files)`
+    `3. UriExt Creation: ${(totalProcessingEnd - totalProcessingStart).toFixed(2)}ms (${internalFiles.length} files)`
   );
+  console.log(`   CustomLabel: ${totalLabelProcessingTime.toFixed(2)}ms`);
+  console.log(`   Filter: ${totalFilterProcessingTime.toFixed(2)}ms`);
 
   const items: FileQuickPickItem[] = [];
 
@@ -165,10 +199,12 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
       score: fileScore, // Store the complete score object
     });
 
-    if (i % 10 === 0) {
+    if (i % 100 === 0) {
       console.log(`  - Processed ${i + 1}/${internalFiles.length} files`);
     }
   }
+  console.log(`  - Processed ${internalFiles.length}/${internalFiles.length} files`);
+
   const fileProcessingEnd = performance.now();
   console.log(
     `4. File processing: ${(fileProcessingEnd - fileProcessingStart).toFixed(2)}ms (${internalFiles.length} files)`
@@ -233,7 +269,9 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   console.log(`=== Total time: ${(totalEnd - totalStart).toFixed(2)}ms ===`);
 
   const stats = getIconCacheStats();
-  console.log(`Icon cache stats: ${stats.hits} hits, ${stats.extensionHits} ext hits, ${stats.misses} misses`);
+  console.log(
+    `Icon cache stats: ${stats.hits} hits, ${stats.extensionHits} ext hits, ${stats.misses} misses, ${stats.quickExits} quick exits`
+  );
   console.log(`Custom labels enabled: ${IsCustomLabelsEnabled()}, processed ${internalFiles.length} files`);
 }
 
@@ -332,8 +370,8 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       const selectedItem = picked.items[selectedIndex];
       if (selectedItem) {
         await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
-        await openFile(selectedItem.file);
         picked.hide();
+        openFile(selectedItem.file);
         if (activeInlineInput) {
           activeInlineInput.destroy();
         }
@@ -357,8 +395,8 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       const selectedItem = picked.selectedItems[0] || picked.items[selectedIndex];
       if (selectedItem) {
         await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
-        await openFile(selectedItem.file);
         picked.hide();
+        openFile(selectedItem.file);
         if (activeInlineInput) {
           activeInlineInput.destroy();
         }
