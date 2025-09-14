@@ -51,8 +51,8 @@ export class RecencyScorer implements IScorer {
 
     // Score based on how recently the file was opened
     // More recent = higher score, with exponential decay
-    const hoursSinceOpened = (Date.now() - lastOpened) / (1000 * 60 * 60);
-    const recencyScore = Math.max(0, 100 * Math.exp(-hoursSinceOpened / 24)); // Decay over 24 hours
+    const minutesSinceOpened = (Date.now() - lastOpened) / (1000 * 60);
+    const recencyScore = Math.max(0, 100 * Math.exp(-minutesSinceOpened / 1440)); // Decay over 24 hours
 
     return recencyScore;
   }

@@ -5,9 +5,9 @@ import { ScoringContext } from "./interface/IContextScorer";
 import { FuzzyScorer } from "./Scorers/FuzzyScorer";
 import { RecencyScorer } from "./Scorers/RecencyScorer";
 import { FrequencyScorer } from "./Scorers/FrequencyScorer";
-// import { LengthScorer, PathScorer } from "./PathScorers";
 import { ClosenessScorer } from "./Scorers/ClosenessScorer";
 import { GitScorer } from "./Scorers/GitScorer";
+import { RelationshipScorer } from "./Scorers/RelationshipScorer";
 import * as vscode from "vscode";
 import { FileQuickPickItem } from "../picks/interface/IFileQuickPickItem";
 
@@ -30,10 +30,9 @@ export class ScoreCalculator {
       new FuzzyScorer(this.context),
       new RecencyScorer(this.context),
       new FrequencyScorer(this.context),
-      // new LengthScorer(this.context),
-      // new PathScorer(this.context),
       new ClosenessScorer(this.context), // Add the new closeness scorer
       new GitScorer(this.context), // Add the git co-change scorer
+      new RelationshipScorer(this.context), // Add the relationship scorer
       // ! NEW-SCORER-INSERT-HERE
     ];
 
@@ -81,17 +80,14 @@ export class ScoreCalculator {
         case "frequency":
           scores.frequencyScore = score;
           break;
-        // case "length":
-        //   scores.lengthScore = score;
-        //   break;
-        // case "path":
-        //   scores.pathScore = score;
-        //   break;
         case "closeness":
           scores.closenessScore = score;
           break;
         case "git":
           scores.gitScore = score;
+          break;
+        case "relationship":
+          scores.relationshipScore = score;
           break;
         // ! NEW-SCORER-INSERT-HERE
       }
@@ -161,6 +157,7 @@ export class ScoreCalculator {
       frequency: { min: Infinity, max: -Infinity },
       closeness: { min: Infinity, max: -Infinity },
       git: { min: Infinity, max: -Infinity },
+      relationship: { min: Infinity, max: -Infinity },
       // ! NEW-SCORER-INSERT-HERE
     };
 
@@ -188,6 +185,10 @@ export class ScoreCalculator {
         scoreRanges.git.min = Math.min(scoreRanges.git.min, score.gitScore);
         scoreRanges.git.max = Math.max(scoreRanges.git.max, score.gitScore);
       }
+      if (score.relationshipScore !== undefined && !isNaN(score.relationshipScore)) {
+        scoreRanges.relationship.min = Math.min(scoreRanges.relationship.min, score.relationshipScore);
+        scoreRanges.relationship.max = Math.max(scoreRanges.relationship.max, score.relationshipScore);
+      }
       // ! NEW-SCORER-INSERT-HERE
     }
     console.log(scoreRanges);
@@ -203,32 +204,34 @@ export class ScoreCalculator {
       if (range.min === Infinity) return (val: number) => val;
       const weight = this.getWeight(type);
       const rangeSize = range.max - range.min;
-      // If all values are the same, return 0 for all
-      if (rangeSize === 0) return (val: number) => 0;
 
       // Choose normalization strategy based on score type
       switch (type) {
         case "fuzzy":
+          // If all values are the same, return 0 for all
+          if (rangeSize === 0) return (val: number) => 0;
           // Fuzzy scores are already well-distributed, use linear normalization
           return (val: number) => ((val - range.min) / rangeSize) * MAX_VALUE * weight;
 
         case "frequency":
           // Hybrid normalization: use raw values for better granularity when max <= threshold,
           // switch to logarithmic normalization for larger ranges to prevent score inflation
-          if (range.max <= MAX_RAW_BEFORE_NORMALIZATION) {
-            // return (val: number) => ((val - range.min) / rangeSize) * MAX_VALUE * weight;
-            return (val: number) => Math.min(Math.max(0, val * weight), MAX_VALUE); // We do min(MAX_VALUE) just for extra safety.
-          } else {
-            // Use logarithmic normalization for larger ranges to compress high values
-            return (val: number) => {
-              const logVal = Math.log(val + 1);
-              const logMin = Math.log(range.min + 1);
-              const logMax = Math.log(range.max + 1);
-              const logRange = logMax - logMin;
-              if (logRange === 0) return 0;
-              return ((logVal - logMin) / logRange) * MAX_VALUE * weight;
-            };
-          }
+          // if (range.max <= MAX_RAW_BEFORE_NORMALIZATION) {
+          //   // return (val: number) => ((val - range.min) / rangeSize) * MAX_VALUE * weight;
+          //   return (val: number) => Math.min(Math.max(0, val * weight), MAX_VALUE); // We do min(MAX_VALUE) just for extra safety.
+          // } else {
+          // If all values are the same, return 0 for all
+          if (rangeSize === 0) return (val: number) => 0;
+          // Use logarithmic normalization for larger ranges to compress high values
+          return (val: number) => {
+            const logVal = Math.log(val + 1);
+            const logMin = Math.log(range.min + 1);
+            const logMax = Math.log(range.max + 1);
+            const logRange = logMax - logMin;
+            if (logRange === 0) return 0;
+            return ((logVal - logMin) / logRange) * MAX_VALUE * weight;
+          };
+        // }
 
         case "git":
           // Count-based scores benefit from logarithmic normalization
@@ -252,12 +255,29 @@ export class ScoreCalculator {
             return ((sqrtVal - sqrtMin) / sqrtRange) * MAX_VALUE * weight;
           };
 
+        case "relationship":
+          // Relationship scores benefit from logarithmic normalization similar to git
+          return (val: number) => {
+            const logVal = Math.log(val + 1);
+            const logMin = Math.log(range.min + 1);
+            const logMax = Math.log(range.max + 1);
+            const logRange = logMax - logMin;
+            if (logRange === 0) return 0;
+            return ((logVal - logMin) / logRange) * MAX_VALUE * weight;
+          };
+
         case "closeness":
         default:
+          // if (range.max <= MAX_RAW_BEFORE_NORMALIZATION) {
+          //   return (val: number) => Math.min(Math.max(0, val * weight), MAX_VALUE); // We do min(MAX_VALUE) just for extra safety.
+          // } else {
+          // If all values are the same, return 0 for all
+          if (rangeSize === 0) return (val: number) => 0;
           // Default to linear normalization with slight smoothing
           const smoothingFactor = rangeSize * 0.1; // 10% smoothing
           const adjustedRange = rangeSize + smoothingFactor;
           return (val: number) => ((val - range.min) / adjustedRange) * MAX_VALUE * weight;
+        // }
       }
     };
 
@@ -266,6 +286,7 @@ export class ScoreCalculator {
     const normalizeFrequency = createNormalizer("frequency", scoreRanges.frequency);
     const normalizeCloseness = createNormalizer("closeness", scoreRanges.closeness);
     const normalizeGit = createNormalizer("git", scoreRanges.git);
+    const normalizeRelationship = createNormalizer("relationship", scoreRanges.relationship);
     // ! NEW-SCORER-INSERT-HERE
 
     // Second pass: Apply normalization to all items
@@ -278,43 +299,50 @@ export class ScoreCalculator {
 
       // Normalize each score type
       if (score.fuzzyScore !== undefined && !isNaN(score.fuzzyScore)) {
-        score.fuzzyScore = Math.ceil(normalizeFuzzy(score.fuzzyScore)); // Ceil to avoid 0.1 scores
+        score.fuzzyScore = normalizeFuzzy(score.fuzzyScore); // Ceil to avoid 0.1 scores
         score.finalScore += score.fuzzyScore;
       }
       if (score.recencyScore !== undefined && !isNaN(score.recencyScore)) {
-        score.recencyScore = Math.ceil(normalizeRecency(score.recencyScore)); // Ceil to avoid 0.1 scores
+        score.recencyScore = normalizeRecency(score.recencyScore); // Ceil to avoid 0.1 scores
         score.finalScore += score.recencyScore;
       }
       if (score.frequencyScore !== undefined && !isNaN(score.frequencyScore)) {
-        score.frequencyScore = Math.ceil(normalizeFrequency(score.frequencyScore)); // Ceil to avoid 0.1 scores
+        score.frequencyScore = normalizeFrequency(score.frequencyScore); // Ceil to avoid 0.1 scores
         score.finalScore += score.frequencyScore;
       }
       if (score.closenessScore !== undefined && !isNaN(score.closenessScore)) {
-        score.closenessScore = Math.ceil(normalizeCloseness(score.closenessScore)); // Ceil to avoid 0.1 scores
+        score.closenessScore = normalizeCloseness(score.closenessScore); // Ceil to avoid 0.1 scores
         score.finalScore += score.closenessScore;
       }
       if (score.gitScore !== undefined && !isNaN(score.gitScore)) {
-        score.gitScore = Math.ceil(normalizeGit(score.gitScore)); // Ceil to avoid 0.1 scores
+        score.gitScore = normalizeGit(score.gitScore); // Ceil to avoid 0.1 scores
         score.finalScore += score.gitScore;
+      }
+      if (score.relationshipScore !== undefined && !isNaN(score.relationshipScore)) {
+        score.relationshipScore = normalizeRelationship(score.relationshipScore); // Ceil to avoid 0.1 scores
+        score.finalScore += score.relationshipScore;
       }
       // ! NEW-SCORER-INSERT-HERE
 
       // Create a description with all values
-      let scoreString = `${score.finalScore?.toFixed(2)} - `;
+      let scoreString = `${score.finalScore?.toFixed(2)} - |`;
       if (score.fuzzyScore !== undefined) {
-        scoreString += `Fuz: ${score.fuzzyScore}|`;
+        scoreString += `Fuz: ${score.fuzzyScore.toFixed(1)}|`;
       }
       if (score.closenessScore !== undefined) {
-        scoreString += `Clo: ${score.closenessScore}|`;
+        scoreString += `Clo: ${score.closenessScore.toFixed(1)}|`;
       }
       if (score.recencyScore !== undefined) {
-        scoreString += `Recent: ${score.recencyScore}|`;
+        scoreString += `Recent: ${score.recencyScore.toFixed(1)}|`;
       }
       if (score.frequencyScore !== undefined) {
-        scoreString += `Freq: ${score.frequencyScore}|`;
+        scoreString += `Freq: ${score.frequencyScore.toFixed(1)}|`;
       }
       if (score.gitScore !== undefined) {
-        scoreString += `Git: ${score.gitScore}`;
+        scoreString += `Git: ${score.gitScore.toFixed(1)}|`;
+      }
+      if (score.relationshipScore !== undefined) {
+        scoreString += `Rel: ${score.relationshipScore.toFixed(1)}`;
       }
       // ! NEW-SCORER-INSERT-HERE
       item.detail = scoreString;
@@ -336,14 +364,12 @@ export class ScoreCalculator {
         return this.config.enabled.recency;
       case "frequency":
         return this.config.enabled.frequency;
-      // case "length":
-      //   return this.config.enabled.length;
-      // case "path":
-      //   return this.config.enabled.path;
       case "closeness":
         return this.config.enabled.closeness;
       case "git":
         return this.config.enabled.git;
+      case "relationship":
+        return this.config.enabled.relationship;
       // ! NEW-SCORER-INSERT-HERE
       default:
         return false;
@@ -361,14 +387,12 @@ export class ScoreCalculator {
         return this.config.weights.recency;
       case "frequency":
         return this.config.weights.frequency;
-      // case "length":
-      //   return this.config.weights.length;
-      // case "path":
-      //   return this.config.weights.path;
       case "closeness":
         return this.config.weights.closeness;
       case "git":
         return this.config.weights.git;
+      case "relationship":
+        return this.config.weights.relationship;
       // ! NEW-SCORER-INSERT-HERE
       default:
         return 0;

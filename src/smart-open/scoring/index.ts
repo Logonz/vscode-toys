@@ -8,10 +8,7 @@ export { IContextScorer, ScoringContext } from "./interface/IContextScorer";
 export { FuzzyScorer } from "./Scorers/FuzzyScorer";
 export { RecencyScorer } from "./Scorers/RecencyScorer";
 export { FrequencyScorer } from "./Scorers/FrequencyScorer";
-// export { LengthScorer, PathScorer } from "./PathScorers";
 export { ClosenessScorer } from "./Scorers/ClosenessScorer";
 export { GitScorer } from "./Scorers/GitScorer";
+export { RelationshipScorer } from "./Scorers/RelationshipScorer";
 // ! NEW-SCORER-INSERT-HERE
-
-// Example/optional scorers
-// export { FileTypeScorer } from "./FileTypeScorer";

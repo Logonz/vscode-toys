@@ -4,7 +4,7 @@ import { UriExt } from "../../picks/interface/IUriExt";
 import { ScoringContext } from "../interface/IContextScorer";
 
 // Configuration constants
-const DECAY_EVERY_N_ACCESSES = 150; // Apply decay every N file accesses
+const DECAY_EVERY_N_ACCESSES = 100; // Apply decay every N file accesses
 
 /**
  * Frequency scorer - gives higher scores to frequently accessed files
@@ -52,8 +52,7 @@ export class FrequencyScorer implements IScorer {
   calculateScore(input: string, file: UriExt, context?: ScoringContext): number {
     const accessCount = this.fileFrequency.get(file.fsPath) || 0;
 
-    // Logarithmic scaling to prevent frequently used files from dominating
-    return accessCount > 0 ? Math.log(accessCount + 1) * 10 : 0;
+    return accessCount;
   }
 
   /**
@@ -66,6 +65,8 @@ export class FrequencyScorer implements IScorer {
     // Increment specific file frequency
     const current = this.fileFrequency.get(fsPath) || 0;
     this.fileFrequency.set(fsPath, current + 1);
+
+    console.log(`FrequencyScorer: File ${fsPath} accessed, new count is ${current + 1}`);
 
     // Check if we should apply decay based on activity
     this.checkAndApplyActivityBasedDecay();
@@ -182,6 +183,7 @@ export class FrequencyScorer implements IScorer {
 
     try {
       // Convert Map to plain object for storage
+      console.log("Saving frequency data...");
       const dataToSave = Object.fromEntries(this.fileFrequency);
       this.context.workspaceState.update("vstoys.frequency.files", dataToSave);
       this.context.workspaceState.update("vstoys.frequency.globalAccessCount", this.globalFileAccessCount);

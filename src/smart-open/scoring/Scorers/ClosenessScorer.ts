@@ -34,8 +34,8 @@ export class ClosenessScorer implements IContextScorer {
     const uncommonParts = fileParts.filter((part) => !activeEditorPathParts.includes(part));
 
     // Base score: common parts minus uncommon parts
-    closeScore = Math.max(0, commonParts.length - uncommonParts.length);
-
+    // closeScore = Math.max(0, commonParts.length - uncommonParts.length);
+    closeScore = Math.max(0, commonParts.length);
     // Additional bonuses for specific types of closeness
 
     // // 1. Same directory bonus
