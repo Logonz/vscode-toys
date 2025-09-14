@@ -8,10 +8,9 @@ export interface FileScore {
   fuzzyScore: number;
   recencyScore?: number;
   frequencyScore?: number;
-  // lengthScore?: number;
-  // pathScore?: number;
   closenessScore?: number;
   gitScore?: number;
+  relationshipScore?: number;
   // ! NEW-SCORER-INSERT-HERE
 
   // Final computed score (weighted combination)
@@ -30,20 +29,18 @@ export interface ScoreConfig {
     fuzzy: number;
     recency: number;
     frequency: number;
-    // length: number;
-    // path: number;
     closeness: number; // Add closeness weight
     git: number; // Add git weight
+    relationship: number; // Add relationship weight
     // ! NEW-SCORER-INSERT-HERE
   };
   enabled: {
     fuzzy: boolean;
     recency: boolean;
     frequency: boolean;
-    // length: boolean;
-    // path: boolean;
     closeness: boolean; // Add closeness enabled flag
     git: boolean; // Add git enabled flag
+    relationship: boolean; // Add relationship enabled flag
     // ! NEW-SCORER-INSERT-HERE
   };
 }
@@ -61,7 +58,6 @@ export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
   //   // path: 0.1, // Path-based bonuses
   //   closeness: 0.5, // Path closeness to active editor
   //   git: 0.4, // Git co-change scoring
-  //   // ! NEW-SCORER-INSERT-HERE
   // },
   // Old Weights 2, before closeness tuning
   // weights: {
@@ -72,26 +68,32 @@ export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
   //   // path: 0.1, // Path-based bonuses
   //   closeness: 0.2, // Path closeness to active editor (20% of total)
   //   git: 0.1, // Git co-change scoring (10% of total)
-  //   // ! NEW-SCORER-INSERT-HERE
+  // },
+  // weights: {
+  //   fuzzy: 0.5, // Primary scoring mechanism (50% of total)
+  //   recency: 0.1, // Recently opened files (10% of total)
+  //   frequency: 0.15, // Frequently accessed files (15% of total)
+  //   // length: 0.1, // Prefer shorter paths
+  //   // path: 0.1, // Path-based bonuses
+  //   closeness: 0.15, // Path closeness to active editor (15% of total)
+  //   git: 0.1, // Git co-change scoring (10% of total)
   // },
   weights: {
-    fuzzy: 0.5, // Primary scoring mechanism (40% of total)
-    recency: 0.15, // Recently opened files (15% of total)
-    frequency: 0.15, // Frequently accessed files (15% of total)
-    // length: 0.1, // Prefer shorter paths
-    // path: 0.1, // Path-based bonuses
-    closeness: 0.5, // Path closeness to active editor (50% of total)
+    fuzzy: 0.8, // Primary scoring mechanism (80% of total)
+    recency: 0.1, // Recently opened files (10% of total)
+    frequency: 0.2, // Frequently accessed files (20% of total)
+    closeness: 0.2, // Path closeness to active editor (20% of total)
     git: 0.1, // Git co-change scoring (10% of total)
+    relationship: 0.3, // File relationship scoring (30% of total)
     // ! NEW-SCORER-INSERT-HERE
   },
   enabled: {
     fuzzy: true,
     recency: true,
     frequency: true,
-    // length: false,
-    // path: false,
     closeness: true,
-    git: true, // Disabled by default due to potential performance impact
+    git: false, // Disabled by default due to potential performance impact
+    relationship: true, // Enable relationship scoring by default
     // ! NEW-SCORER-INSERT-HERE
   },
 };
