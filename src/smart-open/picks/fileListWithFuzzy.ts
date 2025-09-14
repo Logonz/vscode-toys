@@ -5,7 +5,7 @@ import { GetCustomLabelForFile, IsCustomLabelsEnabled } from "../../helpers/cust
 import { FileQuickPickItem } from "./interface/IFileQuickPickItem";
 import { UriExt } from "./interface/IUriExt";
 import { InlineInput } from "./InlineInput";
-import { GitScorer } from "../scoring";
+import { DEFAULT_SCORE_CONFIG, GitScorer } from "../scoring";
 import { scoreCalculator } from "../main";
 import path from "path";
 
@@ -14,23 +14,28 @@ let activeInlineInput: InlineInput | undefined;
 
 let filesCache: vscode.Uri[] = [];
 
+// Debounce timer for file/icon loading
+let fileLoadDebounceTimer: NodeJS.Timeout | undefined;
+
 // Switch editor or file listener
 vscode.window.onDidChangeActiveTextEditor(async (editor) => {
   console.log("Active editor changed:", editor?.document.uri);
-  if (editor?.document) {
-    // The active file
-    const fileObject: UriExt = {
-      uri: editor.document.uri,
-      fsPath: editor.document.uri.fsPath,
-      fileName: path.basename(editor.document.uri.fsPath),
-      relativePath: vscode.workspace.asRelativePath(editor.document.uri),
-      customLabel: "",
-    };
+  if (DEFAULT_SCORE_CONFIG.enabled.git) {
+    if (editor?.document) {
+      // The active file
+      const fileObject: UriExt = {
+        uri: editor.document.uri,
+        fsPath: editor.document.uri.fsPath,
+        fileName: path.basename(editor.document.uri.fsPath),
+        relativePath: vscode.workspace.asRelativePath(editor.document.uri),
+        customLabel: "",
+      };
 
-    const activeWorkspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
-    const context = { activeEditor: editor, activeWorkspaceFolder };
-    // Re-evaluate the scoring when the active editor changes
-    scoreCalculator.getScorer<GitScorer>("git")?.calculateScore("", fileObject, context);
+      const activeWorkspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+      const context = { activeEditor: editor, activeWorkspaceFolder };
+      // Re-evaluate the scoring when the active editor changes
+      scoreCalculator.getScorer<GitScorer>("git")?.calculateScore("", fileObject, context);
+    }
   }
 
   // Clear existing debounce timer
