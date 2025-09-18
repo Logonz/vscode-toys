@@ -83,6 +83,16 @@ picked.onDidChangeValue((value) => {
   vscode.window.showTextDocument(activeEditor.document);
 });
 
+function includeParts(input: string, lowercaseParts: string[]): boolean {
+  const lowerInput = input.toLowerCase();
+  for (const part of lowercaseParts) {
+    if (!lowerInput.includes(part)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export async function showFileListWithFuzzy(input: string): Promise<void> {
   const totalStart = performance.now();
 
@@ -110,7 +120,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   console.log(`   Icon: Average per file: ${((iconLoadEnd - iconLoadStart) / files.length).toFixed(2)}ms`);
 
   // Custom label processing using cached configuration
-  let internalFiles: UriExt[] = [];
+  let filterMatchFiles: UriExt[] = [];
 
   // Profiling variables
   const totalProcessingStart = performance.now();
@@ -130,27 +140,28 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
     // Quick check if the file should even be included.
     const filterProcessingStart = performance.now();
 
-    if (input && input.includes(" ")) {
-      const parts = input.split(/\s+/);
-      // Check if the custom label contains all parts of the input
-      const matches = parts.every((part) => (customLabel || relativePath).toLowerCase().includes(part.toLowerCase()));
-      if (!matches) {
-        // ? Profiling
-        const filterProcessingEnd = performance.now();
-        totalFilterProcessingTime += filterProcessingEnd - filterProcessingStart;
-        // ?-Profiling
-        return; // Skip files that don't match the input
+    let matches = false;
+    if (input) {
+      const parts = input.toLowerCase().split(/\s+/);
+      if (customLabel) {
+        matches = includeParts(customLabel, parts);
+        // If custom label doesn't match, try relative path
+        if (!matches) {
+          matches = includeParts(relativePath, parts);
+        }
+        // If it doesn't have a custom label search by relativePath
+      } else {
+        matches = includeParts(relativePath, parts);
       }
-    } else if (input && !(customLabel || relativePath).toLocaleLowerCase().includes(input.toLocaleLowerCase())) {
       // ? Profiling
       const filterProcessingEnd = performance.now();
       totalFilterProcessingTime += filterProcessingEnd - filterProcessingStart;
-      return;
-      // ?-Profiling
+
+      if (!matches) {
+        // ?-Profiling
+        return; // Skip files that don't match the input
+      }
     }
-    // Add profiling for filter processing time
-    const filterProcessingEnd = performance.now();
-    totalFilterProcessingTime += filterProcessingEnd - filterProcessingStart;
 
     const fileObject: UriExt = {
       uri: file,
@@ -159,12 +170,12 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
       relativePath: relativePath,
       customLabel: customLabel,
     };
-    internalFiles.push(fileObject);
+    filterMatchFiles.push(fileObject);
   });
 
   const totalProcessingEnd = performance.now();
   console.log(
-    `3. UriExt Creation: ${(totalProcessingEnd - totalProcessingStart).toFixed(2)}ms (${internalFiles.length} files)`
+    `3. UriExt Creation: ${(totalProcessingEnd - totalProcessingStart).toFixed(2)}ms (${filterMatchFiles.length} files)`
   );
   console.log(`   CustomLabel: ${totalLabelProcessingTime.toFixed(2)}ms`);
   console.log(`   Filter: ${totalFilterProcessingTime.toFixed(2)}ms`);
@@ -174,8 +185,8 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   const context = activeEditor ? { activeEditor, activeWorkspaceFolder } : undefined;
 
   const fileProcessingStart = performance.now();
-  for (let i = 0; i < internalFiles.length; i++) {
-    const fileInfo = internalFiles[i];
+  for (let i = 0; i < filterMatchFiles.length; i++) {
+    const fileInfo = filterMatchFiles[i];
 
     // Do not include the current file in the suggestions
     // if (activeFilePath && fileInfo.fsPath === activeFilePath) {
@@ -193,7 +204,9 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
       continue;
     }
 
-    const pathWithoutFilename = vscode.workspace.asRelativePath(fileInfo.uri).replace(/\/[^\/]+$/, "");
+    const pathWithoutFilename = fileInfo.relativePath.includes("/")
+      ? fileInfo.relativePath.replace(/\/[^\/]+$/, "")
+      : "";
 
     items.push({
       label: fileInfo.customLabel || fileInfo.fileName,
@@ -205,14 +218,14 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
     });
 
     if (i % 100 === 0) {
-      console.log(`  - Processed ${i + 1}/${internalFiles.length} files`);
+      console.log(`  - Processed ${i + 1}/${filterMatchFiles.length} files`);
     }
   }
-  console.log(`  - Processed ${internalFiles.length}/${internalFiles.length} files`);
+  console.log(`  - Processed ${filterMatchFiles.length}/${filterMatchFiles.length} files`);
 
   const fileProcessingEnd = performance.now();
   console.log(
-    `4. File processing: ${(fileProcessingEnd - fileProcessingStart).toFixed(2)}ms (${internalFiles.length} files)`
+    `4. File processing: ${(fileProcessingEnd - fileProcessingStart).toFixed(2)}ms (${filterMatchFiles.length} files)`
   );
 
   const normalizeStart = performance.now();
@@ -244,23 +257,29 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   // https://vscode.dev/github/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.quickPickSortByLabel.d.ts
   // https://github.com/microsoft/vscode/issues/73904
   // if((quickPickObject as any).sortByLabel !== false) {
-  const maxLength = sortedItems.length.toString().length;
-  for (let i = 0; i < sortedItems.length; i++) {
-    const item = sortedItems[i];
-    const length = i.toString().length;
+  // * With the new inlineinput implemementation we don't need this at all.
+  // const maxLength = sortedItems.length.toString().length; // TODO Needed if you are doing the length addition sorting below
+  // for (let i = 0; i < sortedItems.length; i++) {
+  //   // TODO: Look into this more, it almost looks like the \u00A0 (NO-BREAK-SPACE) just "cancels" sorting internally??
+  //   // TODO So we don't have to use multiple spaces, we could use a single non-breaking space
+  //   // TODO https://www.fileformat.info/info/unicode/char/00a0/index.htm
+  //   const item = sortedItems[i];
+  //   const length = i.toString().length;
 
-    if (length < maxLength) {
-      const diff = maxLength - length;
-      // const spaces = "1".repeat(diff);
-      const spaces = "\u00A0".repeat(diff);
+  //   if (length < maxLength) {
+  //     const diff = maxLength - length;
+  //     // const spaces = "1".repeat(diff);
+  //     const spaces = "\u00A0".repeat(diff);
+  //     // console.log(diff, maxLength, length, `'${spaces}'${item.label}`);
 
-      sortedItems[i].label = `${spaces}${item.label}`;
-      // sortedItems[i].label = `${spaces}${i} ${item.label}`;
-    } else {
-      sortedItems[i].label = `\u00A0${item.label}`;
-      // sortedItems[i].label = `${i} ${item.label}`;
-    }
-  }
+  //     sortedItems[i].label = `${spaces}${item.label}`;
+  //     // sortedItems[i].label = `${spaces}${i} ${item.label}`;
+  //   } else {
+  //     // console.log(0, maxLength, length, `'\u00A0'${item.label}`);
+  //     sortedItems[i].label = `\u00A0${item.label}`;
+  //     // sortedItems[i].label = `${i} ${item.label}`;
+  //   }
+  // }
 
   const activeEditorForQuickPick = vscode.window.activeTextEditor || vscode.window.visibleTextEditors[0];
   const quickPickStart = performance.now();
@@ -277,7 +296,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   console.log(
     `Icon cache stats: ${stats.hits} hits, ${stats.extensionHits} ext hits, ${stats.misses} misses, ${stats.quickExits} quick exits`
   );
-  console.log(`Custom labels enabled: ${IsCustomLabelsEnabled()}, processed ${internalFiles.length} files`);
+  console.log(`Custom labels enabled: ${IsCustomLabelsEnabled()}, processed ${filterMatchFiles.length} files`);
 }
 
 export async function showQuickPickWithInlineSearch(): Promise<void> {
