@@ -38,6 +38,8 @@ export class InlineInput {
   public destroy = (): void => {
     this.statusBarItem.dispose();
     subscriptions.forEach((subscription) => subscription.dispose());
+    // Run onCancel
+    this.props.onCancel();
   };
 
   public deleteLastCharacter = (): string => {
