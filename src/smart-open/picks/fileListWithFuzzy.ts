@@ -17,6 +17,14 @@ let filesCache: vscode.Uri[] = [];
 // Debounce timer for file/icon loading
 let fileLoadDebounceTimer: NodeJS.Timeout | undefined;
 
+if (process.env.NODE_ENV !== "development") {
+  vscode.window.onDidChangeWindowState((event) => {
+    if (!event.focused && activeInlineInput) {
+      activeInlineInput.destroy();
+    }
+  });
+}
+
 // Switch editor or file listener
 vscode.window.onDidChangeActiveTextEditor(async (editor) => {
   console.log("Active editor changed:", editor?.document.uri);
@@ -67,7 +75,8 @@ picked.matchOnDescription = false;
 picked.matchOnDetail = false;
 // picked.enabled = false; // This works and is good, but it disables mouse interactions
 picked.ignoreFocusOut = true;
-picked.title = "Smart Open";
+const baseTitle = "Smart Open";
+picked.title = baseTitle;
 picked.placeholder = `Select file to open - Custom Labels ${IsCustomLabelsEnabled() ? "ENABLED" : "DISABLED"}`;
 
 picked.onDidChangeValue((value) => {
@@ -211,7 +220,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
     items.push({
       label: fileInfo.customLabel || fileInfo.fileName,
       description: pathWithoutFilename,
-      detail: pathWithoutFilename,
+      // detail: pathWithoutFilename, // Let's not add detail, we do add in normalizeScores but that has a toggle
       file: fileInfo.uri,
       iconPath: icon ? icon : new vscode.ThemeIcon("file"),
       score: fileScore, // Store the complete score object
@@ -229,7 +238,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   );
 
   const normalizeStart = performance.now();
-  const normalizedItems = scoreCalculator.normalizeScores(items);
+  const normalizedItems = scoreCalculator.normalizeScores(items, false);
   const normalizeEnd = performance.now();
   console.log(`5. Score normalization: ${(normalizeEnd - normalizeStart).toFixed(2)}ms`);
 
@@ -323,18 +332,24 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       if (activeInlineInput) {
         const itemCount = picked.items.length;
         activeInlineInput.updateStatusBar(
-          `Search: ${activeInlineInput.input} [${selectedIndex + 1}/${itemCount}]`,
+          // `Search: ${activeInlineInput.input} [${selectedIndex + 1}/${itemCount}]`,
+          `${activeInlineInput.input} [${selectedIndex + 1}/${itemCount}]`,
           true
         );
 
-        picked.placeholder = `Search: ${activeInlineInput.input} [${selectedIndex + 1}/${itemCount}]`;
+        // picked.placeholder = `Search: ${activeInlineInput.input} [${selectedIndex + 1}/${itemCount}]`;
+        picked.title = `${baseTitle} - [${selectedIndex + 1}/${itemCount}]`;
+        picked.placeholder = `${activeInlineInput.input}`;
       }
     } else {
       // No found items
       if (activeInlineInput) {
-        picked.placeholder = `Search: ${activeInlineInput.input} [0/0]`;
+        // picked.placeholder = `Search: ${activeInlineInput.input} [0/0]`;
+        picked.title = `${baseTitle} - [0/0]`;
+        picked.placeholder = `${activeInlineInput.input}`;
       } else {
-        picked.placeholder = `Search: [0/0] (No InlineInput)`;
+        picked.title = `${baseTitle}`;
+        picked.placeholder = `Search: (No InlineInput)`;
       }
     }
   };
@@ -373,6 +388,11 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
         }
         activeInlineInput = undefined; // Clear the reference
       },
+    });
+
+    const changedEditor = vscode.window.onDidChangeActiveTextEditor((editor) => {
+      picked.hide();
+      console.log("XXXX", editor);
     });
 
     // Register arrow key commands
@@ -435,6 +455,7 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
         activeInlineInput.destroy();
       }
       activeInlineInput = undefined; // Clear the reference
+      changedEditor.dispose();
       upCommand.dispose();
       downCommand.dispose();
       enterCommand.dispose();

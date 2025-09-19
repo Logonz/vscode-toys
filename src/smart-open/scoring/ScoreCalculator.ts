@@ -145,7 +145,7 @@ export class ScoreCalculator {
   /**
    * Normalize all scores in the provided items to 0-1 range based on min/max values
    */
-  normalizeScores(items: FileQuickPickItem[]): FileQuickPickItem[] {
+  normalizeScores(items: FileQuickPickItem[], debugDetail: boolean = false): FileQuickPickItem[] {
     if (!items || items.length === 0) {
       return items;
     }
@@ -345,7 +345,10 @@ export class ScoreCalculator {
         scoreString += `Rel: ${score.relationshipScore.toFixed(1)}`;
       }
       // ! NEW-SCORER-INSERT-HERE
-      item.detail = scoreString;
+
+      if (debugDetail) {
+        item.detail = scoreString;
+      }
 
       // console.log(`Final Normalized scores for ${item.file}:`, score);
     }

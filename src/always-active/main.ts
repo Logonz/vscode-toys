@@ -19,7 +19,42 @@ export function activateAlwaysActive(name: string, context: vscode.ExtensionCont
   printAlwaysActiveOutput = createOutputChannel(`${name}`);
   printAlwaysActiveOutput(`${name} activating`);
 
+  async function g() {
+    if (vscode.window.activeTextEditor) {
+      // const currentSelection = vscode.window.activeTextEditor.selection.active;
+      const result = await vscode.commands.executeCommand(
+        "vscode.executeDocumentSymbolProvider",
+        // "vscode.executeDocumentHighlights",
+        vscode.window.activeTextEditor.document.uri
+        // vscode.window.activeTextEditor.selection.active
+      );
+      console.log(result);
+
+      const selectedRange = vscode.window.activeTextEditor.selection;
+      const legend = await vscode.commands.executeCommand(
+        "vscode.provideDocumentRangeSemanticTokensLegend",
+        // "vscode.provideDocumentSemanticTokensLegend",
+        // "vscode.executeDocumentHighlights",
+        vscode.window.activeTextEditor.document.uri,
+        selectedRange
+        // vscode.window.activeTextEditor.selection.active
+      );
+      console.log(legend);
+
+      const tokens = await vscode.commands.executeCommand(
+        "vscode.provideDocumentRangeSemanticTokens",
+        // "vscode.provideDocumentSemanticTokens",
+        // "vscode.executeDocumentHighlights",
+        vscode.window.activeTextEditor.document.uri,
+        selectedRange
+        // vscode.window.activeTextEditor.selection.active
+      );
+      console.log(tokens);
+    }
+  }
+
   context.subscriptions.push(vscode.commands.registerCommand("vstoys.openFile", openFile));
+  context.subscriptions.push(vscode.commands.registerCommand("vstoys.test", g));
 
   printAlwaysActiveOutput(`${name} activated`, false);
 }

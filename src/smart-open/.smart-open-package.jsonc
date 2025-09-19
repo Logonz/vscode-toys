@@ -13,22 +13,26 @@
       {
         "command": "vstoys.smart-open.navigateUp",
         "category": "VsToys",
-        "title": "Smart Open: Navigate Up"
+        "title": "Smart Open: Navigate Up",
+        "enablement": "vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.smart-open.navigateDown",
         "category": "VsToys",
-        "title": "Smart Open: Navigate Down"
+        "title": "Smart Open: Navigate Down",
+        "enablement": "vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.smart-open.selectFile",
         "category": "VsToys",
-        "title": "Smart Open: Select File"
+        "title": "Smart Open: Select File",
+        "enablement": "vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.smart-open.deleteChar",
         "category": "VsToys",
-        "title": "Smart Open: Delete Character"
+        "title": "Smart Open: Delete Character",
+        "enablement": "vstoys.smart-open.searching"
       }
     ],
     "configuration": {
