@@ -9,6 +9,12 @@ import { DEFAULT_SCORE_CONFIG, GitScorer } from "../scoring";
 import { scoreCalculator } from "../main";
 import path from "path";
 
+// Ugly, but lets us enable and disable this for now.
+let detailsDebug = false;
+export function updateDetailsDebug(value: boolean) {
+  detailsDebug = value;
+}
+
 // Module-level reference to active InlineInput for forwarding QuickPick input
 let activeInlineInput: InlineInput | undefined;
 
@@ -238,7 +244,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   );
 
   const normalizeStart = performance.now();
-  const normalizedItems = scoreCalculator.normalizeScores(items, true);
+  const normalizedItems = scoreCalculator.normalizeScores(items, detailsDebug);
   const normalizeEnd = performance.now();
   console.log(`5. Score normalization: ${(normalizeEnd - normalizeStart).toFixed(2)}ms`);
 

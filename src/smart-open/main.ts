@@ -3,7 +3,7 @@ import { LoadIcons } from "./icons";
 import { updateFilesExcludeCache, updateSearchExcludeCache } from "./files";
 import { showDebugQuickPick } from "./debugQuickPick";
 import { updateCustomLabelConfiguration } from "../helpers/customEditorLabelService";
-import { showQuickPickWithInlineSearch } from "./picks/fileListWithFuzzy";
+import { updateDetailsDebug, showQuickPickWithInlineSearch } from "./picks/fileListWithFuzzy";
 import { createOutputChannel } from "../extension";
 import { ScoreCalculator } from "./scoring";
 import {
@@ -42,6 +42,10 @@ export async function activateSmartOpen(name: string, context: vscode.ExtensionC
       event.affectsConfiguration("vstoys.smart-open.maxWorkspaceFiles")
     ) {
       updateCustomLabelConfiguration();
+    }
+
+    if (event.affectsConfiguration("vstoys.smart-open.debugDetails")) {
+      updateDetailsDebug(vscode.workspace.getConfiguration("vstoys.smart-open").get("debugDetails", false));
     }
 
     if (event.affectsConfiguration("workbench.iconTheme")) {

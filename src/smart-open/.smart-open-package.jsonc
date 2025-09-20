@@ -43,6 +43,11 @@
           "default": true,
           "description": "Enable the Smart Open module in VSCode Toys"
         },
+        "vstoys.smart-open.debugDetails": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable detailed debugging information for the Smart Open module"
+        },
         "vstoys.smart-open.maxWorkspaceFiles": {
           "type": "number",
           "default": 5000,
