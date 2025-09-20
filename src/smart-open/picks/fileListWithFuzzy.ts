@@ -238,7 +238,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   );
 
   const normalizeStart = performance.now();
-  const normalizedItems = scoreCalculator.normalizeScores(items, false);
+  const normalizedItems = scoreCalculator.normalizeScores(items, true);
   const normalizeEnd = performance.now();
   console.log(`5. Score normalization: ${(normalizeEnd - normalizeStart).toFixed(2)}ms`);
 
