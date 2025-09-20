@@ -348,6 +348,9 @@ export class ScoreCalculator {
 
       if (debugDetail) {
         item.detail = scoreString;
+      } else {
+        // TODO: not checked if it is good looking :P
+        item.description = item.description + ` (${score.finalScore?.toFixed(0)})`;
       }
 
       // console.log(`Final Normalized scores for ${item.file}:`, score);
