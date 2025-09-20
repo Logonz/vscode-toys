@@ -153,12 +153,14 @@
         "vstoys.semantic-jump.decorationBackgroundColor": {
           "type": "string",
           // "default": "#4169E1",
+          "default": "activityErrorBadge.background",
           "description": "Background color for jump character decorations",
           "order": 8008
         },
         "vstoys.semantic-jump.decorationForegroundColor": {
           "type": "string",
           // "default": "#ffffff",
+          "default": "button.foreground",
           "description": "Foreground color for jump character decorations",
           "order": 8009
         },
