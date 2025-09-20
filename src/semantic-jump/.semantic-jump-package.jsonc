@@ -212,13 +212,13 @@
     "keybindings": [
       {
         "key": "f19",
-        "command": "vstoys.semantic-jump.jump",
-        "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active"
-      },
-      {
-        "key": "f19",
         "command": "vstoys.regular-jump.start",
         "when": "hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active"
+      },
+      {
+        "key": "ctrl+f19",
+        "command": "vstoys.semantic-jump.jump",
+        "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active"
       },
       {
         "command": "vstoys.semantic-jump.escape",
