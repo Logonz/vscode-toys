@@ -12,6 +12,9 @@ export function activateSemanticJump(name: string, context: vscode.ExtensionCont
   printSemanticJumpOutput = createOutputChannel(`${name}`);
   printSemanticJumpOutput(`${name} activating`);
 
+  vscode.commands.executeCommand("setContext", "vstoys.semantic-jump.active", false);
+  vscode.commands.executeCommand("setContext", "vstoys.regular-jump.active", false);
+
   semanticJumpHandler = new SemanticJumpHandler();
   regularJumpHandler = new RegularJumpHandler();
 

@@ -10,35 +10,6 @@
         "command": "vstoys.semantic-jump.debug",
         "category": "VsToys",
         "title": "Semantic Jump: Debug Mode (Show All Tokens)"
-      },
-      {
-        "command": "vstoys.semantic-jump.escape",
-        "category": "VsToys",
-        "title": "Semantic Jump: Cancel/Escape",
-        "enablement": "vstoys.regular-jump.active"
-      },
-      {
-        "command": "vstoys.regular-jump.start",
-        "category": "VsToys",
-        "title": "Regular Jump: Start Character Search"
-      },
-      {
-        "command": "vstoys.regular-jump.backspace",
-        "category": "VsToys",
-        "title": "Regular Jump: Backspace",
-        "enablement": "vstoys.regular-jump.active"
-      },
-      {
-        "command": "vstoys.regular-jump.next",
-        "category": "VsToys",
-        "title": "Regular Jump: Next Match",
-        "enablement": "vstoys.regular-jump.active"
-      },
-      {
-        "command": "vstoys.regular-jump.previous",
-        "category": "VsToys",
-        "title": "Regular Jump: Previous Match",
-        "enablement": "vstoys.regular-jump.active"
       }
     ],
     "configuration": {
@@ -252,12 +223,12 @@
       {
         "command": "vstoys.semantic-jump.escape",
         "key": "escape",
-        "when": "vstoys.semantic-jump.active"
+        "when": "!vstoys.regular-jump.active && vstoys.semantic-jump.active"
       },
       {
         "command": "vstoys.regular-jump.escape",
         "key": "escape",
-        "when": "vstoys.regular-jump.active"
+        "when": "vstoys.regular-jump.active && !vstoys.semantic-jump.active"
       },
       {
         "command": "vstoys.regular-jump.backspace",
