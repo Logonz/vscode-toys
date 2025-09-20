@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { JumpInput } from "./jumpInput";
 import { AdaptiveCharAssigner, JumpAssignment } from "../shared/adaptiveCharAssigner";
 import { ProgressiveJumpInput } from "./progressiveJumpInput";
+import { pickColorType } from "../../helpers/pickColorType";
 
 type DecodedToken = {
   line: number;
@@ -47,11 +48,7 @@ export class SemanticJumpHandler {
         this.startDebugMode(editor);
       } else if (mode === "adaptive" || mode === "progressive") {
         // Use the new adaptive system
-        this.jumpAssignments = this.adaptiveAssigner.assignChars(
-          tokens,
-          editor.selection.active,
-          editor.document
-        );
+        this.jumpAssignments = this.adaptiveAssigner.assignChars(tokens, editor.selection.active, editor.document);
         this.createAdaptiveDecorations(editor);
         this.startProgressiveInput(editor);
       } else {
@@ -201,15 +198,19 @@ export class SemanticJumpHandler {
     const config = vscode.workspace.getConfiguration("vstoys.semantic-jump");
 
     // Use red background and white text for debug mode
-    const backgroundColor = debugMode ? "#ff0000" : config.get<string>("decorationBackgroundColor", "#4169E1");
-    const foregroundColor = debugMode ? "#ffffff" : config.get<string>("decorationForegroundColor", "#ffffff");
+    const backgroundColor = debugMode
+      ? "#ff0000"
+      : config.get<string>("decorationBackgroundColor", "activityErrorBadge.background");
+    const foregroundColor = debugMode
+      ? "#ffffff"
+      : config.get<string>("decorationForegroundColor", "button.foreground");
     const displayChar = debugMode ? "X" : undefined;
 
     this.decorationType = vscode.window.createTextEditorDecorationType({
       before: {
-        backgroundColor: backgroundColor,
-        border: `1px solid ${backgroundColor}`,
-        color: foregroundColor,
+        backgroundColor: pickColorType(backgroundColor),
+        // border: `1px solid`,
+        color: pickColorType(foregroundColor),
         textDecoration: "none;position:absolute;z-index:999999;max-height:100%;",
         contentText: "",
         margin: "0 2px 0 0",
@@ -290,9 +291,9 @@ export class SemanticJumpHandler {
 
     this.decorationType = vscode.window.createTextEditorDecorationType({
       before: {
-        backgroundColor: backgroundColor,
-        border: `1px solid ${backgroundColor}`,
-        color: foregroundColor,
+        backgroundColor: pickColorType(backgroundColor),
+        // border: `1px solid`,
+        color: pickColorType(foregroundColor),
         textDecoration: "none;position:absolute;z-index:999999;max-height:100%;",
         contentText: "",
         margin: "0 2px 0 0",
@@ -302,18 +303,17 @@ export class SemanticJumpHandler {
     // Filter assignments if we're in refinement phase
     let visibleAssignments = this.jumpAssignments;
     if (showOnlySequences) {
-      visibleAssignments = this.jumpAssignments.filter(
-        a => a.isSequence && a.chars.startsWith(showOnlySequences)
-      );
+      visibleAssignments = this.jumpAssignments.filter((a) => a.isSequence && a.chars.startsWith(showOnlySequences));
     }
 
     const decorationOptions: vscode.DecorationOptions[] = visibleAssignments.map((assignment) => {
       // For sequences in refinement phase, only show the second character
-      const displayChar = showOnlySequences && assignment.isSequence
-        ? assignment.chars[1]
-        : assignment.isSequence
-        ? assignment.chars[0]
-        : assignment.chars;
+      const displayChar =
+        showOnlySequences && assignment.isSequence
+          ? assignment.chars[1]
+          : assignment.isSequence
+          ? assignment.chars[0]
+          : assignment.chars;
 
       return {
         range: new vscode.Range(assignment.position, assignment.position),
@@ -329,24 +329,21 @@ export class SemanticJumpHandler {
   }
 
   private startProgressiveInput(editor: vscode.TextEditor): void {
-    this.progressiveInput = new ProgressiveJumpInput(
-      this.jumpAssignments,
-      {
-        onJump: (target) => {
-          editor.selection = new vscode.Selection(target.position, target.position);
-          editor.revealRange(new vscode.Range(target.position, target.position));
-          this.cleanup();
-        },
-        onRefine: (targets) => {
-          // Update decorations to show only second characters
-          const firstChar = this.progressiveInput?.getFirstChar() || "";
-          this.createAdaptiveDecorations(editor, firstChar);
-        },
-        onCancel: () => {
-          this.cleanup();
-        }
-      }
-    );
+    this.progressiveInput = new ProgressiveJumpInput(this.jumpAssignments, {
+      onJump: (target) => {
+        editor.selection = new vscode.Selection(target.position, target.position);
+        editor.revealRange(new vscode.Range(target.position, target.position));
+        this.cleanup();
+      },
+      onRefine: (targets) => {
+        // Update decorations to show only second characters
+        const firstChar = this.progressiveInput?.getFirstChar() || "";
+        this.createAdaptiveDecorations(editor, firstChar);
+      },
+      onCancel: () => {
+        this.cleanup();
+      },
+    });
   }
 
   private cleanup(): void {
