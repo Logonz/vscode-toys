@@ -39,22 +39,65 @@
       {
         "command": "vstoys.smart-open.navigateUp",
         "category": "VsToys",
-        "title": "Smart Open: Navigate Up"
+        "title": "Smart Open: Navigate Up",
+        "enablement": "vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.smart-open.navigateDown",
         "category": "VsToys",
-        "title": "Smart Open: Navigate Down"
+        "title": "Smart Open: Navigate Down",
+        "enablement": "vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.smart-open.selectFile",
         "category": "VsToys",
-        "title": "Smart Open: Select File"
+        "title": "Smart Open: Select File",
+        "enablement": "vstoys.smart-open.searching"
       },
       {
         "command": "vstoys.smart-open.deleteChar",
         "category": "VsToys",
-        "title": "Smart Open: Delete Character"
+        "title": "Smart Open: Delete Character",
+        "enablement": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.semantic-jump.jump",
+        "category": "VsToys",
+        "title": "Semantic Jump: Start Jump Mode"
+      },
+      {
+        "command": "vstoys.semantic-jump.debug",
+        "category": "VsToys",
+        "title": "Semantic Jump: Debug Mode (Show All Tokens)"
+      },
+      {
+        "command": "vstoys.semantic-jump.escape",
+        "category": "VsToys",
+        "title": "Semantic Jump: Cancel/Escape",
+        "enablement": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.start",
+        "category": "VsToys",
+        "title": "Regular Jump: Start Character Search"
+      },
+      {
+        "command": "vstoys.regular-jump.backspace",
+        "category": "VsToys",
+        "title": "Regular Jump: Backspace",
+        "enablement": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.next",
+        "category": "VsToys",
+        "title": "Regular Jump: Next Match",
+        "enablement": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.previous",
+        "category": "VsToys",
+        "title": "Regular Jump: Previous Match",
+        "enablement": "vstoys.regular-jump.active"
       },
       {
         "command": "vstoys.registers.showRegisterPastePicker",
@@ -180,6 +223,199 @@
           "type": "number",
           "default": 5000,
           "description": "Maximum number of files to index in the workspace, tip is to use gitignore to exclude files"
+        },
+        "vstoys.semantic-jump.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Semantic Jump module in VSCode Toys",
+          "order": 8000
+        },
+        "vstoys.semantic-jump.jumpCharacters": {
+          "type": "string",
+          "default": "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV",
+          "description": "Characters used for jumping to semantic tokens. Auto-sliced: first 8 chars = home row (single chars for high-priority targets), next 12 chars = extended (used in sequences), remaining = fallback alternatives for conflict avoidance",
+          "order": 8001
+        },
+        "vstoys.semantic-jump.includedTokenTypes": {
+          "type": "array",
+          "default": [
+            "function",
+            "method",
+            "class",
+            "interface",
+            "type",
+            "enum",
+            "enumMember",
+            "variable",
+            "property",
+            "parameter",
+            "namespace",
+            "typeParameter",
+            "struct",
+            "decorator",
+            "event",
+            "macro",
+            "label"
+          ],
+          "description": "Semantic token types to include in jump targets",
+          "items": {
+            "type": "string"
+          },
+          "order": 8002
+        },
+        "vstoys.semantic-jump.includeAllTokenTypes": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include ALL semantic token types (overrides includedTokenTypes when true)",
+          "order": 8003
+        },
+        "vstoys.semantic-jump.mode": {
+          "type": "string",
+          "enum": [
+            "simple",
+            "adaptive",
+            "progressive"
+          ],
+          "default": "adaptive",
+          "description": "Jump mode: simple (original), adaptive (Flash.nvim-style density), progressive (always two-char)",
+          "enumDescriptions": [
+            "Original simple mode with fixed character assignment",
+            "Adaptive mode that adjusts to target density (recommended)",
+            "Progressive mode that always uses two-character sequences"
+          ],
+          "order": 8004
+        },
+        "vstoys.semantic-jump.clusteringEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Group related tokens (e.g., property chains) to reduce clutter",
+          "order": 8005
+        },
+        "vstoys.semantic-jump.tokenPriorities": {
+          "type": "object",
+          "default": {
+            "function": 100,
+            "method": 100,
+            "class": 90,
+            "interface": 85,
+            "type": 80,
+            "enum": 75,
+            "decorator": 70,
+            "namespace": 65,
+            "variable": 50,
+            "property": 40,
+            "parameter": 30,
+            "enumMember": 25,
+            "event": 20,
+            "macro": 15,
+            "label": 10
+          },
+          "description": "Priority scores for semantic token types (higher = better jump characters)",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "order": 8006
+        },
+        "vstoys.semantic-jump.densityThresholds": {
+          "type": "object",
+          "default": {
+            "lowToMedium": 15,
+            "mediumToHigh": 40
+          },
+          "description": "Target count thresholds for adaptive mode switching",
+          "properties": {
+            "lowToMedium": {
+              "type": "number",
+              "description": "Threshold for switching from single-char to mixed mode"
+            },
+            "mediumToHigh": {
+              "type": "number",
+              "description": "Threshold for switching from mixed to progressive mode"
+            }
+          },
+          "order": 8007
+        },
+        "vstoys.semantic-jump.decorationBackgroundColor": {
+          "type": "string",
+          "description": "Background color for jump character decorations",
+          "order": 8008
+        },
+        "vstoys.semantic-jump.decorationForegroundColor": {
+          "type": "string",
+          "description": "Foreground color for jump character decorations",
+          "order": 8009
+        },
+        "vstoys.regular-jump.caseSensitive": {
+          "type": "boolean",
+          "default": false,
+          "description": "Case sensitive search for regular jump",
+          "order": 8100
+        },
+        "vstoys.regular-jump.maxMatches": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum number of matches to show",
+          "order": 8101
+        },
+        "vstoys.regular-jump.minWordLength": {
+          "type": "number",
+          "default": 0,
+          "description": "Minimum word length to match (0 = no limit)",
+          "order": 8102
+        },
+        "vstoys.regular-jump.minPatternLength": {
+          "type": "number",
+          "default": 2,
+          "description": "Minimum pattern length before transitioning to jump mode",
+          "order": 8103
+        },
+        "vstoys.regular-jump.maxMatchesForAutoJump": {
+          "type": "number",
+          "default": 20,
+          "description": "Maximum matches to auto-transition to jump mode",
+          "order": 8104
+        },
+        "vstoys.regular-jump.primaryForegroundColor": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Theme color for primary (current) match text color - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8105
+        },
+        "vstoys.regular-jump.primaryMatchColor": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Theme color for primary (current) match highlighting - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8106
+        },
+        "vstoys.regular-jump.secondaryForegroundColor": {
+          "type": "string",
+          "default": "activityBarBadge.foreground",
+          "description": "Theme color for secondary (current) match highlighting - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8107
+        },
+        "vstoys.regular-jump.secondaryMatchColor": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Theme color for secondary matches highlighting - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8108
+        },
+        "vstoys.regular-jump.jumpLabelBackgroundColor": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Theme color for jump character label background - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8109
+        },
+        "vstoys.regular-jump.jumpLabelForegroundColor": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Theme color for jump character label text - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8110
+        },
+        "vstoys.regular-jump.primaryBorderColor": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Theme color for the border around the primary match, empty string does not draw a border - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8111
         },
         "vstoys.registers.enabled": {
           "type": "boolean",
@@ -445,6 +681,46 @@
         "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
       },
       {
+        "key": "f19",
+        "command": "vstoys.semantic-jump.jump",
+        "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active"
+      },
+      {
+        "key": "f19",
+        "command": "vstoys.regular-jump.start",
+        "when": "hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active"
+      },
+      {
+        "command": "vstoys.semantic-jump.escape",
+        "key": "escape",
+        "when": "vstoys.semantic-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.escape",
+        "key": "escape",
+        "when": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.backspace",
+        "key": "backspace",
+        "when": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.enter",
+        "key": "enter",
+        "when": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.next",
+        "key": "f19",
+        "when": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.previous",
+        "key": "ctrl+f19",
+        "when": "vstoys.regular-jump.active"
+      },
+      {
         "command": "vstoys.paste-replace.clipboardPasteReplace",
         "key": "ctrl+shift+v",
         "mac": "cmd+shift+v",
@@ -503,7 +779,7 @@
       {
         "key": "d c",
         "command": "vstoys.clear-line.clearLines",
-        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active && !vstoys.dot-repeat.active"
+        "when": "editorTextFocus && hyper-layer && vstoys.clear-line.active && !vstoys.dot-repeat.active"
       }
     ],
     "fileDecorations": [

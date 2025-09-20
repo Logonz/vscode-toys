@@ -13,6 +13,7 @@ import { activateSmartOpen, deactivateSmartOpen } from "./smart-open/main";
 import { activateHyper } from "./hyper/main";
 import { activateMotions } from "./motions/main";
 import { activateAlwaysActive } from "./always-active/main";
+import { activateSemanticJump } from "./semantic-jump/main";
 
 try {
   require("./debug");
@@ -99,6 +100,12 @@ let vsToys: {
     name: "Motions",
     moduleContext: "motions",
     activator: (name, context) => activateMotions(name, context, createOutputChannel),
+    deactivator: () => {},
+  },
+  {
+    name: "Semantic Jump",
+    moduleContext: "semantic-jump",
+    activator: activateSemanticJump,
     deactivator: () => {},
   },
 ];
