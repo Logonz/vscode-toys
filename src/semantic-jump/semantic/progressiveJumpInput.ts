@@ -28,7 +28,7 @@ export class ProgressiveJumpInput {
   ) {
     this.statusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
-      1000
+      10000
     );
 
     this.initializeMaps();

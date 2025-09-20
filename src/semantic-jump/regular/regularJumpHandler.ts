@@ -7,8 +7,13 @@ export class RegularJumpHandler {
   private searchInput: ProgressiveSearchInput | null = null;
   private currentEditor: vscode.TextEditor | null = null;
   private isActive = false;
+  private statusBarItem: vscode.StatusBarItem;
 
   private disposables: vscode.Disposable[] = [];
+
+  constructor() {
+    this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 10000);
+  }
 
   /**
    * Start regular jump mode
@@ -204,14 +209,15 @@ export class RegularJumpHandler {
    * Show status bar message
    */
   private showStatusMessage(message: string): void {
-    vscode.window.setStatusBarMessage(message);
+    this.statusBarItem.text = message;
+    this.statusBarItem.show();
   }
 
   /**
    * Hide status bar message
    */
   private hideStatusMessage(): void {
-    vscode.window.setStatusBarMessage("");
+    this.statusBarItem.hide();
   }
 
   /**
@@ -233,5 +239,6 @@ export class RegularJumpHandler {
    */
   dispose(): void {
     this.cancelRegularJump();
+    this.statusBarItem.dispose();
   }
 }

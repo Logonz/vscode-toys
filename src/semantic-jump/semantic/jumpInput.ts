@@ -20,7 +20,7 @@ export class JumpInput {
       window.onDidChangeTextEditorSelection(this._onCancel)
     );
 
-    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
+    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 10000);
   }
 
   public changeAllowedChars = (chars: string[]): void => {

@@ -245,7 +245,7 @@ export class SemanticJumpHandler {
   private startDebugMode(editor: vscode.TextEditor): void {
     // Debug mode just shows the decorations without input handling
     // User can press ESC or change editor to exit
-    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
+    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 10000);
     statusBarItem.text = `░ Debug Mode: ${this.jumpTargets.length} tokens ░`;
     statusBarItem.show();
 

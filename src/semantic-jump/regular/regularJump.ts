@@ -333,7 +333,8 @@ export class RegularJumpDecorationManager {
       ),
       renderOptions: {
         after: {
-          // contentText: "\u00A0" + match.jumpChar + "\u00A0",
+          // TODO: We could add a no-break here to make it look nicer (needs a bit of modification)
+          // contentText: match.jumpChar + "\u00A0",
           contentText: match.jumpChar,
         },
       },
