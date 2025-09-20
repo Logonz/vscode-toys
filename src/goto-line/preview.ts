@@ -1,16 +1,6 @@
 import * as vscode from "vscode";
 import { GotoLineSettings } from "./settings";
-
-/**
- * @param inputColor Takes a theme ID (like `editor.background`) or color string (like `#ffffff`) and returns vscode.ThemeColor or unchanged color string
- */
-function pickColorType(inputColor: string): vscode.ThemeColor | string {
-  if (/[a-z]+\.[a-z]+/i.test(inputColor)) {
-    return new vscode.ThemeColor(inputColor);
-  } else {
-    return inputColor;
-  }
-}
+import { pickColorType } from "../helpers/pickColorType";
 
 /**
  * Manages preview decorations for goto-line operations

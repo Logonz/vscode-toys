@@ -124,7 +124,7 @@
           "contextId": "repeat-delete",
           "command": "editor.action.deleteLines"
         },
-        "when": "editorTextFocus && hyper-layer-active && !repeat-delete"
+        "when": "editorTextFocus && hyper-layer && !repeat-delete"
       },
       // ? Repeaters
       {
@@ -148,7 +148,7 @@
           "contextId": "repeat-delete",
           "command": "vstoys.clear-line.clearLines"
         },
-        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active && !repeat-delete"
+        "when": "editorTextFocus && hyper-layer && vstoys.clear-line.active && !repeat-delete"
       },
       // ? Repeaters
       {

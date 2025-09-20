@@ -1,5 +1,6 @@
 import { window, Selection, Range, env, ThemeColor } from "vscode";
 import { findTextObject, TEXT_OBJECTS } from "./textObjects";
+import { pickColorType } from "../helpers/pickColorType";
 
 export interface MotionConfig {
   foregroundColor?: string;
@@ -118,15 +119,4 @@ async function performYank(editor: any, ranges: { range: Range; isInner: boolean
 function performSelect(editor: any, selections: Selection[]): void {
   editor.selections = selections;
   printMotionOutput(`Selected ${selections.length} text object(s)`);
-}
-
-/**
- * @param inputColor Takes a theme ID (like `editor.background`) or color string (like `#ffffff`) and returns vscode.ThemeColor or unchanged color string
- */
-function pickColorType(inputColor: string): ThemeColor | string {
-  if (/[a-z]+\.[a-z]+/i.test(inputColor)) {
-    return new ThemeColor(inputColor);
-  } else {
-    return inputColor;
-  }
 }
