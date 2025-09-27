@@ -64,10 +64,11 @@ export class AdaptiveCharAssigner {
   assignChars(
     tokens: DecodedToken[],
     cursorPosition: vscode.Position,
-    document: vscode.TextDocument
+    document: vscode.TextDocument,
+    configPrefix: string = "vstoys.semantic-jump"
   ): JumpAssignment[] {
     // Get configuration
-    const config = vscode.workspace.getConfiguration("vstoys.semantic-jump");
+    const config = vscode.workspace.getConfiguration(configPrefix);
 
     // Step 1: Cluster related tokens (if enabled)
     const clusteringEnabled = config.get<boolean>("clusteringEnabled", true);

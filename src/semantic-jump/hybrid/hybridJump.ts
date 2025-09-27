@@ -192,8 +192,8 @@ export class HybridJumpAssigner {
       text: match.text,
     }));
 
-    // Use adaptive assigner to get jump assignments
-    let assignments = this.adaptiveAssigner.assignChars(pseudoTokens, cursorPosition, document);
+    // Use adaptive assigner to get jump assignments with hybrid-jump configuration
+    let assignments = this.adaptiveAssigner.assignChars(pseudoTokens, cursorPosition, document, "vstoys.hybrid-jump");
 
     // Post-process assignments to handle excluded characters
     if (excludedChars.size > 0) {

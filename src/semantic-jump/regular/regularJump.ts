@@ -164,8 +164,8 @@ export class RegularJumpAssigner {
       text: match.text,
     }));
 
-    // Use adaptive assigner to get jump assignments
-    const assignments = this.adaptiveAssigner.assignChars(pseudoTokens, cursorPosition, document);
+    // Use adaptive assigner to get jump assignments with regular-jump configuration
+    const assignments = this.adaptiveAssigner.assignChars(pseudoTokens, cursorPosition, document, "vstoys.regular-jump");
 
     // Convert back to LabeledMatch format
     return assignments.map((assignment, index) => ({
@@ -248,13 +248,15 @@ export class RegularJumpDecorationManager {
       },
     });
 
+    const borderWidth = 1;
+    const leftShift = 0;
     // Jump label decoration
     this.jumpLabelDecorationType = vscode.window.createTextEditorDecorationType({
       after: {
         backgroundColor: pickColorType(jumpLabelBackgroundColor),
         color: pickColorType(jumpLabelForegroundColor),
         textDecoration: "none;position:absolute;z-index:999999;",
-        margin: "-1px 0 0 3px", // (Manually adjusted for the border, so 0 0 0 4px is the real value.
+        margin: `-${borderWidth}px 0 0 ${leftShift + (4 - borderWidth)}px`, // (Manually adjusted for the border, so 0 0 0 4px is the real value.
         border: primaryBorderColor == "" ? undefined : "1px dotted",
         borderColor: primaryBorderColor ? pickColorType(primaryBorderColor) : undefined,
       },
