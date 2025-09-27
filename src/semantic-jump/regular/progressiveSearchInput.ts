@@ -202,7 +202,7 @@ export class ProgressiveSearchInput {
   private shouldTransitionToJumpMode(matches?: RegularMatch[]): boolean {
     const config = vscode.workspace.getConfiguration("vstoys.regular-jump");
     const minPatternLength = config.get<number>("minPatternLength", 2);
-    const maxMatchesForAutoJump = config.get<number>("maxMatchesForAutoJump", 30);
+    const maxMatchesForAutoJump = config.get<number>("maxMatchesForAutoJump", 20);
 
     // Use provided matches or current state matches
     const matchesToCheck = matches || this.searchState.matches;
