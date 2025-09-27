@@ -405,6 +405,7 @@ export class ProgressiveSearchInput {
         jumpChar: "",
         isSequence: false,
       }));
+      this.searchState.isInJumpMode = false;
     }
   }
 
