@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { LabeledMatch, RegularMatchFinder, RegularJumpAssigner, RegularMatch } from "./hybridJump";
+import { LabeledMatch, HybridMatchFinder, HybridJumpAssigner, HybridMatch } from "./hybridJump";
 
 export interface SearchState {
   pattern: string;
@@ -22,8 +22,8 @@ export class ProgressiveSearchInput {
     firstChar: "",
   };
 
-  private matchFinder = new RegularMatchFinder();
-  private jumpAssigner = new RegularJumpAssigner();
+  private matchFinder = new HybridMatchFinder();
+  private jumpAssigner = new HybridJumpAssigner();
 
   private onJumpCallback?: (match: LabeledMatch) => void;
   private onCancelCallback?: () => void;
@@ -303,7 +303,7 @@ export class ProgressiveSearchInput {
   /**
    * Get all possible next characters from given matches
    */
-  private getNextPossibleCharactersFromMatches(matches: RegularMatch[]): Set<string> {
+  private getNextPossibleCharactersFromMatches(matches: HybridMatch[]): Set<string> {
     const nextChars = new Set<string>();
 
     matches.forEach((match) => {

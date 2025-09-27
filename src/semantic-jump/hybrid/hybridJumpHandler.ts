@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
-import { RegularJumpDecorationManager, LabeledMatch } from "./hybridJump";
+import { HybridJumpDecorationManager, LabeledMatch } from "./hybridJump";
 import { ProgressiveSearchInput, SearchState } from "./progressiveHyperInput";
 
 export class HybridJumpHandler {
-  private decorationManager = new RegularJumpDecorationManager();
+  private decorationManager = new HybridJumpDecorationManager();
   private searchInput: ProgressiveSearchInput | null = null;
   private currentEditor: vscode.TextEditor | null = null;
   private isActive = false;
@@ -16,11 +16,11 @@ export class HybridJumpHandler {
   }
 
   /**
-   * Start regular jump mode
+   * Start hybrid jump mode
    */
-  async startRegularJump(editor: vscode.TextEditor): Promise<void> {
+  async startHybridJump(editor: vscode.TextEditor): Promise<void> {
     if (this.isActive) {
-      this.cancelRegularJump();
+      this.cancelHybridJump();
     }
 
     this.currentEditor = editor;
@@ -36,7 +36,7 @@ export class HybridJumpHandler {
     // Start search input
     this.searchInput = new ProgressiveSearchInput(editor, {
       onJump: (match) => this.handleJump(match),
-      onCancel: () => this.cancelRegularJump(),
+      onCancel: () => this.cancelHybridJump(),
       onUpdate: (state) => this.handleStateUpdate(state),
     });
 
@@ -46,7 +46,7 @@ export class HybridJumpHandler {
     this.disposables.push(
       vscode.window.onDidChangeTextEditorSelection((event) => {
         if (event.textEditor === this.currentEditor) {
-          this.cancelRegularJump();
+          this.cancelHybridJump();
         }
       })
     );
@@ -55,7 +55,7 @@ export class HybridJumpHandler {
     this.disposables.push(
       vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (editor !== this.currentEditor) {
-          this.cancelRegularJump();
+          this.cancelHybridJump();
         }
       })
     );
@@ -64,19 +64,19 @@ export class HybridJumpHandler {
     this.disposables.push(
       vscode.window.onDidChangeWindowState((event) => {
         if (!event.focused) {
-          this.cancelRegularJump();
+          this.cancelHybridJump();
         }
       })
     );
 
     // Show initial status
-    this.showStatusMessage("Regular Jump: Start typing to search...");
+    this.showStatusMessage("Hybrid Jump: Start typing to search...");
   }
 
   /**
-   * Cancel regular jump mode
+   * Cancel hybrid jump mode
    */
-  async cancelRegularJump(): Promise<void> {
+  async cancelHybridJump(): Promise<void> {
     if (!this.isActive) return;
 
     this.isActive = false;
@@ -123,7 +123,7 @@ export class HybridJumpHandler {
     );
 
     // Clean up
-    await this.cancelRegularJump();
+    await this.cancelHybridJump();
   }
 
   /**
@@ -154,20 +154,20 @@ export class HybridJumpHandler {
   private updateStatusMessage(state: SearchState): void {
     if (state.isInJumpMode) {
       if (state.matches.length === 0) {
-        this.showStatusMessage("Regular Jump: No matches found");
+        this.showStatusMessage("Hybrid Jump: No matches found");
       } else {
         this.showStatusMessage(
-          `Regular Jump: "${state.pattern}" → ${state.matches.length} matches - Press jump character`
+          `Hybrid Jump: "${state.pattern}" → ${state.matches.length} matches - Press jump character`
         );
       }
     } else {
       if (state.pattern.length === 0) {
-        this.showStatusMessage("Regular Jump: Start typing to search...");
+        this.showStatusMessage("Hybrid Jump: Start typing to search...");
       } else if (state.matches.length === 0) {
-        this.showStatusMessage(`Regular Jump: "${state.pattern}" - No matches`);
+        this.showStatusMessage(`Hybrid Jump: "${state.pattern}" - No matches`);
       } else {
         this.showStatusMessage(
-          `Regular Jump: "${state.pattern}" → ${state.matches.length} matches - Keep typing or press Enter`
+          `Hybrid Jump: "${state.pattern}" → ${state.matches.length} matches - Keep typing or press Enter`
         );
       }
     }
@@ -221,7 +221,7 @@ export class HybridJumpHandler {
   }
 
   /**
-   * Check if regular jump is currently active
+   * Check if hybrid jump is currently active
    */
   isJumpActive(): boolean {
     return this.isActive;
@@ -238,7 +238,7 @@ export class HybridJumpHandler {
    * Dispose resources
    */
   dispose(): void {
-    this.cancelRegularJump();
+    this.cancelHybridJump();
     this.statusBarItem.dispose();
   }
 }

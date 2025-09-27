@@ -2,10 +2,12 @@ import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
 import { SemanticJumpHandler } from "./semantic/semanticJumpHandler";
 import { RegularJumpHandler } from "./regular/regularJumpHandler";
+import { HybridJumpHandler } from "./hybrid/hybridJumpHandler";
 
 let printSemanticJumpOutput: (content: string, reveal?: boolean) => void;
 let semanticJumpHandler: SemanticJumpHandler;
 let regularJumpHandler: RegularJumpHandler;
+let hybridJumpHandler: HybridJumpHandler;
 
 export function activateSemanticJump(name: string, context: vscode.ExtensionContext) {
   console.log(`Activating ${name}`);
@@ -14,9 +16,11 @@ export function activateSemanticJump(name: string, context: vscode.ExtensionCont
 
   vscode.commands.executeCommand("setContext", "vstoys.semantic-jump.active", false);
   vscode.commands.executeCommand("setContext", "vstoys.regular-jump.active", false);
+  vscode.commands.executeCommand("setContext", "vstoys.hybrid-jump.active", false);
 
   semanticJumpHandler = new SemanticJumpHandler();
   regularJumpHandler = new RegularJumpHandler();
+  hybridJumpHandler = new HybridJumpHandler();
 
   context.subscriptions.push(
     // Semantic jump commands
@@ -66,6 +70,32 @@ export function activateSemanticJump(name: string, context: vscode.ExtensionCont
     }),
     vscode.commands.registerCommand("vstoys.regular-jump.previous", async () => {
       await regularJumpHandler.previousMatch();
+    }),
+
+    // Hybrid jump commands
+    vscode.commands.registerCommand("vstoys.hybrid-jump.start", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        printSemanticJumpOutput("No active text editor");
+        return;
+      }
+
+      await hybridJumpHandler.startHybridJump(editor);
+    }),
+    vscode.commands.registerCommand("vstoys.hybrid-jump.escape", async () => {
+      await hybridJumpHandler.cancelHybridJump();
+    }),
+    vscode.commands.registerCommand("vstoys.hybrid-jump.backspace", async () => {
+      await hybridJumpHandler.backspace();
+    }),
+    vscode.commands.registerCommand("vstoys.hybrid-jump.enter", async () => {
+      await hybridJumpHandler.enter();
+    }),
+    vscode.commands.registerCommand("vstoys.hybrid-jump.next", async () => {
+      await hybridJumpHandler.nextMatch();
+    }),
+    vscode.commands.registerCommand("vstoys.hybrid-jump.previous", async () => {
+      await hybridJumpHandler.previousMatch();
     })
   );
 

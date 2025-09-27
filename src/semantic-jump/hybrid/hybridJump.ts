@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { AdaptiveCharAssigner, JumpAssignment } from "../shared/adaptiveCharAssigner";
 import { pickColorType } from "../../helpers/pickColorType";
 
-export interface RegularMatch {
+export interface HybridMatch {
   position: vscode.Position;
   text: string;
   pattern: string;
@@ -13,25 +13,25 @@ export interface RegularMatch {
   nextChar?: string; // Next character after match for pattern continuation
 }
 
-export interface LabeledMatch extends RegularMatch {
+export interface LabeledMatch extends HybridMatch {
   jumpChar: string;
   isSequence: boolean;
 }
 
-export interface RegularJumpTarget {
-  match: RegularMatch;
+export interface HybridJumpTarget {
+  match: HybridMatch;
   position: vscode.Position;
   char: string;
 }
 
-export class RegularMatchFinder {
+export class HybridMatchFinder {
   /**
    * Find all occurrences of pattern in visible ranges
    */
-  findMatches(pattern: string, editor: vscode.TextEditor, caseSensitive: boolean = false): RegularMatch[] {
+  findMatches(pattern: string, editor: vscode.TextEditor, caseSensitive: boolean = false): HybridMatch[] {
     if (pattern.length === 0) return [];
 
-    const matches: RegularMatch[] = [];
+    const matches: HybridMatch[] = [];
     const visibleRanges = editor.visibleRanges;
 
     for (const range of visibleRanges) {
@@ -49,7 +49,7 @@ export class RegularMatchFinder {
     document: vscode.TextDocument,
     range: vscode.Range,
     caseSensitive: boolean,
-    matches: RegularMatch[]
+    matches: HybridMatch[]
   ): void {
     const searchPattern = caseSensitive ? pattern : pattern.toLowerCase();
 
@@ -93,7 +93,7 @@ export class RegularMatchFinder {
   /**
    * Sort matches by distance from cursor position
    */
-  private sortByDistanceFromCursor(matches: RegularMatch[], cursorPos: vscode.Position): RegularMatch[] {
+  private sortByDistanceFromCursor(matches: HybridMatch[], cursorPos: vscode.Position): HybridMatch[] {
     return matches.sort((a, b) => {
       const distanceA = this.calculateDistance(a.position, cursorPos);
       const distanceB = this.calculateDistance(b.position, cursorPos);
@@ -115,7 +115,7 @@ export class RegularMatchFinder {
   /**
    * Filter matches based on configuration
    */
-  filterMatches(matches: RegularMatch[], maxMatches: number, minWordLength: number = 0): RegularMatch[] {
+  filterMatches(matches: HybridMatch[], maxMatches: number, minWordLength: number = 0): HybridMatch[] {
     let filtered = matches;
 
     // Filter by word length if specified
@@ -134,7 +134,7 @@ export class RegularMatchFinder {
   /**
    * Check if match is at word boundary
    */
-  isAtWordBoundary(match: RegularMatch, document: vscode.TextDocument): boolean {
+  isAtWordBoundary(match: HybridMatch, document: vscode.TextDocument): boolean {
     const line = document.lineAt(match.line).text;
 
     // Check character before match
@@ -170,19 +170,19 @@ export class RegularMatchFinder {
   }
 }
 
-export class RegularJumpAssigner {
+export class HybridJumpAssigner {
   private adaptiveAssigner = new AdaptiveCharAssigner();
 
   /**
-   * Assign jump characters to regular matches
+   * Assign jump characters to hybrid matches
    */
   assignJumpChars(
-    matches: RegularMatch[],
+    matches: HybridMatch[],
     cursorPosition: vscode.Position,
     document: vscode.TextDocument,
     excludedChars: Set<string> = new Set()
   ): LabeledMatch[] {
-    // Convert RegularMatch to DecodedToken format for reusing adaptive assigner
+    // Convert HybridMatch to DecodedToken format for reusing adaptive assigner
     const pseudoTokens = matches.map((match, index) => ({
       line: match.line,
       startChar: match.startChar,
@@ -273,7 +273,7 @@ export class RegularJumpAssigner {
   /**
    * Classify match type for priority scoring
    */
-  private classifyMatchType(match: RegularMatch, document: vscode.TextDocument): string {
+  private classifyMatchType(match: HybridMatch, document: vscode.TextDocument): string {
     // Simple heuristics for match classification
     if (this.isAtWordStart(match, document)) {
       if (/^[A-Z]/.test(match.text)) {
@@ -287,14 +287,14 @@ export class RegularJumpAssigner {
     return "property"; // Default to medium priority
   }
 
-  private isAtWordStart(match: RegularMatch, document: vscode.TextDocument): boolean {
+  private isAtWordStart(match: HybridMatch, document: vscode.TextDocument): boolean {
     const line = document.lineAt(match.line).text;
     const charBefore = match.startChar > 0 ? line[match.startChar - 1] : " ";
     return /\s|[^\w]/.test(charBefore);
   }
 }
 
-export class RegularJumpDecorationManager {
+export class HybridJumpDecorationManager {
   private patternDecorationType: vscode.TextEditorDecorationType | null = null;
   private primaryMatchDecorationType: vscode.TextEditorDecorationType | null = null;
   private secondaryMatchDecorationType: vscode.TextEditorDecorationType | null = null;
