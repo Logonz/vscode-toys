@@ -10,6 +10,11 @@
         "command": "vstoys.semantic-jump.debug",
         "category": "VsToys",
         "title": "Semantic Jump: Debug Mode (Show All Tokens)"
+      },
+      {
+        "command": "vstoys.hybrid-jump.start",
+        "category": "VsToys",
+        "title": "Hybrid Jump: Start Hybrid Jump Mode"
       }
     ],
     "configuration": {
@@ -165,47 +170,155 @@
           "description": "Maximum matches to auto-transition to jump mode",
           "order": 8104
         },
+        "vstoys.regular-jump.enableHybridMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable hybrid mode - allows continuing to type when characters conflict with jump chars",
+          "order": 8105
+        },
+        "vstoys.regular-jump.autoJumpSingleMatch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically jump when only one match remains",
+          "order": 8106
+        },
+        "vstoys.regular-jump.jumpCharacters": {
+          "type": "string",
+          "default": "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV",
+          "description": "Characters used for jumping in regular jump mode. Ordered by priority: first chars = home row (preferred for single chars), remaining = extended set for sequences and conflict avoidance",
+          "order": 8107
+        },
         "vstoys.regular-jump.primaryForegroundColor": {
           "type": "string",
           "default": "button.foreground",
           "description": "Theme color for primary (current) match text color - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
-          "order": 8105
+          "order": 8108
         },
         "vstoys.regular-jump.primaryMatchColor": {
           "type": "string",
           "default": "activityErrorBadge.background",
           "description": "Theme color for primary (current) match highlighting - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
-          "order": 8106
+          "order": 8109
         },
         "vstoys.regular-jump.secondaryForegroundColor": {
           "type": "string",
           "default": "activityBarBadge.foreground",
           "description": "Theme color for secondary (current) match highlighting - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
-          "order": 8107
+          "order": 8110
         },
         "vstoys.regular-jump.secondaryMatchColor": {
           "type": "string",
           "default": "activityBarBadge.background",
           "description": "Theme color for secondary matches highlighting - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
-          "order": 8108
+          "order": 8111
         },
         "vstoys.regular-jump.jumpLabelBackgroundColor": {
           "type": "string",
           "default": "activityErrorBadge.background",
           "description": "Theme color for jump character label background - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
-          "order": 8109
+          "order": 8112
         },
         "vstoys.regular-jump.jumpLabelForegroundColor": {
           "type": "string",
           "default": "button.foreground",
           "description": "Theme color for jump character label text - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
-          "order": 8110
+          "order": 8113
         },
         "vstoys.regular-jump.primaryBorderColor": {
           "type": "string",
           "default": "activityBarBadge.background",
           "description": "Theme color for the border around the primary match, empty string does not draw a border - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
-          "order": 8111
+          "order": 8114
+        },
+        "vstoys.hybrid-jump.caseSensitive": {
+          "type": "boolean",
+          "default": false,
+          "description": "Case sensitive search for hybrid jump",
+          "order": 8200
+        },
+        "vstoys.hybrid-jump.maxMatches": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum number of matches to show in hybrid mode",
+          "order": 8201
+        },
+        "vstoys.hybrid-jump.minWordLength": {
+          "type": "number",
+          "default": 0,
+          "description": "Minimum word length to match in hybrid mode (0 = no limit)",
+          "order": 8202
+        },
+        "vstoys.hybrid-jump.minPatternLength": {
+          "type": "number",
+          "default": 3,
+          "description": "Minimum pattern length before showing jump characters (longer than regular jump for better pattern building)",
+          "order": 8203
+        },
+        "vstoys.hybrid-jump.maxMatchesForAutoJump": {
+          "type": "number",
+          "default": 30,
+          "description": "Maximum matches to show jump characters (vs continue typing) - higher than regular jump for more exploration",
+          "order": 8204
+        },
+        "vstoys.hybrid-jump.enablePatternContinuation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow continuing to type when characters would conflict with jump chars (core hybrid feature)",
+          "order": 8205
+        },
+        "vstoys.hybrid-jump.autoJumpSingleMatch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically jump when only one match remains (key feature for hybrid mode)",
+          "order": 8206
+        },
+        "vstoys.hybrid-jump.jumpCharacters": {
+          "type": "string",
+          "default": "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV",
+          "description": "Characters used for jumping in hybrid mode. Ordered by priority: first chars = home row (preferred for single chars), remaining = extended set for sequences and conflict avoidance",
+          "order": 8207
+        },
+        "vstoys.hybrid-jump.primaryForegroundColor": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Theme color for primary (current) match text color in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8208
+        },
+        "vstoys.hybrid-jump.primaryMatchColor": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Theme color for primary (current) match highlighting in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8209
+        },
+        "vstoys.hybrid-jump.secondaryForegroundColor": {
+          "type": "string",
+          "default": "activityBarBadge.foreground",
+          "description": "Theme color for secondary match text color in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8210
+        },
+        "vstoys.hybrid-jump.secondaryMatchColor": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Theme color for secondary matches highlighting in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8211
+        },
+        "vstoys.hybrid-jump.jumpLabelBackgroundColor": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Theme color for jump character label background in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8212
+        },
+        "vstoys.hybrid-jump.jumpLabelForegroundColor": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Theme color for jump character label text in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8213
+        },
+        "vstoys.hybrid-jump.primaryBorderColor": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Theme color for the border around the primary match in hybrid mode, empty string does not draw a border - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8214
         }
       }
     },
@@ -222,6 +335,7 @@
       },
       {
         "key": "ctrl+f19",
+        "mac": "cmd+f19",
         "command": "vstoys.regular-jump.start",
         "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active"
       },
@@ -254,6 +368,16 @@
         "command": "vstoys.regular-jump.previous",
         "key": "ctrl+f19",
         "when": "vstoys.regular-jump.active"
+      },
+      {
+        "key": "alt+f19",
+        "command": "vstoys.hybrid-jump.start",
+        "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+      },
+      {
+        "command": "vstoys.hybrid-jump.escape",
+        "key": "escape",
+        "when": "vstoys.hybrid-jump.active"
       }
     ]
   }
