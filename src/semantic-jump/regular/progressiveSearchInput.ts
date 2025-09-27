@@ -6,6 +6,8 @@ export interface SearchState {
   matches: LabeledMatch[];
   currentMatchIndex: number;
   isInJumpMode: boolean;
+  isWaitingForSecondChar: boolean;
+  firstChar: string;
 }
 
 export class ProgressiveSearchInput {
@@ -15,7 +17,9 @@ export class ProgressiveSearchInput {
     pattern: "",
     matches: [],
     currentMatchIndex: 0,
-    isInJumpMode: false
+    isInJumpMode: false,
+    isWaitingForSecondChar: false,
+    firstChar: "",
   };
 
   private matchFinder = new RegularMatchFinder();
@@ -49,7 +53,9 @@ export class ProgressiveSearchInput {
       pattern: "",
       matches: [],
       currentMatchIndex: 0,
-      isInJumpMode: false
+      isInJumpMode: false,
+      isWaitingForSecondChar: false,
+      firstChar: "",
     };
 
     this.setupInputCapture();
@@ -71,20 +77,25 @@ export class ProgressiveSearchInput {
    * Setup keyboard input capture
    */
   private setupInputCapture(): void {
-    const inputDisposable = vscode.commands.registerCommand(
-      "type",
-      (args: { text: string }) => {
-        if (!this.isActive) return;
-
-        const char = args.text;
-
-        if (this.searchState.isInJumpMode) {
-          this.handleJumpModeInput(char);
-        } else {
-          this.handleSearchModeInput(char);
-        }
+    const inputDisposable = vscode.commands.registerCommand("type", (args: { text: string }) => {
+      if (!this.isActive) {
+        // If not active, execute the default type command
+        return vscode.commands.executeCommand("default:type", args);
       }
-    );
+
+      const char = args.text;
+
+      if (this.searchState.isWaitingForSecondChar) {
+        this.handleSecondCharInput(char);
+        return;
+      } else if (this.searchState.isInJumpMode) {
+        this.handleJumpModeInput(char);
+        return;
+      } else {
+        this.handleSearchModeInput(char);
+        return;
+      }
+    });
 
     this.disposables.push(inputDisposable);
   }
@@ -102,11 +113,7 @@ export class ProgressiveSearchInput {
     const maxMatches = config.get<number>("maxMatches", 100);
     const minWordLength = config.get<number>("minWordLength", 0);
 
-    let matches = this.matchFinder.findMatches(
-      this.searchState.pattern,
-      this.editor,
-      caseSensitive
-    );
+    let matches = this.matchFinder.findMatches(this.searchState.pattern, this.editor, caseSensitive);
 
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
@@ -127,13 +134,29 @@ export class ProgressiveSearchInput {
   }
 
   /**
+   * Handle second character input for sequence matches
+   */
+  private handleSecondCharInput(char: string): void {
+    const fullSequence = this.searchState.firstChar + char;
+    const match = this.searchState.matches.find((m) => m.jumpChar === fullSequence);
+
+    if (match) {
+      this.performJump(match);
+    } else {
+      // No match found, exit waiting state and go back to normal jump mode
+      this.searchState.isWaitingForSecondChar = false;
+      this.searchState.firstChar = "";
+      // Restore original matches (before filtering for second char)
+      this.refreshMatches();
+    }
+  }
+
+  /**
    * Handle input during jump mode (selecting target)
    */
   private handleJumpModeInput(char: string): void {
     // Find direct single-char matches
-    const singleCharMatch = this.searchState.matches.find(
-      match => !match.isSequence && match.jumpChar === char
-    );
+    const singleCharMatch = this.searchState.matches.find((match) => !match.isSequence && match.jumpChar === char);
 
     if (singleCharMatch) {
       this.performJump(singleCharMatch);
@@ -142,7 +165,7 @@ export class ProgressiveSearchInput {
 
     // Handle first character of sequences
     const sequenceMatches = this.searchState.matches.filter(
-      match => match.isSequence && match.jumpChar.startsWith(char)
+      (match) => match.isSequence && match.jumpChar.startsWith(char)
     );
 
     if (sequenceMatches.length === 1) {
@@ -159,31 +182,11 @@ export class ProgressiveSearchInput {
    * Wait for second character in sequence
    */
   private waitForSecondChar(firstChar: string, candidates: LabeledMatch[]): void {
-    // Update visual state to show only candidates
+    // Update state to wait for second character
+    this.searchState.isWaitingForSecondChar = true;
+    this.searchState.firstChar = firstChar;
     this.searchState.matches = candidates;
     this.updateState();
-
-    // Set up temporary handler for second character
-    const secondCharDisposable = vscode.commands.registerCommand(
-      "type",
-      (args: { text: string }) => {
-        const secondChar = args.text;
-        const fullSequence = firstChar + secondChar;
-
-        const match = candidates.find(m => m.jumpChar === fullSequence);
-        if (match) {
-          this.performJump(match);
-        }
-
-        // Clean up temporary handler
-        secondCharDisposable.dispose();
-      }
-    );
-
-    // Auto-cleanup after timeout
-    setTimeout(() => {
-      secondCharDisposable.dispose();
-    }, 5000);
   }
 
   /**
@@ -217,11 +220,7 @@ export class ProgressiveSearchInput {
     const maxMatches = config.get<number>("maxMatches", 100);
     const minWordLength = config.get<number>("minWordLength", 0);
 
-    let matches = this.matchFinder.findMatches(
-      this.searchState.pattern,
-      this.editor,
-      caseSensitive
-    );
+    let matches = this.matchFinder.findMatches(this.searchState.pattern, this.editor, caseSensitive);
 
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
@@ -242,7 +241,14 @@ export class ProgressiveSearchInput {
    * Handle backspace key
    */
   handleBackspace(): void {
-    if (this.searchState.isInJumpMode) {
+    if (this.searchState.isWaitingForSecondChar) {
+      // In waiting for second char mode, go back to normal jump mode
+      this.searchState.isWaitingForSecondChar = false;
+      this.searchState.firstChar = "";
+      // Restore original matches
+      this.refreshMatches();
+      this.updateState();
+    } else if (this.searchState.isInJumpMode) {
       // In jump mode, backspace goes back to search mode
       this.searchState.isInJumpMode = false;
       // Keep current matches and update decorations
@@ -281,8 +287,7 @@ export class ProgressiveSearchInput {
   nextMatch(): void {
     if (this.searchState.matches.length === 0) return;
 
-    this.searchState.currentMatchIndex =
-      (this.searchState.currentMatchIndex + 1) % this.searchState.matches.length;
+    this.searchState.currentMatchIndex = (this.searchState.currentMatchIndex + 1) % this.searchState.matches.length;
     this.updateState();
   }
 
@@ -317,7 +322,7 @@ export class ProgressiveSearchInput {
    * Clean up all disposables
    */
   private disposeAll(): void {
-    this.disposables.forEach(d => d.dispose());
+    this.disposables.forEach((d) => d.dispose());
     this.disposables = [];
   }
 
