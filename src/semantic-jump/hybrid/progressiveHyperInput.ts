@@ -118,27 +118,34 @@ export class ProgressiveSearchInput {
 
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
-    // Get excluded characters for hybrid mode (pattern continuation always enabled)
-    const excludedChars = this.getNextPossibleCharactersFromMatches(matches);
+    // Check if we should transition to jump mode BEFORE assigning jump characters
+    const shouldTransitionToJump = this.shouldTransitionToJumpMode(matches);
 
-    this.searchState.matches = this.jumpAssigner.assignJumpChars(
-      matches,
-      this.editor.selection.active,
-      this.editor.document,
-      excludedChars
-    );
+    if (shouldTransitionToJump && matches.length > 0) {
+      // Only assign jump characters if we're going to enter jump mode
+      // Get excluded characters for hybrid mode (pattern continuation always enabled)
+      const excludedChars = this.getNextPossibleCharactersFromMatches(matches);
 
-    // Auto-jump if only one match remains
-    if (autoJumpSingleMatch && this.searchState.matches.length === 1) {
-      this.performJump(this.searchState.matches[0]);
-      return;
+      this.searchState.matches = this.jumpAssigner.assignJumpChars(
+        matches,
+        this.editor.selection.active,
+        this.editor.document,
+        excludedChars
+      );
+      this.searchState.isInJumpMode = true;
+    } else {
+      // Don't assign jump characters, just store raw matches for display
+      this.searchState.matches = matches.map((match) => ({
+        ...match,
+        jumpChar: "",
+        isSequence: false,
+      }));
     }
 
-    // Check if we should transition to jump mode
-    const shouldTransitionToJump = this.shouldTransitionToJumpMode();
-
-    if (shouldTransitionToJump && this.searchState.matches.length > 0) {
-      this.searchState.isInJumpMode = true;
+    // Auto-jump if only one match remains (and we're in jump mode)
+    if (autoJumpSingleMatch && this.searchState.matches.length === 1 && this.searchState.isInJumpMode) {
+      this.performJump(this.searchState.matches[0]);
+      return;
     }
 
     this.updateState();
@@ -213,26 +220,34 @@ export class ProgressiveSearchInput {
     let matches = this.matchFinder.findMatches(this.searchState.pattern, this.editor, caseSensitive);
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
-    // Get excluded characters for hybrid mode (pattern continuation always enabled)
-    const excludedChars = this.getNextPossibleCharactersFromMatches(matches);
+    // Check if we should transition back to jump mode BEFORE assigning jump characters
+    const shouldTransitionToJump = this.shouldTransitionToJumpMode(matches);
 
-    this.searchState.matches = this.jumpAssigner.assignJumpChars(
-      matches,
-      this.editor.selection.active,
-      this.editor.document,
-      excludedChars
-    );
+    if (shouldTransitionToJump && matches.length > 0) {
+      // Only assign jump characters if we're going to enter jump mode
+      // Get excluded characters for hybrid mode (pattern continuation always enabled)
+      const excludedChars = this.getNextPossibleCharactersFromMatches(matches);
 
-    // Auto-jump if only one match remains
-    if (autoJumpSingleMatch && this.searchState.matches.length === 1) {
-      this.performJump(this.searchState.matches[0]);
-      return;
+      this.searchState.matches = this.jumpAssigner.assignJumpChars(
+        matches,
+        this.editor.selection.active,
+        this.editor.document,
+        excludedChars
+      );
+      this.searchState.isInJumpMode = true;
+    } else {
+      // Don't assign jump characters, just store raw matches for display
+      this.searchState.matches = matches.map((match) => ({
+        ...match,
+        jumpChar: "",
+        isSequence: false,
+      }));
     }
 
-    // Check if we should transition back to jump mode
-    const shouldTransitionToJump = this.shouldTransitionToJumpMode();
-    if (shouldTransitionToJump && this.searchState.matches.length > 0) {
-      this.searchState.isInJumpMode = true;
+    // Auto-jump if only one match remains (and we're in jump mode)
+    if (autoJumpSingleMatch && this.searchState.matches.length === 1 && this.searchState.isInJumpMode) {
+      this.performJump(this.searchState.matches[0]);
+      return;
     }
 
     this.updateState();
@@ -252,10 +267,13 @@ export class ProgressiveSearchInput {
   /**
    * Determine if we should transition from search to jump mode
    */
-  private shouldTransitionToJumpMode(): boolean {
+  private shouldTransitionToJumpMode(matches?: HybridMatch[]): boolean {
     const config = vscode.workspace.getConfiguration("vstoys.hybrid-jump");
     const minPatternLength = config.get<number>("minPatternLength", 3);
     const maxMatchesForAutoJump = config.get<number>("maxMatchesForAutoJump", 30);
+
+    // Use provided matches or current state matches
+    const matchesToCheck = matches || this.searchState.matches;
 
     // Minimum pattern length reached
     if (this.searchState.pattern.length < minPatternLength) {
@@ -263,17 +281,18 @@ export class ProgressiveSearchInput {
     }
 
     // Have manageable number of matches
-    if (this.searchState.matches.length > maxMatchesForAutoJump) {
+    if (matchesToCheck.length > maxMatchesForAutoJump) {
       return false;
     }
 
     // Have at least one match
-    if (this.searchState.matches.length === 0) {
+    if (matchesToCheck.length === 0) {
       return false;
     }
 
-    // Check for character conflicts (pattern continuation always enabled in hybrid mode)
-    if (this.hasJumpCharacterConflicts()) {
+    // In hybrid mode, we're more permissive about conflicts since users can continue typing
+    // Only prevent transition if we have NO available jump characters at all
+    if (this.hasNoAvailableJumpChars()) {
       return false;
     }
 
@@ -281,23 +300,14 @@ export class ProgressiveSearchInput {
   }
 
   /**
-   * Check if there are conflicts between potential jump characters and next characters
+   * Check if we have no available jump characters at all
    */
-  private hasJumpCharacterConflicts(): boolean {
-    // We need to check against the raw matches before jump character assignment
-    const config = vscode.workspace.getConfiguration("vstoys.hybrid-jump");
-    const caseSensitive = config.get<boolean>("caseSensitive", false);
-    const maxMatches = config.get<number>("maxMatches", 100);
-    const minWordLength = config.get<number>("minWordLength", 0);
-
-    let matches = this.matchFinder.findMatches(this.searchState.pattern, this.editor, caseSensitive);
-    matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
-
-    const nextChars = this.getNextPossibleCharactersFromMatches(matches);
+  private hasNoAvailableJumpChars(): boolean {
+    const nextChars = this.getNextPossibleCharacters();
     const availableJumpChars = this.getAvailableJumpChars(nextChars);
 
-    // Need at least enough jump characters for all matches
-    return availableJumpChars.size < matches.length;
+    // Only prevent transition if we have absolutely no jump characters available
+    return availableJumpChars.size === 0;
   }
 
   /**
@@ -373,20 +383,28 @@ export class ProgressiveSearchInput {
 
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
-    // Get excluded characters for hybrid mode (pattern continuation always enabled)
-    const excludedChars = this.getNextPossibleCharactersFromMatches(matches);
+    // Check if we should be in jump mode BEFORE assigning jump characters
+    const shouldTransitionToJump = this.shouldTransitionToJumpMode(matches);
 
-    this.searchState.matches = this.jumpAssigner.assignJumpChars(
-      matches,
-      this.editor.selection.active,
-      this.editor.document,
-      excludedChars
-    );
+    if (shouldTransitionToJump && matches.length > 0) {
+      // Only assign jump characters if we're going to enter jump mode
+      // Get excluded characters for hybrid mode (pattern continuation always enabled)
+      const excludedChars = this.getNextPossibleCharactersFromMatches(matches);
 
-    // Check if we should be in jump mode
-    const shouldTransitionToJump = this.shouldTransitionToJumpMode();
-    if (shouldTransitionToJump && this.searchState.matches.length > 0) {
+      this.searchState.matches = this.jumpAssigner.assignJumpChars(
+        matches,
+        this.editor.selection.active,
+        this.editor.document,
+        excludedChars
+      );
       this.searchState.isInJumpMode = true;
+    } else {
+      // Don't assign jump characters, just store raw matches for display
+      this.searchState.matches = matches.map((match) => ({
+        ...match,
+        jumpChar: "",
+        isSequence: false,
+      }));
     }
   }
 
