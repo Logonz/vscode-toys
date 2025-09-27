@@ -118,11 +118,8 @@ export class ProgressiveSearchInput {
 
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
-    // Get excluded characters for hybrid mode
-    const enablePatternContinuation = config.get<boolean>("enablePatternContinuation", true);
-    const excludedChars = enablePatternContinuation
-      ? this.getNextPossibleCharactersFromMatches(matches)
-      : new Set<string>();
+    // Get excluded characters for hybrid mode (pattern continuation always enabled)
+    const excludedChars = this.getNextPossibleCharactersFromMatches(matches);
 
     this.searchState.matches = this.jumpAssigner.assignJumpChars(
       matches,
@@ -216,11 +213,8 @@ export class ProgressiveSearchInput {
     let matches = this.matchFinder.findMatches(this.searchState.pattern, this.editor, caseSensitive);
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
-    // Get excluded characters for hybrid mode
-    const enablePatternContinuation = config.get<boolean>("enablePatternContinuation", true);
-    const excludedChars = enablePatternContinuation
-      ? this.getNextPossibleCharactersFromMatches(matches)
-      : new Set<string>();
+    // Get excluded characters for hybrid mode (pattern continuation always enabled)
+    const excludedChars = this.getNextPossibleCharactersFromMatches(matches);
 
     this.searchState.matches = this.jumpAssigner.assignJumpChars(
       matches,
@@ -262,7 +256,6 @@ export class ProgressiveSearchInput {
     const config = vscode.workspace.getConfiguration("vstoys.hybrid-jump");
     const minPatternLength = config.get<number>("minPatternLength", 3);
     const maxMatchesForAutoJump = config.get<number>("maxMatchesForAutoJump", 30);
-    const enablePatternContinuation = config.get<boolean>("enablePatternContinuation", true);
 
     // Minimum pattern length reached
     if (this.searchState.pattern.length < minPatternLength) {
@@ -279,8 +272,8 @@ export class ProgressiveSearchInput {
       return false;
     }
 
-    // In pattern continuation mode, check for character conflicts
-    if (enablePatternContinuation && this.hasJumpCharacterConflicts()) {
+    // Check for character conflicts (pattern continuation always enabled in hybrid mode)
+    if (this.hasJumpCharacterConflicts()) {
       return false;
     }
 
@@ -349,15 +342,9 @@ export class ProgressiveSearchInput {
 
   /**
    * Check if typing this character should continue the pattern instead of jumping
+   * In hybrid mode, pattern continuation is always enabled
    */
   private shouldContinuePattern(char: string): boolean {
-    const config = vscode.workspace.getConfiguration("vstoys.hybrid-jump");
-    const enablePatternContinuation = config.get<boolean>("enablePatternContinuation", true);
-
-    if (!enablePatternContinuation) {
-      return false;
-    }
-
     // Check if this character is a possible next character for any match
     const nextChars = this.getNextPossibleCharacters();
     if (!nextChars.has(char.toLowerCase())) {
@@ -366,6 +353,7 @@ export class ProgressiveSearchInput {
 
     // Test if continuing would still yield matches
     const testPattern = this.searchState.pattern + char;
+    const config = vscode.workspace.getConfiguration("vstoys.hybrid-jump");
     const caseSensitive = config.get<boolean>("caseSensitive", false);
     const matches = this.matchFinder.findMatches(testPattern, this.editor, caseSensitive);
 
@@ -385,11 +373,8 @@ export class ProgressiveSearchInput {
 
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
-    // Get excluded characters for hybrid mode
-    const enablePatternContinuation = config.get<boolean>("enablePatternContinuation", true);
-    const excludedChars = enablePatternContinuation
-      ? this.getNextPossibleCharactersFromMatches(matches)
-      : new Set<string>();
+    // Get excluded characters for hybrid mode (pattern continuation always enabled)
+    const excludedChars = this.getNextPossibleCharactersFromMatches(matches);
 
     this.searchState.matches = this.jumpAssigner.assignJumpChars(
       matches,
