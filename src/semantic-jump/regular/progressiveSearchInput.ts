@@ -234,16 +234,25 @@ export class ProgressiveSearchInput {
 
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
-    this.searchState.matches = this.jumpAssigner.assignJumpChars(
-      matches,
-      this.editor.selection.active,
-      this.editor.document
-    );
+    // Check if we should transition to jump mode BEFORE assigning jump characters
+    const shouldTransitionToJump = this.shouldTransitionToJumpMode(matches);
 
-    // Check if we should be in jump mode
-    const shouldTransitionToJump = this.shouldTransitionToJumpMode();
-    if (shouldTransitionToJump && this.searchState.matches.length > 0) {
+    if (shouldTransitionToJump && matches.length > 0) {
+      // Only assign jump characters if we're going to enter jump mode
+      this.searchState.matches = this.jumpAssigner.assignJumpChars(
+        matches,
+        this.editor.selection.active,
+        this.editor.document
+      );
       this.searchState.isInJumpMode = true;
+    } else {
+      // Don't assign jump characters, just store raw matches for display
+      this.searchState.matches = matches.map((match) => ({
+        ...match,
+        jumpChar: "",
+        isSequence: false,
+      }));
+      this.searchState.isInJumpMode = false;
     }
   }
 
