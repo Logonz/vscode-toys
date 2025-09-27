@@ -165,7 +165,12 @@ export class RegularJumpAssigner {
     }));
 
     // Use adaptive assigner to get jump assignments with regular-jump configuration
-    const assignments = this.adaptiveAssigner.assignChars(pseudoTokens, cursorPosition, document, "vstoys.regular-jump");
+    const assignments = this.adaptiveAssigner.assignChars(
+      pseudoTokens,
+      cursorPosition,
+      document,
+      "vstoys.regular-jump"
+    );
 
     // Convert back to LabeledMatch format
     return assignments.map((assignment, index) => ({

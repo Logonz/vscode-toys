@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { LabeledMatch, RegularMatchFinder, RegularJumpAssigner } from "./regularJump";
+import { LabeledMatch, RegularMatch, RegularMatchFinder, RegularJumpAssigner } from "./regularJump";
 
 export interface SearchState {
   pattern: string;
@@ -117,17 +117,24 @@ export class ProgressiveSearchInput {
 
     matches = this.matchFinder.filterMatches(matches, maxMatches, minWordLength);
 
-    this.searchState.matches = this.jumpAssigner.assignJumpChars(
-      matches,
-      this.editor.selection.active,
-      this.editor.document
-    );
+    // Check if we should transition to jump mode BEFORE assigning jump characters
+    const shouldTransitionToJump = this.shouldTransitionToJumpMode(matches);
 
-    // Check if we should transition to jump mode
-    const shouldTransitionToJump = this.shouldTransitionToJumpMode();
-
-    if (shouldTransitionToJump && this.searchState.matches.length > 0) {
+    if (shouldTransitionToJump && matches.length > 0) {
+      // Only assign jump characters if we're going to enter jump mode
+      this.searchState.matches = this.jumpAssigner.assignJumpChars(
+        matches,
+        this.editor.selection.active,
+        this.editor.document
+      );
       this.searchState.isInJumpMode = true;
+    } else {
+      // Don't assign jump characters, just store raw matches for display
+      this.searchState.matches = matches.map((match) => ({
+        ...match,
+        jumpChar: "",
+        isSequence: false,
+      }));
     }
 
     this.updateState();
@@ -192,10 +199,13 @@ export class ProgressiveSearchInput {
   /**
    * Determine if we should transition from search to jump mode
    */
-  private shouldTransitionToJumpMode(): boolean {
+  private shouldTransitionToJumpMode(matches?: RegularMatch[]): boolean {
     const config = vscode.workspace.getConfiguration("vstoys.regular-jump");
     const minPatternLength = config.get<number>("minPatternLength", 2);
-    const maxMatchesForAutoJump = config.get<number>("maxMatchesForAutoJump", 20);
+    const maxMatchesForAutoJump = config.get<number>("maxMatchesForAutoJump", 30);
+
+    // Use provided matches or current state matches
+    const matchesToCheck = matches || this.searchState.matches;
 
     // Minimum pattern length reached
     if (this.searchState.pattern.length < minPatternLength) {
@@ -203,12 +213,12 @@ export class ProgressiveSearchInput {
     }
 
     // Have manageable number of matches
-    if (this.searchState.matches.length > maxMatchesForAutoJump) {
+    if (matchesToCheck.length > maxMatchesForAutoJump) {
       return false;
     }
 
     // Have at least one match
-    return this.searchState.matches.length > 0;
+    return matchesToCheck.length > 0;
   }
 
   /**
