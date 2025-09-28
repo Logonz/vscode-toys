@@ -3,6 +3,8 @@ import { JumpInput } from "./jumpInput";
 import { AdaptiveCharAssigner, JumpAssignment } from "../shared/adaptiveCharAssigner";
 import { ProgressiveJumpInput } from "./progressiveJumpInput";
 import { pickColorType } from "../../helpers/pickColorType";
+import { fetchSemanticTokens, filterTokens } from "./providers/semanticTokenProvider";
+import { fetchDocumentSymbols } from "./providers/documentSymbolProvider";
 
 type DecodedToken = {
   line: number;
@@ -30,9 +32,15 @@ export class SemanticJumpHandler {
 
   async startSemanticJump(editor: vscode.TextEditor, debugMode: boolean = false): Promise<void> {
     try {
-      const tokens = await this.fetchSemanticTokens(editor, debugMode);
+      // Fetch semantic tokens for the visible range
+      const rawTokens = await fetchSemanticTokens(editor, debugMode);
+      const tokens = filterTokens(
+        // If no semantic tokens, fall back to document symbols
+        rawTokens.length ? rawTokens : await fetchDocumentSymbols(editor, debugMode),
+        debugMode
+      );
       if (!tokens || tokens.length === 0) {
-        vscode.window.showInformationMessage("No semantic tokens found");
+        vscode.window.showInformationMessage("No semantic or document symbols found");
         return;
       }
 
@@ -43,7 +51,7 @@ export class SemanticJumpHandler {
       const mode = config.get<string>("mode", "adaptive");
 
       if (debugMode) {
-        this.createJumpTargets(tokens, editor, debugMode);
+        this.createJumpTargets(tokens, debugMode);
         this.createDecorations(editor, debugMode);
         this.startDebugMode(editor);
       } else if (mode === "adaptive" || mode === "progressive") {
@@ -53,7 +61,7 @@ export class SemanticJumpHandler {
         this.startProgressiveInput(editor);
       } else {
         // Fallback to simple mode
-        this.createJumpTargets(tokens, editor, debugMode);
+        this.createJumpTargets(tokens, debugMode);
         this.createDecorations(editor, debugMode);
         this.startInput(editor);
       }
@@ -65,113 +73,7 @@ export class SemanticJumpHandler {
     }
   }
 
-  private async fetchSemanticTokens(editor: vscode.TextEditor, debugMode: boolean = false): Promise<DecodedToken[]> {
-    const visibleRanges = editor.visibleRanges;
-    if (visibleRanges.length === 0) {
-      return [];
-    }
-
-    const visibleRange = visibleRanges[0];
-
-    const legend: any = await vscode.commands.executeCommand(
-      "vscode.provideDocumentRangeSemanticTokensLegend",
-      editor.document.uri,
-      visibleRange
-    );
-
-    if (!legend) {
-      return [];
-    }
-
-    const tokens: any = await vscode.commands.executeCommand(
-      "vscode.provideDocumentRangeSemanticTokens",
-      editor.document.uri,
-      visibleRange
-    );
-
-    if (!tokens || !tokens.data) {
-      return [];
-    }
-
-    return this.decodeSemanticTokens(tokens.data, legend, editor.document, debugMode);
-  }
-
-  private decodeSemanticTokens(
-    data: Uint32Array,
-    legend: { tokenTypes: string[]; tokenModifiers: string[] },
-    document: vscode.TextDocument,
-    debugMode: boolean = false
-  ): DecodedToken[] {
-    const out: DecodedToken[] = [];
-    let line = 0;
-    let char = 0;
-
-    for (let i = 0; i < data.length; i += 5) {
-      const deltaLine = data[i];
-      const deltaStart = data[i + 1];
-      const length = data[i + 2];
-      const tokenTypeIndex = data[i + 3];
-      const tokenMods = data[i + 4];
-
-      line += deltaLine;
-      char = deltaLine === 0 ? char + deltaStart : deltaStart;
-
-      const type = legend.tokenTypes[tokenTypeIndex] ?? "unknown";
-      const modifiers: string[] = [];
-      for (let bit = 0; bit < 32; bit++) {
-        if (tokenMods & (1 << bit)) {
-          const mod = legend.tokenModifiers[bit];
-          if (mod) modifiers.push(mod);
-        }
-      }
-
-      const text = document.getText(new vscode.Range(line, char, line, char + length));
-
-      out.push({ line, startChar: char, length, type, modifiers, text });
-    }
-
-    return this.filterTokens(out, debugMode);
-  }
-
-  private filterTokens(tokens: DecodedToken[], debugMode: boolean = false): DecodedToken[] {
-    const config = vscode.workspace.getConfiguration("vstoys.semantic-jump");
-
-    // Debug mode shows ALL tokens
-    if (debugMode) {
-      return tokens.filter((token) => token.text && token.text.trim().length > 0);
-    }
-
-    // Check if "all" mode is enabled
-    const includeAllTypes = config.get<boolean>("includeAllTokenTypes", false);
-    if (includeAllTypes) {
-      return tokens.filter((token) => token.text && token.text.trim().length > 0);
-    }
-
-    // Normal filtering by included types
-    const includedTypes = config.get<string[]>("includedTokenTypes", [
-      "function",
-      "method",
-      "class",
-      "interface",
-      "type",
-      "enum",
-      "enumMember",
-      "variable",
-      "property",
-      "parameter",
-      "namespace",
-      "typeParameter",
-      "struct",
-      "decorator",
-      "event",
-      "macro",
-      "label",
-    ]);
-
-    return tokens.filter((token) => includedTypes.includes(token.type) && token.text && token.text.trim().length > 0);
-  }
-
-  private createJumpTargets(tokens: DecodedToken[], editor: vscode.TextEditor, debugMode: boolean = false): void {
+  private createJumpTargets(tokens: DecodedToken[], debugMode: boolean = false): void {
     const config = vscode.workspace.getConfiguration("vstoys.semantic-jump");
     const allowedChars = config.get<string>("jumpCharacters", "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV").split("");
 

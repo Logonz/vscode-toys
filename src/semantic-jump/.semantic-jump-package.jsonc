@@ -29,7 +29,7 @@
         "vstoys.semantic-jump.jumpCharacters": {
           "type": "string",
           "default": "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV",
-          "description": "Characters used for jumping to semantic tokens. Auto-sliced: first 8 chars = home row (single chars for high-priority targets), next 12 chars = extended (used in sequences), remaining = fallback alternatives for conflict avoidance",
+          "description": "Characters used for semantic jumps. Low density uses only the first 8 (‘home row’) characters for single-label targets. Medium density keeps those singles and builds two-key sequences from every lowercase character in the string. High density expands the first and second key to include lowercase, uppercase, and any other symbols from the string. Later characters remain available as conflict fallbacks.",
           "order": 8001
         },
         "vstoys.semantic-jump.includedTokenTypes": {
@@ -108,25 +108,25 @@
           },
           "order": 8006
         },
-        "vstoys.semantic-jump.densityThresholds": {
-          "type": "object",
-          "default": {
-            "lowToMedium": 15,
-            "mediumToHigh": 40
-          },
-          "description": "Target count thresholds for adaptive mode switching",
-          "properties": {
-            "lowToMedium": {
-              "type": "number",
-              "description": "Threshold for switching from single-char to mixed mode"
-            },
-            "mediumToHigh": {
-              "type": "number",
-              "description": "Threshold for switching from mixed to progressive mode"
-            }
-          },
-          "order": 8007
-        },
+        // "vstoys.semantic-jump.densityThresholds": {
+        //   "type": "object",
+        //   "default": {
+        //     "lowToMedium": 15,
+        //     "mediumToHigh": 40
+        //   },
+        //   "description": "Target count thresholds for adaptive mode switching",
+        //   "properties": {
+        //     "lowToMedium": {
+        //       "type": "number",
+        //       "description": "Threshold for switching from single-char to mixed mode"
+        //     },
+        //     "mediumToHigh": {
+        //       "type": "number",
+        //       "description": "Threshold for switching from mixed to progressive mode"
+        //     }
+        //   },
+        //   "order": 8007
+        // },
         "vstoys.semantic-jump.decorationBackgroundColor": {
           "type": "string",
           // "default": "#4169E1",

@@ -33,6 +33,14 @@ export type JumpAssignment = {
 
 export type DensityLevel = "low" | "medium" | "high";
 
+type CharPools = {
+  homeRow: string[];
+  lowercase: string[];
+  uppercase: string[];
+  others: string[];
+  all: string[];
+};
+
 export class AdaptiveCharAssigner {
   // Default values - will be overridden by configuration
   private readonly defaultTypeScores: Record<string, number> = {
@@ -53,10 +61,7 @@ export class AdaptiveCharAssigner {
     label: 10,
   };
 
-  private readonly defaultDensityThresholds = {
-    lowToMedium: 15,
-    mediumToHigh: 40,
-  };
+  private readonly defaultJumpChars = "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV";
 
   /**
    * Main entry point - assigns jump characters to tokens using Flash.nvim-inspired algorithm
@@ -77,16 +82,57 @@ export class AdaptiveCharAssigner {
     // Step 2: Score and filter targets
     const scoredTargets = this.scoreTargets(tokens, clusters, cursorPosition, config);
 
+    const jumpCharsSetting = config.get<string>("jumpCharacters", this.defaultJumpChars);
+    const charPools = this.getCharPools(jumpCharsSetting);
+
     // Step 3: Calculate density and choose strategy
-    const density = this.calculateDensity(scoredTargets.length, config);
+    const density = this.calculateDensity(scoredTargets.length, charPools, config);
+    console.log(`AdaptiveCharAssigner: ${scoredTargets.length} targets, density=${density}`);
 
     // Step 4: Assign characters based on density
-    let assignments = this.performAdaptiveAssignment(scoredTargets, density, config);
+    let assignments = this.performAdaptiveAssignment(scoredTargets, density, charPools);
 
     // Step 5: Avoid visual conflicts
-    assignments = this.avoidVisualConflicts(assignments, document, config);
+    assignments = this.avoidVisualConflicts(assignments, document, jumpCharsSetting);
 
     return assignments;
+  }
+  // Partition the configured jump characters into reusable pools for each density tier
+  private getCharPools(jumpChars: string): CharPools {
+    const chars = jumpChars.split("").filter(Boolean);
+    const addUnique = (list: string[], char: string) => {
+      if (!list.includes(char)) {
+        list.push(char);
+      }
+    };
+
+    const homeRowLimit = Math.min(8, chars.length);
+    const homeRow: string[] = [];
+    for (let i = 0; i < homeRowLimit; i++) {
+      addUnique(homeRow, chars[i]);
+    }
+
+    const lowercase: string[] = [];
+    const uppercase: string[] = [];
+    const others: string[] = [];
+
+    chars.forEach((char) => {
+      // Skip if already in home row
+      if (!homeRow.includes(char)) {
+        if (/[a-z]/.test(char)) {
+          addUnique(lowercase, char);
+        } else if (/[A-Z]/.test(char)) {
+          addUnique(uppercase, char);
+        } else {
+          addUnique(others, char);
+        }
+      }
+    });
+
+    const all: string[] = [];
+    chars.forEach((char) => addUnique(all, char));
+
+    return { homeRow, lowercase, uppercase, others, all };
   }
 
   /**
@@ -225,40 +271,59 @@ export class AdaptiveCharAssigner {
   }
 
   /**
-   * Calculate density level based on number of targets
+   * Choose density mode by comparing target volume to the capacity each pool can comfortably label
    */
-  private calculateDensity(targetCount: number, config: vscode.WorkspaceConfiguration): DensityLevel {
-    const thresholds = { ...this.defaultDensityThresholds, ...config.get<any>("densityThresholds", {}) };
+  private calculateDensity(
+    targetCount: number,
+    charPools: CharPools,
+    config: vscode.WorkspaceConfiguration
+  ): DensityLevel {
+    const lowercasePool = charPools.lowercase.length > 0 ? charPools.lowercase : charPools.all;
+    // Auto-calculate density thresholds based on available character tiers
+    const lowCapacity = charPools.homeRow.length > 0 ? charPools.homeRow.length : lowercasePool.length;
+    const mediumCapacity = lowCapacity + lowercasePool.length * Math.max(lowercasePool.length, 1);
 
-    if (targetCount <= thresholds.lowToMedium) return "low";
-    if (targetCount <= thresholds.mediumToHigh) return "medium";
+    // Old manual density thresholds (commented out)
+    // const manualThresholds = config.get<{ lowToMedium?: number; mediumToHigh?: number }>("densityThresholds");
+    // const lowToMedium = manualThresholds?.lowToMedium ?? lowCapacity;
+    // const mediumToHigh = manualThresholds?.mediumToHigh ?? mediumCapacity;
+
+    const lowToMedium = lowCapacity;
+    const mediumToHigh = mediumCapacity;
+    console.log(`Density thresholds: lowToMedium=${lowToMedium}, mediumToHigh=${mediumToHigh}`);
+
+    if (targetCount <= lowToMedium) return "low";
+    if (targetCount <= mediumToHigh) return "medium";
     return "high";
   }
 
   /**
-   * Perform adaptive character assignment based on density
+   * Dispatch to the assignment strategy that matches the current density tier
    */
   private performAdaptiveAssignment(
     targets: ScoredTarget[],
     density: DensityLevel,
-    config: vscode.WorkspaceConfiguration
+    charPools: CharPools
   ): JumpAssignment[] {
     switch (density) {
       case "low":
-        return this.assignSingleChars(targets, config);
+        return this.assignSingleChars(targets, charPools);
       case "medium":
-        return this.assignMixedChars(targets, config);
+        return this.assignMixedChars(targets, charPools);
       case "high":
-        return this.assignProgressiveChars(targets, config);
+        return this.assignProgressiveChars(targets, charPools);
     }
   }
 
   /**
-   * Assign single characters (low density)
+   * Low density: stick to the most ergonomic single characters (home row first)
    */
-  private assignSingleChars(targets: ScoredTarget[], config: vscode.WorkspaceConfiguration): JumpAssignment[] {
-    const jumpChars = config.get<string>("jumpCharacters", "fjdkslaghrueiwoncmv");
-    const availableChars = jumpChars.split("");
+  private assignSingleChars(targets: ScoredTarget[], charPools: CharPools): JumpAssignment[] {
+    const availableChars = charPools.homeRow.length > 0 ? charPools.homeRow : charPools.all;
+
+    if (availableChars.length === 0) {
+      return [];
+    }
 
     return targets.slice(0, availableChars.length).map((target, i) => ({
       token: target.token,
@@ -269,68 +334,88 @@ export class AdaptiveCharAssigner {
   }
 
   /**
-   * Assign mixed single and two-char sequences (medium density)
+   * Medium density: reserve single keys for top targets and build lowercase-first sequences for the rest
    */
-  private assignMixedChars(targets: ScoredTarget[], config: vscode.WorkspaceConfiguration): JumpAssignment[] {
+  private assignMixedChars(targets: ScoredTarget[], charPools: CharPools): JumpAssignment[] {
     const assignments: JumpAssignment[] = [];
-    const jumpChars = config.get<string>("jumpCharacters", "fjdkslaghrueiwoncmv");
+    const singleChars = charPools.homeRow.length > 0 ? charPools.homeRow : charPools.all;
+    const lowercasePool = charPools.lowercase.length > 0 ? charPools.lowercase : charPools.all;
 
-    // Smart splitting: use first 8 chars as home row, rest as extended
-    const homeRowChars = jumpChars.slice(0, 8).split("");
-    const extendedChars = jumpChars.slice(8, 20).split("");
+    const singleCharCount = Math.min(singleChars.length, targets.length);
 
-    // Top priority targets get single home row chars
-    const singleCharCount = homeRowChars.length;
     targets.slice(0, singleCharCount).forEach((target, i) => {
       assignments.push({
         token: target.token,
         position: new vscode.Position(target.token.line, target.token.startChar),
-        chars: homeRowChars[i],
+        chars: singleChars[i],
         isSequence: false,
       });
     });
 
     // Remaining targets get two-char sequences
     const remaining = targets.slice(singleCharCount);
-    let sequenceIndex = 0;
+    if (remaining.length === 0 || lowercasePool.length === 0) {
+      return assignments;
+    }
 
-    for (const target of remaining) {
-      if (sequenceIndex >= extendedChars.length * homeRowChars.length) break;
+    let index = 0;
+    for (const firstChar of lowercasePool) {
+      for (const secondChar of lowercasePool) {
+        if (index >= remaining.length) {
+          break;
+        }
 
-      const firstCharIndex = Math.floor(sequenceIndex / homeRowChars.length);
-      const secondCharIndex = sequenceIndex % homeRowChars.length;
-
-      if (firstCharIndex < extendedChars.length) {
+        const target = remaining[index];
         assignments.push({
           token: target.token,
           position: new vscode.Position(target.token.line, target.token.startChar),
-          chars: extendedChars[firstCharIndex] + homeRowChars[secondCharIndex],
+          chars: firstChar + secondChar,
           isSequence: true,
         });
-      }
 
-      sequenceIndex++;
+        index++;
+      }
+      if (index >= remaining.length) {
+        break;
+      }
     }
 
     return assignments;
   }
 
   /**
-   * Assign progressive two-char sequences (high density)
+   * High density: widen both keystrokes to include every available character pool (lower, upper, symbols)
    */
-  private assignProgressiveChars(targets: ScoredTarget[], config: vscode.WorkspaceConfiguration): JumpAssignment[] {
+  private assignProgressiveChars(targets: ScoredTarget[], charPools: CharPools): JumpAssignment[] {
     const assignments: JumpAssignment[] = [];
-    const jumpChars = config.get<string>("jumpCharacters", "fjdkslaghrueiwoncmv");
 
-    // Use first 8 chars for first position, all chars for second position
-    const firstChars = jumpChars.slice(0, 8).split("");
-    const secondChars = jumpChars.split("");
+    const mergeUnique = (...lists: string[][]): string[] => {
+      const combined: string[] = [];
+      lists.forEach((list) => {
+        list.forEach((char) => {
+          if (!combined.includes(char)) {
+            combined.push(char);
+          }
+        });
+      });
+      return combined;
+    };
+
+    const lowercasePool = charPools.lowercase.length > 0 ? charPools.lowercase : charPools.all;
+    const firstChars = mergeUnique(lowercasePool, charPools.uppercase, charPools.others);
+    const secondChars = mergeUnique(lowercasePool, charPools.uppercase, charPools.others);
+
+    if (firstChars.length === 0 || secondChars.length === 0) {
+      return assignments;
+    }
 
     let targetIndex = 0;
 
     for (const firstChar of firstChars) {
       for (const secondChar of secondChars) {
-        if (targetIndex >= targets.length) break;
+        if (targetIndex >= targets.length) {
+          break;
+        }
 
         assignments.push({
           token: targets[targetIndex].token,
@@ -341,22 +426,26 @@ export class AdaptiveCharAssigner {
 
         targetIndex++;
       }
-      if (targetIndex >= targets.length) break;
+      if (targetIndex >= targets.length) {
+        break;
+      }
     }
 
     return assignments;
   }
 
   /**
-   * Avoid visual conflicts with surrounding text
+   * Prevent jump labels from visually blending with surrounding text by swapping to uppercase variants
    */
   private avoidVisualConflicts(
     assignments: JumpAssignment[],
     document: vscode.TextDocument,
-    config: vscode.WorkspaceConfiguration
+    jumpCharsSetting: string
   ): JumpAssignment[] {
-    const jumpChars = config.get<string>("jumpCharacters", "fjdkslaghrueiwoncmv");
-    const upperCaseAlternatives = jumpChars.toUpperCase().split("");
+    const upperCaseAlternatives = jumpCharsSetting
+      .toUpperCase()
+      .split("")
+      .filter((char, index, array) => array.indexOf(char) === index);
 
     return assignments.map((assignment) => {
       const token = assignment.token;
