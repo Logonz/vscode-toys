@@ -27,14 +27,6 @@ export async function activateSmartOpen(name: string, context: vscode.ExtensionC
   printSmartOpenOutput = createOutputChannel(name);
   printSmartOpenOutput(`${name} activating`);
 
-  const debugCommand = vscode.commands.registerCommand("vstoys.debug.showQuickPick", async () => {
-    await showDebugQuickPick();
-  });
-
-  const smartOpenCommand = vscode.commands.registerCommand("vstoys.smart-open.showQuickPick", async () => {
-    await showQuickPickWithInlineSearch();
-  });
-
   const configChangeListener = vscode.workspace.onDidChangeConfiguration((event) => {
     if (
       event.affectsConfiguration("workbench.editor.customLabels.enabled") ||
@@ -67,28 +59,45 @@ export async function activateSmartOpen(name: string, context: vscode.ExtensionC
     handleWorkspaceFoldersChanged(event);
   });
 
-  context.subscriptions.push(debugCommand);
-  context.subscriptions.push(smartOpenCommand);
   context.subscriptions.push(configChangeListener);
   context.subscriptions.push(excludeListener);
   context.subscriptions.push(workspaceListener);
 
-  // Initialize all icons
-  LoadIcons();
-
-  // Initialize exclude listeners
-  updateSearchExcludeCache();
-  updateFilesExcludeCache();
-
-  // Initialize the custom editor label service
-  updateCustomLabelConfiguration();
-
-  // Initialize gitignore watchers
-  initializeGitignoreWatchers();
-
   scoreCalculator = new ScoreCalculator(context);
 
-  printSmartOpenOutput(`${name} activated`);
+  // Lazy mans lazy loading
+  setTimeout(() => {
+    // Initialize all icons
+    LoadIcons();
+  }, 10);
+
+  // Lazy mans lazy loading
+  setTimeout(() => {
+    // Initialize exclude listeners
+    updateSearchExcludeCache();
+    updateFilesExcludeCache();
+
+    // Initialize the custom editor label service
+    updateCustomLabelConfiguration();
+
+    // Initialize gitignore watchers
+    initializeGitignoreWatchers();
+  }, 100);
+
+  // Lazy mans lazy loading
+  setTimeout(() => {
+    const debugCommand = vscode.commands.registerCommand("vstoys.debug.showQuickPick", async () => {
+      await showDebugQuickPick();
+    });
+
+    const smartOpenCommand = vscode.commands.registerCommand("vstoys.smart-open.showQuickPick", async () => {
+      await showQuickPickWithInlineSearch();
+    });
+
+    context.subscriptions.push(debugCommand);
+    context.subscriptions.push(smartOpenCommand);
+    printSmartOpenOutput(`${name} activated`);
+  }, 300);
 }
 
 export function deactivateSmartOpen() {
