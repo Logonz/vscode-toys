@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
-import { RegularJumpDecorationManager, LabeledMatch } from "./regularJump";
+import { LabeledMatch } from "./regularJump";
 import { ProgressiveSearchInput, SearchState } from "./progressiveSearchInput";
+import { JumpDecorationManager } from "../shared/jumpDecorationManager";
 
 export class RegularJumpHandler {
-  private decorationManager = new RegularJumpDecorationManager();
+  private decorationManager = new JumpDecorationManager();
   private searchInput: ProgressiveSearchInput | null = null;
   private currentEditor: vscode.TextEditor | null = null;
   private isActive = false;

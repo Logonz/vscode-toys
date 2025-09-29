@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
-import { HybridJumpDecorationManager, LabeledMatch } from "./hybridJump";
+import { LabeledMatch } from "./hybridJump";
 import { ProgressiveSearchInput, SearchState } from "./progressiveHyperInput";
+import { JumpDecorationManager } from "../shared/jumpDecorationManager";
 
 export class HybridJumpHandler {
-  private decorationManager = new HybridJumpDecorationManager();
+  private decorationManager = new JumpDecorationManager();
   private searchInput: ProgressiveSearchInput | null = null;
   private currentEditor: vscode.TextEditor | null = null;
   private isActive = false;
