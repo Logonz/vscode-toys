@@ -9,8 +9,8 @@ import {
   IsCustomLabelsEnabled,
 } from "../helpers/customEditorLabelService";
 import { FileQuickPickItem } from "./picks/interface/IFileQuickPickItem";
-import { showFileListWithIcons } from "./picks/testPickers/fileListWithIcons";
-import { showFileListWithCustomLabels } from "./picks/testPickers/fileListWithCustomLabels";
+// import { showFileListWithIcons } from "./picks/testPickers/fileListWithIcons";
+// import { showFileListWithCustomLabels } from "./picks/testPickers/fileListWithCustomLabels";
 import { showFileListWithFuzzy } from "./picks/fileListWithFuzzy";
 
 interface DebugQuickPickItem extends vscode.QuickPickItem {
@@ -34,16 +34,16 @@ export async function showDebugQuickPick(): Promise<void> {
       description: "Test optimized batch icon loading",
       action: "testBatchIcons",
     },
-    {
-      label: "$(list-unordered) Show File List",
-      description: "Display all workspace files with icons",
-      action: "showFileList",
-    },
-    {
-      label: "$(list-unordered) Show File List (Custom Labels)",
-      description: "Display all workspace files with icons and custom labels",
-      action: "showFileListCustomLabels",
-    },
+    // {
+    //   label: "$(list-unordered) Show File List",
+    //   description: "Display all workspace files with icons",
+    //   action: "showFileList",
+    // },
+    // {
+    //   label: "$(list-unordered) Show File List (Custom Labels)",
+    //   description: "Display all workspace files with icons and custom labels",
+    //   action: "showFileListCustomLabels",
+    // },
     {
       label: "$(list-unordered) Show File List (Fuzzy Search)",
       description: "Display all workspace files with icons and fuzzy search",
@@ -91,12 +91,12 @@ async function executeDebugAction(action: string): Promise<void> {
     case "testBatchIcons":
       await testBatchIconLoading();
       break;
-    case "showFileList":
-      await showFileListWithIcons();
-      break;
-    case "showFileListCustomLabels":
-      await showFileListWithCustomLabels();
-      break;
+    // case "showFileList":
+    //   await showFileListWithIcons();
+    //   break;
+    // case "showFileListCustomLabels":
+    //   await showFileListWithCustomLabels();
+    //   break;
     case "showFileListFuzzy":
       await showFileListWithFuzzy("");
       break;
