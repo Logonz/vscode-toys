@@ -67,8 +67,8 @@ let vsToys: {
     deactivator: () => {},
   },
   {
-    name: "File Decorator",
-    moduleContext: "file-decorator",
+    name: "Git File Decorator",
+    moduleContext: "git-file-decorator",
     activator: (name, context) => activateFileDecorator(name, context),
     deactivator: () => {},
   },
@@ -136,12 +136,17 @@ export function activate(context: vscode.ExtensionContext) {
   printChannelOutput("vstoys.installed context set to true");
 
   vsToys.forEach((toy) => {
+    const start = performance.now();
     const fullContext = `vstoys.${toy.moduleContext}.active`;
     // TODO: Check if the "toy" should be enabled or not
     printChannelOutput(`---> Loading Module: ${toy.name}, Activating Context: ${fullContext}`);
     console.log(`---> Loading Module: ${toy.name}, Activating Context: ${fullContext}`);
     vscode.commands.executeCommand("setContext", fullContext, true);
     toy.activator(toy.name, context);
+    const end = performance.now();
+    const duration = end - start;
+    printChannelOutput(`---> Module: ${toy.name} activated in ${duration}ms`);
+    console.log(`---> Module: ${toy.name} activated in ${duration}ms`);
   });
 }
 
