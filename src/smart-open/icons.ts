@@ -181,28 +181,28 @@ function FastGetIconForFileSync(file: vscode.Uri): vscode.Uri | undefined {
   let icon: vscode.Uri | undefined;
 
   // TODO: Remove this debug output
-  let whereFound = "";
+  // let whereFound = "";
 
   // Check for full file name match
   if (iconFileNames.has(fileName)) {
-    whereFound = "fileName";
+    // whereFound = "fileName";
     icon = iconFileNames.get(fileName);
   }
   // Test for things such as .vscodeignore, gitlab-ci.yml and other files that start with a dot
   else if (dotFileNameWithoutDot && extensionToIcon.has(dotFileNameWithoutDot)) {
-    whereFound = "dotFileNameExtension";
+    // whereFound = "dotFileNameExtension";
     icon = extensionToIcon.get(dotFileNameWithoutDot);
     iconCacheStats.extensionHits++;
   }
   // Test if the full filename exists in extensionToIcon (Some files do)
   else if (fileName && extensionToIcon.has(fileName)) {
-    whereFound = "fileNameExtension";
+    // whereFound = "fileNameExtension";
     icon = extensionToIcon.get(fileName);
     iconCacheStats.extensionHits++;
   }
   // Check for learned extension match
   else if (extensionToIcon.has(fileExtensionWithoutDot)) {
-    whereFound = "extension";
+    // whereFound = "extension";
     icon = extensionToIcon.get(fileExtensionWithoutDot);
     iconCacheStats.extensionHits++;
   }

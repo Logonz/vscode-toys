@@ -2,8 +2,6 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
-import path from "path";
-import os from "os";
 import { openFile } from "./openFile";
 
 /**

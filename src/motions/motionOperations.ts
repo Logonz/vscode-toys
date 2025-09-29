@@ -1,4 +1,4 @@
-import { window, Selection, Range, env, ThemeColor } from "vscode";
+import { window, Selection, Range, env } from "vscode";
 import { findTextObject, TEXT_OBJECTS } from "./textObjects";
 import { pickColorType } from "../helpers/pickColorType";
 

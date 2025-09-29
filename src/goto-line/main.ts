@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
 import { navigateToLine, navigateToRelativeLine } from "./navigation";
 import { GotoLinePreview } from "./preview";
-import { GotoLineSettingsManager, getGotoLineSettings } from "./settings";
+import { GotoLineSettingsManager } from "./settings";
 
 /**
  * Prints the given content on the output channel.

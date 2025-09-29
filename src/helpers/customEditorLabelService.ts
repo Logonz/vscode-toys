@@ -67,7 +67,6 @@ function updateCustomLabelsPatternsCache(): void {
   }
 }
 
-let customEditorLabelService: CustomEditorLabelService | undefined;
 export function updateCustomLabelConfiguration(): void {
   // * Get if custom labels are enabled
   updateCustomLabelsEnabledCache();

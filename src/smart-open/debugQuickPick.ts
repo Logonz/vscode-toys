@@ -1,14 +1,6 @@
 import * as vscode from "vscode";
 import { GetIconForFile, LoadIcons, batchLoadIcons, getIconCacheStats, clearIconCache } from "./icons";
 import { GetAllFilesInWorkspace } from "./files";
-import {
-  CustomEditorLabelService,
-  GetCustomLabelForFile,
-  GetMaxWorkspaceFiles,
-  ICustomEditorLabelPatterns,
-  IsCustomLabelsEnabled,
-} from "../helpers/customEditorLabelService";
-import { FileQuickPickItem } from "./picks/interface/IFileQuickPickItem";
 // import { showFileListWithIcons } from "./picks/testPickers/fileListWithIcons";
 // import { showFileListWithCustomLabels } from "./picks/testPickers/fileListWithCustomLabels";
 import { showFileListWithFuzzy } from "./picks/fileListWithFuzzy";
@@ -163,7 +155,7 @@ async function testBatchIconLoading(): Promise<void> {
       const serialStartTime = performance.now();
 
       for (const file of testFiles) {
-        const icon = await GetIconForFile(file);
+        await GetIconForFile(file);
       }
 
       const serialEndTime = performance.now();
@@ -226,32 +218,32 @@ async function openDebugConsole(): Promise<void> {
   vscode.commands.executeCommand("workbench.action.toggleDevTools");
 }
 
-async function GenerateItemList(files: vscode.Uri[]): Promise<void> {
-  let internalFiles: { uri: vscode.Uri; customLabel: string; relativePath: string; fsPath: string }[] = [];
+// async function GenerateItemList(files: vscode.Uri[]): Promise<void> {
+//   let internalFiles: { uri: vscode.Uri; customLabel: string; relativePath: string; fsPath: string }[] = [];
 
-  const customLabelsEnabled: boolean | undefined = vscode.workspace
-    .getConfiguration("workbench")
-    .get<boolean>("editor.customLabels.enabled");
+//   const customLabelsEnabled: boolean | undefined = vscode.workspace
+//     .getConfiguration("workbench")
+//     .get<boolean>("editor.customLabels.enabled");
 
-  if (customLabelsEnabled && customLabelsEnabled === true) {
-    const customLabelsPatterns: ICustomEditorLabelPatterns | undefined = vscode.workspace
-      .getConfiguration("workbench")
-      .get<ICustomEditorLabelPatterns>("editor.customLabels.patterns");
+//   if (customLabelsEnabled && customLabelsEnabled === true) {
+//     const customLabelsPatterns: ICustomEditorLabelPatterns | undefined = vscode.workspace
+//       .getConfiguration("workbench")
+//       .get<ICustomEditorLabelPatterns>("editor.customLabels.patterns");
 
-    if (customLabelsPatterns) {
-      const labelService = new CustomEditorLabelService(customLabelsPatterns);
-      files.forEach((file) => {
-        const label = labelService.getName(file);
-        const fileObject = {
-          uri: file,
-          fsPath: file.fsPath,
-          relativePath: vscode.workspace.asRelativePath(file),
-          customLabel: label ? label : vscode.workspace.asRelativePath(file),
-        };
-        internalFiles.push(fileObject);
-      });
-    }
-  }
+//     if (customLabelsPatterns) {
+//       const labelService = new CustomEditorLabelService(customLabelsPatterns);
+//       files.forEach((file) => {
+//         const label = labelService.getName(file);
+//         const fileObject = {
+//           uri: file,
+//           fsPath: file.fsPath,
+//           relativePath: vscode.workspace.asRelativePath(file),
+//           customLabel: label ? label : vscode.workspace.asRelativePath(file),
+//         };
+//         internalFiles.push(fileObject);
+//       });
+//     }
+//   }
 
-  console.log(internalFiles);
-}
+//   console.log(internalFiles);
+// }

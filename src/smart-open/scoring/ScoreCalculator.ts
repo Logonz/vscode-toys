@@ -69,7 +69,7 @@ export class ScoreCalculator {
       }
 
       const score = result;
-      const weight = this.getWeight(type); // Store individual score
+      // const weight = this.getWeight(type); // Store individual score
       switch (type) {
         case "fuzzy":
           scores.fuzzyScore = score;
@@ -197,7 +197,7 @@ export class ScoreCalculator {
     const MAX_VALUE = 100;
     // Threshold for switching from linear to square root normalization for frequency scores
     // Do not use any value below 10 here, 100 is a good value imo.
-    const MAX_RAW_BEFORE_NORMALIZATION = MAX_VALUE;
+    // const MAX_RAW_BEFORE_NORMALIZATION = MAX_VALUE;
     // Create normalization functions for each score type
     const createNormalizer = (type: string, range: { min: number; max: number }) => {
       // If min is still Infinity, no values were processed

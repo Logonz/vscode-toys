@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { AdaptiveCharAssigner } from "../shared/adaptiveCharAssigner";
-import { RegularMatch, RegularLabeledMatch, RegularJumpTarget } from "../shared/types";
+import { RegularMatch, RegularLabeledMatch } from "../shared/types";
 import { BaseMatchFinder } from "../shared/baseMatchFinder";
 import { classifyMatchType } from "../shared/functions";
 

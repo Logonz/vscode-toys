@@ -294,7 +294,7 @@ export function findAnyTextObject(
   const quoteChars = new Set<string>();
   const bracketPairs = new Map<string, TextObjectPair>();
 
-  for (const [char, pair] of Object.entries(textObjects)) {
+  for (const [, pair] of Object.entries(textObjects)) {
     if (pair.open === pair.close) {
       quoteChars.add(pair.open);
     } else {

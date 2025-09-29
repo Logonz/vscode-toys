@@ -26,7 +26,7 @@ export class FuzzyScorer implements IScorer {
     }
 
     // Extract just the filename (without path) for separate scoring
-    const filename = file.fileName;
+    // const filename = file.fileName;
     const relativePath = file.relativePath;
 
     // Split input on whitespace to enable multi-term fuzzy searching

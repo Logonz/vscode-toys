@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { AdaptiveCharAssigner, JumpAssignment } from "../shared/adaptiveCharAssigner";
-import { HybridMatch, HybridLabeledMatch, HybridJumpTarget } from "../shared/types";
+import { HybridMatch, HybridLabeledMatch } from "../shared/types";
 import { BaseMatchFinder } from "../shared/baseMatchFinder";
 import { classifyMatchType } from "../shared/functions";
 

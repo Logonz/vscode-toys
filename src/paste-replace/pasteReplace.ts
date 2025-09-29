@@ -119,10 +119,10 @@ export async function pasteReplace(printOutput: (content: string) => void): Prom
     printOutput(`cursors: ${cursors.length}`);
 
     // Store original selections for restoration later
-    const originalSelections = selections.map((selection) => ({
-      start: selection.start,
-      end: selection.end,
-    }));
+    // const originalSelections = selections.map((selection) => ({
+    //   start: selection.start,
+    //   end: selection.end,
+    // }));
 
     await editor.edit((editBuilder) => {
       // Handle cursor positions (no selection) - keep original logic

@@ -1,5 +1,3 @@
-import * as vscode from "vscode";
-
 /**
  * object that holds multiple scoring types
  */

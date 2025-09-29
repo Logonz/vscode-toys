@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import * as child_process from "child_process";
 import * as path from "path";
-import { file } from "tmp";
 import { createOutputChannel } from "../extension";
 
 /**

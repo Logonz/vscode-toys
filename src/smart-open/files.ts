@@ -1,6 +1,5 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import path from "path/win32";
 import * as vscode from "vscode";
 import { getCachedGitignoreGlobs } from "./gitignoreCache";
 

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { GetIconForFile, LoadIcons, batchLoadIcons, getIconCacheStats, clearIconCache } from "../icons";
+import { GetIconForFile, batchLoadIcons, getIconCacheStats } from "../icons";
 import { GetAllFilesInWorkspace } from "../files";
 import { GetCustomLabelForFile, IsCustomLabelsEnabled } from "../../helpers/customEditorLabelService";
 import { FileQuickPickItem } from "./interface/IFileQuickPickItem";
@@ -115,7 +115,7 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
 
   // Get the currently active editor for context-aware scoring
   const activeEditor = vscode.window.activeTextEditor;
-  const activeFilePath = activeEditor?.document.uri.fsPath;
+  // const activeFilePath = activeEditor?.document.uri.fsPath;
 
   const activeWorkspaceFolder = activeEditor
     ? vscode.workspace.getWorkspaceFolder(activeEditor.document.uri)

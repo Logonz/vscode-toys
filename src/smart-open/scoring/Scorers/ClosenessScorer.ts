@@ -31,7 +31,7 @@ export class ClosenessScorer implements IContextScorer {
     let closeScore = 0;
     const fileParts = file.relativePath.split("/").filter((part) => part.length > 0);
     const commonParts = fileParts.filter((part) => activeEditorPathParts.includes(part));
-    const uncommonParts = fileParts.filter((part) => !activeEditorPathParts.includes(part));
+    // const uncommonParts = fileParts.filter((part) => !activeEditorPathParts.includes(part));
 
     // Base score: common parts minus uncommon parts
     // closeScore = Math.max(0, commonParts.length - uncommonParts.length);

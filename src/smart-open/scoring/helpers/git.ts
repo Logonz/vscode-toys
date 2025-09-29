@@ -1,5 +1,4 @@
 import * as child_process from "child_process";
-import * as path from "path";
 
 type CoChangeOptions = {
   repoRoot: string;
@@ -90,7 +89,6 @@ function getFilesInCommits(
         })
         .toString();
 
-      let currentSha = "";
       const lines = output.split("\n");
 
       for (const line of lines) {
@@ -99,7 +97,6 @@ function getFilesInCommits(
 
         // Check for commit header
         if (trimmedLine.startsWith("@@@")) {
-          currentSha = trimmedLine.slice(3);
           continue;
         }
 
