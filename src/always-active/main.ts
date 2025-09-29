@@ -12,6 +12,67 @@ import { openFile } from "./openFile";
  */
 let printAlwaysActiveOutput: (content: string, reveal?: boolean) => void;
 
+type DecodedToken = {
+  line: number;
+  startChar: number;
+  length: number;
+  type: string;
+  modifiers: string[];
+  text?: string;
+};
+
+function decodeSemanticTokens(
+  data: Uint32Array,
+  legend: { tokenTypes: string[]; tokenModifiers: string[] }
+): DecodedToken[] {
+  const out: DecodedToken[] = [];
+  let line = 0;
+  let char = 0;
+
+  for (let i = 0; i < data.length; i += 5) {
+    const deltaLine = data[i];
+    const deltaStart = data[i + 1];
+    const length = data[i + 2];
+    const tokenTypeIndex = data[i + 3];
+    const tokenMods = data[i + 4];
+
+    line += deltaLine;
+    char = deltaLine === 0 ? char + deltaStart : deltaStart;
+
+    const type = legend.tokenTypes[tokenTypeIndex] ?? "unknown";
+    const modifiers: string[] = [];
+    for (let bit = 0; bit < 32; bit++) {
+      if (tokenMods & (1 << bit)) {
+        const mod = legend.tokenModifiers[bit];
+        if (mod) modifiers.push(mod);
+      }
+    }
+
+    out.push({ line, startChar: char, length, type, modifiers });
+  }
+  return out;
+}
+
+function AddTextToDecodedToken(doc: vscode.TextDocument, decodedTokens: DecodedToken[]): DecodedToken[] {
+  for (const token of decodedTokens) {
+    token.text = doc.getText(new vscode.Range(token.line, token.startChar, token.line, token.startChar + token.length));
+  }
+  return decodedTokens;
+}
+
+// async function openPeek(locations: vscode.Location[]) {
+//   const editor = vscode.window.activeTextEditor!;
+//   const pos = editor.selection.active;
+//   await vscode.commands.executeCommand(
+//     "editor.action.peekLocations",
+//     editor.document.uri,
+//     pos,
+//     locations,
+//     "goto"
+//     // "peek" // or 'goto' | 'gotoAndPeek'
+//   );
+// }
+
 export function activateAlwaysActive(name: string, context: vscode.ExtensionContext) {
   console.log(`Activating ${name}`);
   printAlwaysActiveOutput = createOutputChannel(`${name}`);
@@ -29,7 +90,7 @@ export function activateAlwaysActive(name: string, context: vscode.ExtensionCont
       console.log(result);
 
       const selectedRange = vscode.window.activeTextEditor.selection;
-      const legend = await vscode.commands.executeCommand(
+      const legend: any = await vscode.commands.executeCommand(
         "vscode.provideDocumentRangeSemanticTokensLegend",
         // "vscode.provideDocumentSemanticTokensLegend",
         // "vscode.executeDocumentHighlights",
@@ -39,7 +100,7 @@ export function activateAlwaysActive(name: string, context: vscode.ExtensionCont
       );
       console.log(legend);
 
-      const tokens = await vscode.commands.executeCommand(
+      const tokens: any = await vscode.commands.executeCommand(
         "vscode.provideDocumentRangeSemanticTokens",
         // "vscode.provideDocumentSemanticTokens",
         // "vscode.executeDocumentHighlights",
@@ -48,6 +109,16 @@ export function activateAlwaysActive(name: string, context: vscode.ExtensionCont
         // vscode.window.activeTextEditor.selection.active
       );
       console.log(tokens);
+
+      const decodedTokens = decodeSemanticTokens(tokens.data, legend);
+      // console.log(decodedTokens);
+      const allTokenText = AddTextToDecodedToken(vscode.window.activeTextEditor.document, decodedTokens);
+      console.log(allTokenText);
+
+      // openPeek([
+      //   new vscode.Location(vscode.window.activeTextEditor.document.uri, selectedRange),
+      //   new vscode.Location(vscode.window.activeTextEditor.document.uri, selectedRange),
+      // ]);
     }
   }
 
