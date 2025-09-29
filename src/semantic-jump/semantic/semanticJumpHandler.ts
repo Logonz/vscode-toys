@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { JumpInput } from "./jumpInput";
-import { AdaptiveCharAssigner, JumpAssignment } from "../shared/adaptiveCharAssigner";
+import { AdaptiveCharAssigner, JumpAssignment, JumpTargetMode } from "../shared/adaptiveCharAssigner";
 import { ProgressiveJumpInput } from "./progressiveJumpInput";
 import { pickColorType } from "../../helpers/pickColorType";
 import { fetchSemanticTokens, filterTokens } from "./providers/semanticTokenProvider";
@@ -30,7 +30,11 @@ export class SemanticJumpHandler {
   private adaptiveAssigner = new AdaptiveCharAssigner();
   private jumpAssignments: JumpAssignment[] = [];
 
-  async startSemanticJump(editor: vscode.TextEditor, debugMode: boolean = false): Promise<void> {
+  async startSemanticJump(
+    editor: vscode.TextEditor,
+    debugMode: boolean = false,
+    targetMode: JumpTargetMode = "start"
+  ): Promise<void> {
     try {
       // Fetch semantic tokens for the visible range
       const rawTokens = await fetchSemanticTokens(editor, debugMode);
@@ -46,6 +50,7 @@ export class SemanticJumpHandler {
 
       // Set context to indicate semantic jump is active
       vscode.commands.executeCommand("setContext", "vstoys.semantic-jump.active", true);
+      vscode.commands.executeCommand("setContext", "vstoys.semantic-jump.targetMode", targetMode);
 
       const config = vscode.workspace.getConfiguration("vstoys.semantic-jump");
       const mode = config.get<string>("mode", "adaptive");
@@ -56,7 +61,13 @@ export class SemanticJumpHandler {
         this.startDebugMode(editor);
       } else if (mode === "adaptive" || mode === "progressive") {
         // Use the new adaptive system
-        this.jumpAssignments = this.adaptiveAssigner.assignChars(tokens, editor.selection.active, editor.document);
+        this.jumpAssignments = this.adaptiveAssigner.assignChars(
+          tokens,
+          editor.selection.active,
+          editor.document,
+          "vstoys.semantic-jump",
+          targetMode
+        );
         this.createAdaptiveDecorations(editor);
         this.startProgressiveInput(editor);
       } else {
@@ -70,6 +81,7 @@ export class SemanticJumpHandler {
       vscode.window.showErrorMessage("Failed to start semantic jump");
       // Make sure to clear context on error
       vscode.commands.executeCommand("setContext", "vstoys.semantic-jump.active", false);
+      vscode.commands.executeCommand("setContext", "vstoys.semantic-jump.targetMode", undefined);
     }
   }
 
@@ -218,7 +230,7 @@ export class SemanticJumpHandler {
           : assignment.chars;
 
       return {
-        range: new vscode.Range(assignment.position, assignment.position),
+        range: new vscode.Range(assignment.decorationPosition, assignment.decorationPosition),
         renderOptions: {
           before: {
             contentText: displayChar,
@@ -251,6 +263,7 @@ export class SemanticJumpHandler {
   private cleanup(): void {
     // Clear context
     vscode.commands.executeCommand("setContext", "vstoys.semantic-jump.active", false);
+    vscode.commands.executeCommand("setContext", "vstoys.semantic-jump.targetMode", undefined);
 
     this.disposeDecorations();
     if (this.jumpInput) {

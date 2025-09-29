@@ -26,12 +26,15 @@ export type ScoredTarget = {
 
 export type JumpAssignment = {
   token: DecodedToken;
-  position: vscode.Position;
+  position: vscode.Position; // Position to jump to
+  decorationPosition: vscode.Position; // Position to show decoration at
   chars: string; // Single char or multi-char sequence
   isSequence: boolean;
 };
 
 export type DensityLevel = "low" | "medium" | "high";
+
+export type JumpTargetMode = "start" | "end";
 
 type CharPools = {
   homeRow: string[];
@@ -70,7 +73,8 @@ export class AdaptiveCharAssigner {
     tokens: DecodedToken[],
     cursorPosition: vscode.Position,
     document: vscode.TextDocument,
-    configPrefix: string = "vstoys.semantic-jump"
+    configPrefix: string = "vstoys.semantic-jump",
+    targetMode: JumpTargetMode = "start"
   ): JumpAssignment[] {
     // Get configuration
     const config = vscode.workspace.getConfiguration(configPrefix);
@@ -90,7 +94,7 @@ export class AdaptiveCharAssigner {
     console.log(`AdaptiveCharAssigner: ${scoredTargets.length} targets, density=${density}`);
 
     // Step 4: Assign characters based on density
-    let assignments = this.performAdaptiveAssignment(scoredTargets, density, charPools);
+    let assignments = this.performAdaptiveAssignment(scoredTargets, density, charPools, targetMode);
 
     // Step 5: Avoid visual conflicts
     assignments = this.avoidVisualConflicts(assignments, document, jumpCharsSetting);
@@ -303,22 +307,43 @@ export class AdaptiveCharAssigner {
   private performAdaptiveAssignment(
     targets: ScoredTarget[],
     density: DensityLevel,
-    charPools: CharPools
+    charPools: CharPools,
+    targetMode: JumpTargetMode
   ): JumpAssignment[] {
     switch (density) {
       case "low":
-        return this.assignSingleChars(targets, charPools);
+        return this.assignSingleChars(targets, charPools, targetMode);
       case "medium":
-        return this.assignMixedChars(targets, charPools);
+        return this.assignMixedChars(targets, charPools, targetMode);
       case "high":
-        return this.assignProgressiveChars(targets, charPools);
+        return this.assignProgressiveChars(targets, charPools, targetMode);
     }
+  }
+
+  /**
+   * Calculate the position to jump to based on the target mode
+   */
+  private calculateJumpPosition(token: DecodedToken, targetMode: JumpTargetMode): vscode.Position {
+    const jumpChar = targetMode === "end" ? token.startChar + token.length : token.startChar;
+    return new vscode.Position(token.line, jumpChar);
+  }
+
+  /**
+   * Calculate the position for decoration display based on the target mode
+   */
+  private calculateDecorationPosition(token: DecodedToken, targetMode: JumpTargetMode): vscode.Position {
+    const decorationChar = targetMode === "end" ? token.startChar + token.length - 1 : token.startChar;
+    return new vscode.Position(token.line, decorationChar);
   }
 
   /**
    * Low density: stick to the most ergonomic single characters (home row first)
    */
-  private assignSingleChars(targets: ScoredTarget[], charPools: CharPools): JumpAssignment[] {
+  private assignSingleChars(
+    targets: ScoredTarget[],
+    charPools: CharPools,
+    targetMode: JumpTargetMode
+  ): JumpAssignment[] {
     const availableChars = charPools.homeRow.length > 0 ? charPools.homeRow : charPools.all;
 
     if (availableChars.length === 0) {
@@ -327,7 +352,8 @@ export class AdaptiveCharAssigner {
 
     return targets.slice(0, availableChars.length).map((target, i) => ({
       token: target.token,
-      position: new vscode.Position(target.token.line, target.token.startChar),
+      position: this.calculateJumpPosition(target.token, targetMode),
+      decorationPosition: this.calculateDecorationPosition(target.token, targetMode),
       chars: availableChars[i],
       isSequence: false,
     }));
@@ -336,7 +362,11 @@ export class AdaptiveCharAssigner {
   /**
    * Medium density: reserve single keys for top targets and build lowercase-first sequences for the rest
    */
-  private assignMixedChars(targets: ScoredTarget[], charPools: CharPools): JumpAssignment[] {
+  private assignMixedChars(
+    targets: ScoredTarget[],
+    charPools: CharPools,
+    targetMode: JumpTargetMode
+  ): JumpAssignment[] {
     const assignments: JumpAssignment[] = [];
     const singleChars = charPools.homeRow.length > 0 ? charPools.homeRow : charPools.all;
     const lowercasePool = charPools.lowercase.length > 0 ? charPools.lowercase : charPools.all;
@@ -346,7 +376,8 @@ export class AdaptiveCharAssigner {
     targets.slice(0, singleCharCount).forEach((target, i) => {
       assignments.push({
         token: target.token,
-        position: new vscode.Position(target.token.line, target.token.startChar),
+        position: this.calculateJumpPosition(target.token, targetMode),
+        decorationPosition: this.calculateDecorationPosition(target.token, targetMode),
         chars: singleChars[i],
         isSequence: false,
       });
@@ -368,7 +399,8 @@ export class AdaptiveCharAssigner {
         const target = remaining[index];
         assignments.push({
           token: target.token,
-          position: new vscode.Position(target.token.line, target.token.startChar),
+          position: this.calculateJumpPosition(target.token, targetMode),
+          decorationPosition: this.calculateDecorationPosition(target.token, targetMode),
           chars: firstChar + secondChar,
           isSequence: true,
         });
@@ -386,7 +418,11 @@ export class AdaptiveCharAssigner {
   /**
    * High density: widen both keystrokes to include every available character pool (lower, upper, symbols)
    */
-  private assignProgressiveChars(targets: ScoredTarget[], charPools: CharPools): JumpAssignment[] {
+  private assignProgressiveChars(
+    targets: ScoredTarget[],
+    charPools: CharPools,
+    targetMode: JumpTargetMode
+  ): JumpAssignment[] {
     const assignments: JumpAssignment[] = [];
 
     const mergeUnique = (...lists: string[][]): string[] => {
@@ -419,7 +455,8 @@ export class AdaptiveCharAssigner {
 
         assignments.push({
           token: targets[targetIndex].token,
-          position: new vscode.Position(targets[targetIndex].token.line, targets[targetIndex].token.startChar),
+          position: this.calculateJumpPosition(targets[targetIndex].token, targetMode),
+          decorationPosition: this.calculateDecorationPosition(targets[targetIndex].token, targetMode),
           chars: firstChar + secondChar,
           isSequence: true,
         });

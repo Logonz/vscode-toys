@@ -24,14 +24,25 @@ export function activateSemanticJump(name: string, context: vscode.ExtensionCont
 
   context.subscriptions.push(
     // Semantic jump commands
-    vscode.commands.registerCommand("vstoys.semantic-jump.jump", async () => {
+    vscode.commands.registerCommand("vstoys.semantic-jump.jump.start", async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
         printSemanticJumpOutput("No active text editor");
         return;
       }
 
-      await semanticJumpHandler.startSemanticJump(editor, false);
+      semanticJumpHandler.forceCleanup();
+      await semanticJumpHandler.startSemanticJump(editor, false, "start");
+    }),
+    vscode.commands.registerCommand("vstoys.semantic-jump.jump.end", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        printSemanticJumpOutput("No active text editor");
+        return;
+      }
+
+      semanticJumpHandler.forceCleanup();
+      await semanticJumpHandler.startSemanticJump(editor, false, "end");
     }),
     vscode.commands.registerCommand("vstoys.semantic-jump.debug", async () => {
       const editor = vscode.window.activeTextEditor;
@@ -40,6 +51,7 @@ export function activateSemanticJump(name: string, context: vscode.ExtensionCont
         return;
       }
 
+      semanticJumpHandler.forceCleanup();
       await semanticJumpHandler.startSemanticJump(editor, true);
     }),
     vscode.commands.registerCommand("vstoys.semantic-jump.escape", () => {

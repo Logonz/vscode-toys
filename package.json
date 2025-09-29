@@ -61,9 +61,14 @@
         "enablement": "vstoys.smart-open.searching"
       },
       {
-        "command": "vstoys.semantic-jump.jump",
+        "command": "vstoys.semantic-jump.jump.start",
         "category": "VsToys",
-        "title": "Semantic Jump: Start Jump Mode"
+        "title": "Semantic Jump: Start Jump Mode (Start)"
+      },
+      {
+        "command": "vstoys.semantic-jump.jump.end",
+        "category": "VsToys",
+        "title": "Semantic Jump: Start Jump Mode (End)"
       },
       {
         "command": "vstoys.semantic-jump.debug",
@@ -742,8 +747,18 @@
       },
       {
         "key": "f19",
-        "command": "vstoys.semantic-jump.jump",
+        "command": "vstoys.semantic-jump.jump.end",
         "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+      },
+      {
+        "key": "f19",
+        "command": "vstoys.semantic-jump.jump.end",
+        "when": "vstoys.semantic-jump.active && vstoys.semantic-jump.targetMode === 'start'"
+      },
+      {
+        "key": "f19",
+        "command": "vstoys.semantic-jump.jump.start",
+        "when": "vstoys.semantic-jump.active && vstoys.semantic-jump.targetMode === 'end'"
       },
       {
         "key": "f19",
@@ -901,7 +916,6 @@
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src",
     "test": "vscode-test"
   },
   "devDependencies": {
