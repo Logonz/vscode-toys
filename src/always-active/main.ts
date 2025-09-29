@@ -80,17 +80,23 @@ export function activateAlwaysActive(name: string, context: vscode.ExtensionCont
 
   async function g() {
     if (vscode.window.activeTextEditor) {
-      // const currentSelection = vscode.window.activeTextEditor.selection.active;
-      const result = await vscode.commands.executeCommand(
+      // Fetch raw document symbols
+      const result: vscode.DocumentSymbol[] = await vscode.commands.executeCommand(
         "vscode.executeDocumentSymbolProvider",
-        // "vscode.executeDocumentHighlights",
         vscode.window.activeTextEditor.document.uri
-        // vscode.window.activeTextEditor.selection.active
       );
-      console.log(result);
+      console.log("Raw document symbols:", result);
+
+      const processedResult: any = [];
+
+      for (const symbol of result) {
+        const text = vscode.window.activeTextEditor.document.getText(symbol.range);
+        processedResult.push({ ...symbol, text });
+      }
+      console.log("Document symbols with text:", processedResult);
 
       const selectedRange = vscode.window.activeTextEditor.selection;
-      const legend: any = await vscode.commands.executeCommand(
+      const legend: vscode.SemanticTokensLegend = await vscode.commands.executeCommand(
         "vscode.provideDocumentRangeSemanticTokensLegend",
         // "vscode.provideDocumentSemanticTokensLegend",
         // "vscode.executeDocumentHighlights",
@@ -100,7 +106,7 @@ export function activateAlwaysActive(name: string, context: vscode.ExtensionCont
       );
       console.log(legend);
 
-      const tokens: any = await vscode.commands.executeCommand(
+      const tokens: vscode.SemanticTokens = await vscode.commands.executeCommand(
         "vscode.provideDocumentRangeSemanticTokens",
         // "vscode.provideDocumentSemanticTokens",
         // "vscode.executeDocumentHighlights",
@@ -110,10 +116,12 @@ export function activateAlwaysActive(name: string, context: vscode.ExtensionCont
       );
       console.log(tokens);
 
-      const decodedTokens = decodeSemanticTokens(tokens.data, legend);
-      // console.log(decodedTokens);
-      const allTokenText = AddTextToDecodedToken(vscode.window.activeTextEditor.document, decodedTokens);
-      console.log(allTokenText);
+      if (tokens && tokens.data && tokens.data.length > 0) {
+        const decodedTokens = decodeSemanticTokens(tokens.data, legend);
+        // console.log(decodedTokens);
+        const allTokenText = AddTextToDecodedToken(vscode.window.activeTextEditor.document, decodedTokens);
+        console.log(allTokenText);
+      }
 
       // openPeek([
       //   new vscode.Location(vscode.window.activeTextEditor.document.uri, selectedRange),
