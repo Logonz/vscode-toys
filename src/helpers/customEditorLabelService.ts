@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import { minimatch } from "minimatch";
+// import { minimatch } from "minimatch"; // Old working implementation, very large when compiled
+import { simpleMatch } from "./simpleGlob";
 
 // This entire code is based on the CustomEditorLabelService class from the vscode repo:
 // https://github.com/microsoft/vscode/blob/8491f5724fe930cef67c40a2c5c05d2f4d5c2ee5/src/vs/workbench/services/editor/common/customEditorLabelService.ts
@@ -144,7 +145,7 @@ export class CustomEditorLabelService {
         relevantPath = resource.path;
       }
 
-      if (minimatch(relevantPath, pattern.pattern)) {
+      if (simpleMatch(relevantPath, pattern.pattern)) {
         return this.applyTemplate(pattern.template, resource, relevantPath);
       }
     }

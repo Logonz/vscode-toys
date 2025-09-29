@@ -5,6 +5,7 @@
 const path = require("path");
 // const CopyWebpackPlugin = require("copy-webpack-plugin");
 const webpack = require("webpack");
+const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
 const homedir = require("os").homedir();
 const packageJSON = require("./package.json");
 
@@ -105,6 +106,19 @@ const extensionConfig = {
     //     },
     //   ],
     // }),
+    // Add bundle analyzer for production builds
+    new BundleAnalyzerPlugin({
+      analyzerMode: "static",
+      openAnalyzer: false,
+      reportFilename: "bundle-report.html",
+    }),
+    // process.env.NODE_ENV === "production"
+    //   ? new BundleAnalyzerPlugin({
+    //       analyzerMode: "static",
+    //       openAnalyzer: false,
+    //       reportFilename: "bundle-report.html",
+    //     })
+    //   : undefined,
     process.env.NODE_ENV === "production"
       ? undefined
       : {
