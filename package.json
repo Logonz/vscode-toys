@@ -61,26 +61,6 @@
         "enablement": "vstoys.smart-open.searching"
       },
       {
-        "command": "vstoys.semantic-jump.jump.start",
-        "category": "VsToys",
-        "title": "Semantic Jump: Start Jump Mode (Start)"
-      },
-      {
-        "command": "vstoys.semantic-jump.jump.end",
-        "category": "VsToys",
-        "title": "Semantic Jump: Start Jump Mode (End)"
-      },
-      {
-        "command": "vstoys.semantic-jump.debug",
-        "category": "VsToys",
-        "title": "Semantic Jump: Debug Mode (Show All Tokens)"
-      },
-      {
-        "command": "vstoys.hybrid-jump.start",
-        "category": "VsToys",
-        "title": "Hybrid Jump: Start Hybrid Jump Mode"
-      },
-      {
         "command": "vstoys.registers.showRegisterPastePicker",
         "category": "VsToys",
         "title": "Registers: Show Register Paste Picker"
@@ -139,6 +119,26 @@
         "command": "vstoys.motions.escape",
         "category": "VsToys",
         "title": "Motions: Escape/Cancel"
+      },
+      {
+        "command": "vstoys.semantic-jump.jump.start",
+        "category": "VsToys",
+        "title": "Semantic Jump: Start Jump Mode (Start)"
+      },
+      {
+        "command": "vstoys.semantic-jump.jump.end",
+        "category": "VsToys",
+        "title": "Semantic Jump: Start Jump Mode (End)"
+      },
+      {
+        "command": "vstoys.semantic-jump.debug",
+        "category": "VsToys",
+        "title": "Semantic Jump: Debug Mode (Show All Tokens)"
+      },
+      {
+        "command": "vstoys.hybrid-jump.start",
+        "category": "VsToys",
+        "title": "Hybrid Jump: Start Hybrid Jump Mode"
       },
       {
         "command": "vstoys.hyper.deactivateAll",
@@ -205,10 +205,63 @@
           "default": 5000,
           "description": "Maximum number of files to index in the workspace, tip is to use gitignore to exclude files"
         },
-        "vstoys.semantic-jump.enabled": {
+        "vstoys.registers.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Semantic Jump module in VSCode Toys",
+          "description": "Enable the Registers module in VSCode Toys",
+          "order": 6000
+        },
+        "vstoys.registers.maxPreviewLength": {
+          "type": "number",
+          "default": 200,
+          "description": "Maximum preview length in quick pick menu for register contents",
+          "order": 6001
+        },
+        "vstoys.registers.showEmptyRegisters": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show all registers (including empty ones) in quick paste menu. When disabled, only shows registers with content.",
+          "order": 6002
+        },
+        "vstoys.paste-replace.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Paste Replace module in VSCode Toys",
+          "order": 7000
+        },
+        "vstoys.paste-replace.reindentBeforePaste": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically reindent lines before pasting content when using smart paste",
+          "order": 7001
+        },
+        "vstoys.motions.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Motions module in VSCode Toys",
+          "order": 3000
+        },
+        "vstoys.motions.foregroundColor": {
+          "type": "string",
+          "description": "Foreground color for yank highlighting",
+          "order": 3001
+        },
+        "vstoys.motions.backgroundColor": {
+          "type": "string",
+          "default": "editor.wordHighlightBackground",
+          "description": "Background color for yank highlighting\\nFor more information about color check out https://code.visualstudio.com/api/references/theme-color for more available colors\\nrgba(R, G, B, A) is also supported",
+          "order": 3002
+        },
+        "vstoys.motions.timeout": {
+          "type": "number",
+          "default": 100,
+          "description": "Highlight timeout duration in milliseconds for yank operations",
+          "order": 3003
+        },
+        "vstoys.jump.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Jump module in VSCode Toys",
           "order": 8000
         },
         "vstoys.semantic-jump.jumpCharacters": {
@@ -477,59 +530,6 @@
           "description": "Theme color for the border around the primary match in hybrid mode, empty string does not draw a border - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
           "order": 8213
         },
-        "vstoys.registers.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable the Registers module in VSCode Toys",
-          "order": 6000
-        },
-        "vstoys.registers.maxPreviewLength": {
-          "type": "number",
-          "default": 200,
-          "description": "Maximum preview length in quick pick menu for register contents",
-          "order": 6001
-        },
-        "vstoys.registers.showEmptyRegisters": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show all registers (including empty ones) in quick paste menu. When disabled, only shows registers with content.",
-          "order": 6002
-        },
-        "vstoys.paste-replace.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable the Paste Replace module in VSCode Toys",
-          "order": 7000
-        },
-        "vstoys.paste-replace.reindentBeforePaste": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically reindent lines before pasting content when using smart paste",
-          "order": 7001
-        },
-        "vstoys.motions.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable the Motions module in VSCode Toys",
-          "order": 3000
-        },
-        "vstoys.motions.foregroundColor": {
-          "type": "string",
-          "description": "Foreground color for yank highlighting",
-          "order": 3001
-        },
-        "vstoys.motions.backgroundColor": {
-          "type": "string",
-          "default": "editor.wordHighlightBackground",
-          "description": "Background color for yank highlighting\\nFor more information about color check out https://code.visualstudio.com/api/references/theme-color for more available colors\\nrgba(R, G, B, A) is also supported",
-          "order": 3002
-        },
-        "vstoys.motions.timeout": {
-          "type": "number",
-          "default": 100,
-          "description": "Highlight timeout duration in milliseconds for yank operations",
-          "order": 3003
-        },
         "vstoys.hyper.enabled": {
           "type": "boolean",
           "default": true,
@@ -741,9 +741,26 @@
         "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
       },
       {
+        "command": "vstoys.paste-replace.clipboardPasteReplace",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "editorTextFocus && vstoys.paste-replace.active"
+      },
+      {
+        "command": "editor.action.clipboardPasteAction",
+        "key": "ctrl+k ctrl+v",
+        "mac": "ctrl+k cmd+v",
+        "when": "vstoys.paste-replace.active"
+      },
+      {
+        "command": "vstoys.motions.escape",
+        "key": "escape",
+        "when": "vstoys.motions.inputActive"
+      },
+      {
         "key": "f19",
         "command": "vstoys.semantic-jump.jump.end",
-        "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
       },
       {
         "key": "f19",
@@ -758,13 +775,13 @@
       {
         "key": "f19",
         "command": "vstoys.regular-jump.start",
-        "when": "hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+        "when": "vstoys.jump.active && hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
       },
       {
         "key": "ctrl+f19",
         "mac": "cmd+f19",
         "command": "vstoys.regular-jump.start",
-        "when": "!vstoys.regular-jump.active && !vstoys.hybrid-jump.active && !vstoys.semantic-jump.active"
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active && !vstoys.semantic-jump.active"
       },
       {
         "command": "vstoys.semantic-jump.escape",
@@ -799,7 +816,7 @@
       {
         "key": "alt+f19",
         "command": "vstoys.hybrid-jump.start",
-        "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
       },
       {
         "command": "vstoys.hybrid-jump.escape",
@@ -825,23 +842,6 @@
         "command": "vstoys.hybrid-jump.previous",
         "key": "ctrl+alt+f19",
         "when": "vstoys.hybrid-jump.active"
-      },
-      {
-        "command": "vstoys.paste-replace.clipboardPasteReplace",
-        "key": "ctrl+shift+v",
-        "mac": "cmd+shift+v",
-        "when": "editorTextFocus && vstoys.paste-replace.active"
-      },
-      {
-        "command": "editor.action.clipboardPasteAction",
-        "key": "ctrl+k ctrl+v",
-        "mac": "ctrl+k cmd+v",
-        "when": "vstoys.paste-replace.active"
-      },
-      {
-        "command": "vstoys.motions.escape",
-        "key": "escape",
-        "when": "vstoys.motions.inputActive"
       },
       {
         "command": "vstoys.hyper.layerActivate.hyper-layer",

@@ -173,7 +173,8 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
 
       // Cache Git diff
       this.gitDiffCache = child_process
-        .execSync(`git diff ${this.targetBranch} --name-only`, { cwd })
+        // TODO: Make sure the branch name is clean to avoid command injection
+        .execSync(`git diff ${this.targetBranch.replace(/[^/a-zA-Z0-9._-]/g, "")} --name-only`, { cwd })
         .toString()
         .split("\n")
         .map((line) => line.trim());
