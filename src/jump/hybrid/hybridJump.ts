@@ -97,42 +97,169 @@ export class HybridJumpAssigner {
    */
   private reassignConflictingChars(assignments: JumpAssignment[], excludedChars: Set<string>): JumpAssignment[] {
     const availableChars = this.getAvailableChars(excludedChars);
+    const availableArray = Array.from(availableChars);
+    
+    if (availableArray.length === 0) {
+      // No available characters, return as-is
+      return assignments;
+    }
+
+    // PHASE 1: Fix excluded character conflicts
+    const usedChars = new Set<string>();
     const conflictingAssignments: number[] = [];
 
-    // Find assignments that conflict with excluded characters
+    // First pass: identify conflicts with excluded chars
     assignments.forEach((assignment, index) => {
+      let hasConflict = false;
+      
       if (assignment.chars.length === 1 && excludedChars.has(assignment.chars.toLowerCase())) {
+        // Single character conflicts
+        hasConflict = true;
+      } else if (assignment.isSequence && assignment.chars.length >= 1) {
+        // Check if the first character of a sequence conflicts
+        const firstChar = assignment.chars[0].toLowerCase();
+        if (excludedChars.has(firstChar)) {
+          hasConflict = true;
+        }
+      }
+      
+      if (hasConflict) {
         conflictingAssignments.push(index);
+      } else {
+        usedChars.add(assignment.chars.toLowerCase());
       }
     });
 
-    // Reassign conflicting characters
-    let availableIndex = 0;
-    const availableArray = Array.from(availableChars);
+    // Generate pool of unused characters for reassignment
+    let unusedSingleChars: string[] = [];
+    let unusedSequenceChars: string[] = [];
+
+    // Find unused single characters
+    for (const char of availableArray) {
+      if (!usedChars.has(char.toLowerCase())) {
+        unusedSingleChars.push(char);
+      }
+    }
+
+    // Generate unused sequences
+    for (const firstChar of availableArray) {
+      for (const secondChar of availableArray) {
+        const sequence = firstChar + secondChar;
+        if (!usedChars.has(sequence.toLowerCase())) {
+          unusedSequenceChars.push(sequence);
+        }
+      }
+    }
+
+    // Reassign conflicting assignments
+    let singleCharIndex = 0;
+    let sequenceIndex = 0;
 
     for (const index of conflictingAssignments) {
-      if (availableIndex < availableArray.length) {
+      const wasSequence = assignments[index].isSequence;
+      
+      if (!wasSequence && singleCharIndex < unusedSingleChars.length) {
+        const newChar = unusedSingleChars[singleCharIndex];
         assignments[index] = {
           ...assignments[index],
-          chars: availableArray[availableIndex],
+          chars: newChar,
           isSequence: false,
         };
-        availableIndex++;
-      } else {
-        // Fallback to sequences if we run out of single characters
-        const sequenceIndex = availableIndex - availableArray.length;
-        const firstChar = availableArray[sequenceIndex % availableArray.length];
-        const secondChar = availableArray[(sequenceIndex + 1) % availableArray.length];
+        usedChars.add(newChar.toLowerCase());
+        singleCharIndex++;
+      } else if (sequenceIndex < unusedSequenceChars.length) {
+        const newSequence = unusedSequenceChars[sequenceIndex];
         assignments[index] = {
           ...assignments[index],
-          chars: firstChar + secondChar,
+          chars: newSequence,
           isSequence: true,
         };
-        availableIndex++;
+        usedChars.add(newSequence.toLowerCase());
+        sequenceIndex++;
+      } else {
+        const fallbackSequence = this.generateFallbackSequence(availableArray, usedChars);
+        assignments[index] = {
+          ...assignments[index],
+          chars: fallbackSequence,
+          isSequence: true,
+        };
+        usedChars.add(fallbackSequence.toLowerCase());
+      }
+    }
+
+    // PHASE 2: Fix single-char vs sequence first-char conflicts
+    // Build a map of sequence first characters
+    const sequenceFirstChars = new Set<string>();
+    assignments.forEach((assignment) => {
+      if (assignment.isSequence && assignment.chars.length >= 1) {
+        sequenceFirstChars.add(assignment.chars[0].toLowerCase());
+      }
+    });
+
+    // Find single-char assignments that conflict with sequence first chars
+    const singleVsSequenceConflicts: number[] = [];
+    assignments.forEach((assignment, index) => {
+      if (!assignment.isSequence && sequenceFirstChars.has(assignment.chars.toLowerCase())) {
+        singleVsSequenceConflicts.push(index);
+      }
+    });
+
+    // Rebuild unused single chars pool, excluding sequence first chars
+    unusedSingleChars = [];
+    for (const char of availableArray) {
+      const lowerChar = char.toLowerCase();
+      if (!usedChars.has(lowerChar) && !sequenceFirstChars.has(lowerChar)) {
+        unusedSingleChars.push(char);
+      }
+    }
+
+    // Reassign conflicting single-char assignments
+    singleCharIndex = 0;
+    for (const index of singleVsSequenceConflicts) {
+      // Remove old assignment from usedChars
+      usedChars.delete(assignments[index].chars.toLowerCase());
+      
+      if (singleCharIndex < unusedSingleChars.length) {
+        const newChar = unusedSingleChars[singleCharIndex];
+        assignments[index] = {
+          ...assignments[index],
+          chars: newChar,
+          isSequence: false,
+        };
+        usedChars.add(newChar.toLowerCase());
+        singleCharIndex++;
+      } else {
+        // If we run out of single chars, convert to a unique sequence
+        const uniqueSequence = this.generateFallbackSequence(availableArray, usedChars);
+        assignments[index] = {
+          ...assignments[index],
+          chars: uniqueSequence,
+          isSequence: true,
+        };
+        usedChars.add(uniqueSequence.toLowerCase());
       }
     }
 
     return assignments;
+  }
+
+  /**
+   * Generate a fallback sequence when we run out of pre-generated options
+   */
+  private generateFallbackSequence(availableChars: string[], usedChars: Set<string>): string {
+    // Try to find any unused combination
+    for (const first of availableChars) {
+      for (const second of availableChars) {
+        for (const third of availableChars) {
+          const seq = first + second + third;
+          if (!usedChars.has(seq.toLowerCase())) {
+            return seq;
+          }
+        }
+      }
+    }
+    // Ultimate fallback - just use first two chars with a number
+    return availableChars[0] + availableChars[0] + Math.random().toString(36).substr(2, 1);
   }
 
   /**
