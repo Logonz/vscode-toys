@@ -13,6 +13,8 @@ export async function openFile(args: {
   matchRange: boolean | undefined;
   // Close the tab after switch
   closePreviousEditor: boolean | undefined;
+  // Close editor in all other groups
+  closeEditorInOtherGroups: boolean | undefined;
 }) {
   try {
     let targetFilePath = convertPredefinedVariables(args.filePath);
@@ -29,14 +31,33 @@ export async function openFile(args: {
 
     const sourceTextEditor = vscode.window.activeTextEditor;
     if (sourceTextEditor && (sourceTextEditor.document.fileName !== targetFilePath || alwaysOpen)) {
+      // Save the current view column so that we can open the new document in the same column
+      const viewColumn = sourceTextEditor.viewColumn;
+
       // Close the active editor
       if (closePreviousEditor) {
         vscode.commands.executeCommand("workbench.action.closeActiveEditor");
       }
 
+      // Close the same file in other group before opening
+      if (args.closeEditorInOtherGroups) {
+        for (const group of vscode.window.tabGroups.all) {
+          // Skip the current group
+          if (group.viewColumn !== viewColumn) {
+            // Check each tab in the group
+            for (const tab of group.tabs) {
+              if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === targetFilePath) {
+                vscode.window.tabGroups.close(tab, true);
+              }
+            }
+          }
+        }
+      }
+
       // Switch to the new document
       vscode.workspace.openTextDocument(vscode.Uri.file(targetFilePath)).then((doc) => {
-        vscode.window.showTextDocument(doc).then((targetEditor) => {
+        // Not not make the tab preview(italics tab) and open in the same view column
+        vscode.window.showTextDocument(doc, { preview: false, viewColumn: viewColumn }).then((targetEditor) => {
           if (matchRange) {
             const currentRange = sourceTextEditor.visibleRanges[0];
             const currentSelection = [...sourceTextEditor.selections];
