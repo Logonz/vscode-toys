@@ -24,13 +24,13 @@
     ],
     "configuration": {
       "properties": {
-        // ! Semantic Jump Settings
-        "vstoys.semantic-jump.enabled": {
+        "vstoys.jump.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Semantic Jump module in VSCode Toys",
+          "description": "Enable the Jump module in VSCode Toys",
           "order": 8000
         },
+        // ! Semantic Jump Settings
         "vstoys.semantic-jump.jumpCharacters": {
           "type": "string",
           "default": "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV",
@@ -323,7 +323,7 @@
       {
         "key": "f19",
         "command": "vstoys.semantic-jump.jump.end",
-        "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
       },
       {
         "key": "f19",
@@ -338,13 +338,13 @@
       {
         "key": "f19",
         "command": "vstoys.regular-jump.start",
-        "when": "hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+        "when": "vstoys.jump.active && hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
       },
       {
         "key": "ctrl+f19",
         "mac": "cmd+f19",
         "command": "vstoys.regular-jump.start",
-        "when": "!vstoys.regular-jump.active && !vstoys.hybrid-jump.active && !vstoys.semantic-jump.active"
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active && !vstoys.semantic-jump.active"
       },
       {
         "command": "vstoys.semantic-jump.escape",
@@ -381,7 +381,7 @@
       {
         "key": "alt+f19",
         "command": "vstoys.hybrid-jump.start",
-        "when": "!vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
       },
       {
         "command": "vstoys.hybrid-jump.escape",
