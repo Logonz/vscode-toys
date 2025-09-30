@@ -395,17 +395,6 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       onInput: async (input: string, char: string) => {
         console.log(`Received input: "${input}", char: "${char}"`);
 
-        // Handle special characters for navigation
-        if (char === "ArrowUp" || char === "ArrowDown") {
-          if (char === "ArrowUp" && selectedIndex > 0) {
-            selectedIndex--;
-          } else if (char === "ArrowDown" && selectedIndex < picked.items.length - 1) {
-            selectedIndex++;
-          }
-          updateSelection();
-          return; // Don't process as search input
-        }
-
         // Reset selection when search changes
         selectedIndex = 0;
 
