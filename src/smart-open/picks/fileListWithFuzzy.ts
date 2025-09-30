@@ -7,6 +7,7 @@ import { UriExt } from "./interface/IUriExt";
 import { InlineInput } from "./InlineInput";
 import { DEFAULT_SCORE_CONFIG, GitScorer } from "../scoring";
 import { scoreCalculator } from "../main";
+import { getCursorBlinkingSetting, getCursorCharFromSettings } from "./cursor";
 import path from "path";
 
 // Ugly, but lets us enable and disable this for now.
@@ -314,6 +315,12 @@ export async function showFileListWithFuzzy(input: string): Promise<void> {
   console.log(`Custom labels enabled: ${IsCustomLabelsEnabled()}, processed ${filterMatchFiles.length} files`);
 }
 
+// Cursor blinking state
+let cursorVisible = true;
+let cursorBlinkTimer: NodeJS.Timeout | undefined;
+const timerInterval = 500; //ms
+
+
 export async function showQuickPickWithInlineSearch(): Promise<void> {
   const activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
@@ -328,6 +335,15 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
   await showFileListWithFuzzy("");
 
   let selectedIndex = 0;
+  const cursorChar = getCursorCharFromSettings();
+
+  function cancelBlinkingCursor() {
+    if (cursorBlinkTimer) {
+      clearInterval(cursorBlinkTimer);
+      cursorBlinkTimer = undefined;
+    }
+    cursorVisible = false;
+  }
 
   // Update QuickPick selection
   const updateSelection = () => {
@@ -345,14 +361,16 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
 
         // picked.placeholder = `Search: ${activeInlineInput.input} [${selectedIndex + 1}/${itemCount}]`;
         picked.title = `${baseTitle} - [${selectedIndex + 1}/${itemCount}]`;
-        picked.placeholder = `${activeInlineInput.input}`;
+        const cursor = cursorVisible ? cursorChar : "";
+        picked.placeholder = `${activeInlineInput.input}${cursor}`;
       }
     } else {
       // No found items
       if (activeInlineInput) {
         // picked.placeholder = `Search: ${activeInlineInput.input} [0/0]`;
         picked.title = `${baseTitle} - [0/0]`;
-        picked.placeholder = `${activeInlineInput.input}`;
+        const cursor = cursorVisible ? cursorChar : "";
+        picked.placeholder = `${activeInlineInput.input}${cursor}`;
       } else {
         picked.title = `${baseTitle}`;
         picked.placeholder = `Search: (No InlineInput)`;
@@ -361,6 +379,17 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
   };
 
   try {
+    if (getCursorBlinkingSetting()) {
+      // Start cursor blinking timer
+      cursorVisible = true;
+      cursorBlinkTimer = setInterval(() => {
+        cursorVisible = !cursorVisible;
+        updateSelection();
+      }, timerInterval); // Blink every 500ms (1 second cycle)
+    } else {
+      cursorVisible = true; // Always visible if blinking is disabled
+    }
+
     activeInlineInput = new InlineInput({
       textEditor: activeEditor,
       onInput: async (input: string, char: string) => {
@@ -389,6 +418,7 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       onCancel: async () => {
         await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
         picked.hide();
+        cancelBlinkingCursor();
         if (activeInlineInput) {
           activeInlineInput.destroy();
         }
@@ -421,6 +451,7 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       if (selectedItem) {
         await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
         picked.hide();
+        cancelBlinkingCursor();
         openFile(selectedItem.file);
         if (activeInlineInput) {
           activeInlineInput.destroy();
@@ -446,6 +477,7 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       if (selectedItem) {
         await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
         picked.hide();
+        cancelBlinkingCursor();
         openFile(selectedItem.file);
         if (activeInlineInput) {
           activeInlineInput.destroy();
@@ -457,6 +489,10 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
     // Handle QuickPick hide
     const disposableHide = picked.onDidHide(async () => {
       await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
+
+      // Clear cursor blink timer
+      cancelBlinkingCursor();
+
       if (activeInlineInput) {
         activeInlineInput.destroy();
       }
