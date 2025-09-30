@@ -442,6 +442,7 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
 
   context.subscriptions.push(
     vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", pasteReplaceCommand),
+    // TODO: This function is not working as i want... i disabled all the package.json assignments.
     vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", () => smartPaste(true))
   );
 
