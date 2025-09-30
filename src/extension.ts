@@ -13,7 +13,7 @@ import { activateSmartOpen, deactivateSmartOpen } from "./smart-open/main";
 import { activateHyper } from "./hyper/main";
 import { activateMotions } from "./motions/main";
 import { activateAlwaysActive } from "./always-active/main";
-import { activateSemanticJump } from "./semantic-jump/main";
+import { activateSemanticJump } from "./jump/main";
 
 try {
   require("./debug");
@@ -44,15 +44,6 @@ let vsToys: {
     moduleContext: "copy-highlight",
     activator: activateCopyHighlight,
     deactivator: () => {},
-  },
-  {
-    // ! DEPRECATED
-    name: "Dot Repeat",
-    moduleContext: "dot-repeat",
-    // activator: activateDotRepeat,
-    activator: () => {},
-    deactivator: () => {},
-    // ! DEPRECATED
   },
   {
     name: "Hyper Layer",
@@ -103,8 +94,8 @@ let vsToys: {
     deactivator: () => {},
   },
   {
-    name: "Semantic Jump",
-    moduleContext: "semantic-jump",
+    name: "Jump",
+    moduleContext: "jump",
     activator: activateSemanticJump,
     deactivator: () => {},
   },
