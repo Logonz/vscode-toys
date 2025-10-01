@@ -35,6 +35,7 @@ The Goto Line module provides **advanced line navigation capabilities** that ext
 - Bounds checking (1 to document.lineCount)
 - Visual preview of target line during typing
 - Support for copy/cut/delete/select operations
+- Command chaining via `executeCommandAfterGoto`
 
 **Usage Examples**:
 
@@ -42,6 +43,17 @@ The Goto Line module provides **advanced line navigation capabilities** that ext
 - `1` → Jump to first line
 - With args: `{select: true}` → Select from current to target line
 - With args: `{copy: true, delete: true}` → Cut target line
+
+**Supported Arguments**:
+
+```typescript
+{
+  select?: boolean;                    // Create selection instead of just moving
+  copy?: boolean;                      // Copy line(s) to clipboard
+  delete?: boolean;                    // Delete line(s)
+  executeCommandAfterGoto?: string;    // Execute command after navigation
+}
+```
 
 ### 2. `vstoys.goto-line.goto-relative` - Relative Line Navigation
 
@@ -54,6 +66,8 @@ The Goto Line module provides **advanced line navigation capabilities** that ext
 - Temporarily enables relative line numbers for context
 - Real-time preview of relative movement
 - Automatic restoration of original line number settings
+- Pre-filled input values via `value` argument
+- Integration with hyper layer system
 
 **Supported Input Formats**:
 
@@ -62,6 +76,19 @@ The Goto Line module provides **advanced line navigation capabilities** that ext
 - `k5` → Move up 5 lines (vim-style)
 - `j10` → Move down 10 lines (vim-style)
 - `5` → Move down 5 lines (default direction)
+
+**Supported Arguments**:
+
+```typescript
+{
+  value?: string;                      // Pre-fill input box (e.g., "-", "+", "k", "j")
+  select?: boolean;                    // Create selection instead of just moving
+  copy?: boolean;                      // Copy line(s) to clipboard
+  delete?: boolean;                    // Delete line(s)
+  deactivateAllHyper?: boolean;        // Deactivate hyper layers after command
+  executeCommandAfterGoto?: string;    // Execute command after navigation
+}
+```
 
 ## Advanced Operations System
 
@@ -97,191 +124,67 @@ The Goto Line module provides **advanced line navigation capabilities** that ext
 
 ## Complete Operation Matrix
 
-### All Supported Argument Combinations
-
 The module supports **8 distinct operation modes** based on argument combinations:
 
-#### **Mode 1: Navigation Only** (default)
+| Mode                | Arguments                                  | Behavior                                       | Use Case                                |
+| ------------------- | ------------------------------------------ | ---------------------------------------------- | --------------------------------------- |
+| **1. Navigate**     | `{}`                                       | Moves cursor to target line                    | Basic line navigation                   |
+| **2. Copy Line**    | `{copy: true}`                             | Copies target line to clipboard (cursor stays) | Copy distant line without navigating    |
+| **3. Delete Line**  | `{delete: true}`                           | Deletes target line with auto-reindent         | Remove specific line by number          |
+| **4. Cut Line**     | `{copy: true, delete: true}`               | Copies and deletes target line atomically      | Move line content to clipboard          |
+| **5. Select Range** | `{select: true}`                           | Creates selection from cursor to target        | Select large blocks by line numbers     |
+| **6. Copy Range**   | `{select: true, copy: true}`               | Copies selection, then deselects               | Copy blocks without keeping selection   |
+| **7. Delete Range** | `{select: true, delete: true}`             | Deletes selection with auto-reindent           | Remove large blocks by line range       |
+| **8. Cut Range**    | `{select: true, copy: true, delete: true}` | Copies and deletes selection atomically        | Move large blocks to different location |
 
-```typescript
-// No args or args = {}
-```
+### Key Behavior Differences
 
-- **Behavior**: Simply moves cursor to target line
-- **Use Case**: Basic line navigation
-- **Example**: `goto-line.goto` → input `42` → cursor moves to line 42
+**Without `select`** (Modes 1-4):
 
-#### **Mode 2: Copy Single Line**
+- Operations target only the specified line
+- Cursor generally stays at original position (except navigation)
+- Uses VS Code's native line behavior for copy
 
-```typescript
-args = { copy: true };
-```
+**With `select`** (Modes 5-8):
 
-- **Behavior**: Copies entire target line to clipboard (without selection)
-- **Cursor**: Stays at original position after copy
-- **Use Case**: Copy distant line without navigating to it
-- **Example**: Copy line 100 while staying on line 10
-
-#### **Mode 3: Delete Single Line**
-
-```typescript
-args = { delete: true };
-```
-
-- **Behavior**: Deletes entire target line with line break
-- **Auto-Reindent**: Automatically reindents surrounding code
-- **Use Case**: Remove specific line by number
-- **Example**: Delete line 42 from current position
-
-#### **Mode 4: Cut Single Line** (Copy + Delete)
-
-```typescript
-args = { copy: true, delete: true };
-```
-
-- **Behavior**: Copies target line to clipboard AND deletes it
-- **Atomic**: Both operations succeed or fail together
-- **Use Case**: Move line content to clipboard for pasting elsewhere
-- **Example**: Cut line 15 for moving to different location
-
-#### **Mode 5: Select to Target**
-
-```typescript
-args = { select: true };
-```
-
-- **Behavior**: Creates selection from cursor to target line
-- **Direction-Aware**: Intelligent selection boundaries based on navigation direction
-- **Use Case**: Select large blocks of code by line numbers
-- **Example**: Select from current line to line 100
-
-#### **Mode 6: Select and Copy** (Multi-line Copy)
-
-```typescript
-args = { select: true, copy: true };
-```
-
-- **Behavior**: Selects from cursor to target, copies selection, then deselects
-- **Selection Cleared**: Cursor returns to original position after copy
-- **Use Case**: Copy large blocks without keeping them selected
-- **Example**: Copy lines 10-50 to clipboard
-
-#### **Mode 7: Select and Delete** (Multi-line Delete)
-
-```typescript
-args = { select: true, delete: true };
-```
-
-- **Behavior**: Selects from cursor to target, then deletes entire selection
-- **Auto-Reindent**: Reindents remaining code after deletion
-- **Use Case**: Remove large blocks of code by line range
-- **Example**: Delete lines 10-50
-
-#### **Mode 8: Select, Copy and Delete** (Multi-line Cut)
-
-```typescript
-args = { select: true, copy: true, delete: true };
-```
-
-- **Behavior**: Selects range, copies to clipboard, then deletes selection
-- **Most Powerful**: Combines all operations in atomic transaction
-- **Use Case**: Move large blocks of code to different locations
-- **Example**: Cut lines 10-50 for pasting elsewhere
-
-### Behavior Differences: Single Line vs Multi-Line Operations
-
-#### **Without Selection** (`select: false` or undefined)
-
-- **Copy**: Uses VS Code's native line copy behavior
-- **Delete**: Removes entire line including line break
-- **Target**: Operations apply only to the target line
-- **Cursor**: Generally stays at original position (except basic navigation)
-
-#### **With Selection** (`select: true`)
-
-- **Copy**: Copies exact selected text range
-- **Delete**: Removes selected range with smart reindenting
-- **Target**: Operations apply to entire selection from cursor to target
-- **Cursor**: Creates and manipulates selections
-
-### Selection Logic Details
-
-```typescript
-// Downward selection (current line 5, target line 10)
-// From: cursor position → To: end of line 10
-const selection = new vscode.Selection(currentPosition, endOfTargetLine);
-
-// Upward selection (current line 10, target line 5)
-// From: beginning of line 5 → To: cursor position
-const selection = new vscode.Selection(beginningOfTargetLine, currentPosition);
-```
+- Operations apply to entire range from cursor to target
+- Creates and manipulates selections
+- Direction-aware: upward selections start at target line, downward end at target line
 
 ## Practical Usage Examples
 
-### Scenario-Based Workflows
+### Basic Workflows
 
-#### **Scenario 1: Code Review Navigation**
+#### **Code Review Navigation**
 
 ```typescript
-// Jump to specific line mentioned in review
 Command: vstoys.goto-line.goto
 Input: "147"
 Result: Cursor moves to line 147 for inspection
 ```
 
-#### **Scenario 2: Copy Function Definition**
+#### **Copy Function Definition**
 
 ```typescript
-// Copy entire function at line 85 without navigating
 Command: vstoys.goto-line.goto
 Args: { copy: true }
 Input: "85"
 Result: Line 85 copied to clipboard, cursor stays in place
 ```
 
-#### **Scenario 3: Delete Obsolete Code Block**
+#### **Move Code Block**
 
 ```typescript
-// Remove lines 20-35 containing old implementation
-Command: vstoys.goto-line.goto (from line 20)
-Args: { select: true, delete: true }
-Input: "35"
-Result: Lines 20-35 deleted, code auto-reindented
-```
-
-#### **Scenario 4: Move Code Block**
-
-```typescript
-// Step 1: Cut lines 50-75 for relocation
+// Step 1: Cut lines 50-75
 Command: vstoys.goto-line.goto (from line 50)
 Args: { select: true, copy: true, delete: true }
 Input: "75"
 Result: Lines 50-75 cut to clipboard
 
-// Step 2: Navigate to target location and paste
+// Step 2: Navigate and paste
 Command: vstoys.goto-line.goto
 Input: "120"
-// Then Ctrl+V to paste the moved block
-```
-
-#### **Scenario 5: Relative Movement with Operations**
-
-```typescript
-// Copy next 10 lines from current position
-Command: vstoys.goto-line.goto-relative
-Args: { select: true, copy: true }
-Input: "+10" (or "j10")
-Result: Next 10 lines copied to clipboard
-```
-
-#### **Scenario 6: Vim-Style Line Deletion**
-
-```typescript
-// Delete 5 lines upward (vim: "5dk" equivalent)
-Command: vstoys.goto-line.goto-relative
-Args: { select: true, delete: true }
-Input: "k5" (or "-5")
-Result: 5 lines above cursor deleted
+// Then Ctrl+V to paste
 ```
 
 ### Advanced Integration Examples
@@ -311,6 +214,163 @@ Result: 5 lines above cursor deleted
 }
 // Usage: Copy line and auto-format document afterwards
 ```
+
+## Keybinding Reference
+
+### Pre-filled Input Values
+
+The `vstoys.goto-line.goto-relative` command supports a `value` argument that pre-fills the input box, enabling quick-access keybindings for common navigation patterns.
+
+**Supported Value Formats**:
+
+- `"-"` or `"+"` → Starts with direction prefix (user types number immediately)
+- `"k"` or `"j"` → Starts with vim-style direction character
+- `"5"` or `"-5"` → Pre-fills complete offset
+
+**Behavior**: The input box opens with the value pre-filled and cursor at the end, allowing immediate number entry or Enter to accept.
+
+### Example Keybinding Configurations
+
+#### **Quick Navigation Keybindings**
+
+```json
+// Arrow key navigation with pre-filled direction
+{
+  "key": "g up",
+  "command": "vstoys.goto-line.goto-relative",
+  "args": { "value": "-" },
+  "when": "editorTextFocus && hyper-layer && hyper.count == 1"
+},
+{
+  "key": "g down",
+  "command": "vstoys.goto-line.goto-relative",
+  "args": { "value": "+" },
+  "when": "editorTextFocus && hyper-layer && hyper.count == 1"
+},
+{
+  "key": "up",
+  "command": "vstoys.goto-line.goto-relative",
+  "args": { "value": "-" },
+  "when": "editorTextFocus && hyper-layer && hyper.count == 1"
+},
+{
+  "key": "down",
+  "command": "vstoys.goto-line.goto-relative",
+  "args": { "value": "+" },
+  "when": "editorTextFocus && hyper-layer && hyper.count == 1"
+}
+```
+
+**Usage**: Press `g` + arrow key (or just arrow key) in hyper layer, then immediately type the number of lines to move (e.g., `5` to go 5 lines in that direction).
+
+#### **Delete Line Range (dl)**
+
+```json
+{
+  "key": "d l",
+  "command": "vstoys.goto-line.goto-relative",
+  "args": {
+    "select": true,
+    "delete": true
+  },
+  "when": "editorTextFocus && hyper-layer && hyper.count == 1"
+}
+```
+
+**Usage**: Press `d` + `l` in hyper layer, then enter relative offset (e.g., `+10` or `j10`) to delete from current line to target line.
+
+**Example Workflow**:
+
+1. Position cursor at line 20
+2. Press `d` + `l`
+3. Type `+5` or `j5`
+4. Lines 20-25 are deleted with auto-reindent
+
+#### **Yank (Copy) Operations**
+
+```json
+// Copy single line at distance (yy)
+{
+  "key": "y y",
+  "command": "vstoys.goto-line.goto-relative",
+  "args": { "copy": true },
+  "when": "editorTextFocus && hyper-layer && !editorReadonly"
+},
+
+// Copy line range (yl)
+{
+  "key": "y l",
+  "command": "vstoys.goto-line.goto-relative",
+  "args": {
+    "select": true,
+    "copy": true
+  },
+  "when": "editorTextFocus && hyper-layer && !editorReadonly"
+}
+```
+
+**yy Usage**: Press `y` twice, then enter offset to copy that specific line without navigating.
+
+**yl Usage**: Press `y` + `l`, then enter offset to copy range from current line to target.
+
+**Example Workflows**:
+
+_Single Line Copy (yy)_:
+
+1. Cursor at line 20
+2. Press `y` + `y`
+3. Type `+10` or `j10`
+4. Line 30 is copied to clipboard
+5. Cursor stays at line 20
+
+_Range Copy (yl)_:
+
+1. Cursor at line 20
+2. Press `y` + `l`
+3. Type `+10` or `j10`
+4. Lines 20-30 copied to clipboard
+5. Selection cleared, cursor returns to line 20
+
+#### **Visual (Select) Operations**
+
+```json
+{
+  "key": "v l",
+  "command": "vstoys.goto-line.goto-relative",
+  "args": { "select": true },
+  "when": "editorTextFocus && hyper-layer && !editorReadonly"
+}
+```
+
+**Usage**: Press `v` + `l`, then enter offset to create selection from current line to target.
+
+**Example Workflow**:
+
+1. Cursor at line 20
+2. Press `v` + `l`
+3. Type `+10` or `j10`
+4. Lines 20-30 are selected
+5. Can now apply other commands to selection
+
+### Keybinding Design Patterns
+
+**Two-Key Mnemonics**: The example keybindings follow vim-inspired patterns where the first key indicates the operation (`d`=delete, `y`=yank/copy, `v`=visual/select) and the second key indicates the target scope (`l`=line).
+
+**Context-Aware Bindings**: All examples use `when` clauses for appropriate activation:
+
+- `editorTextFocus`: Only active when editing text
+- `hyper-layer`: Requires hyper layer activation
+- `hyper.count == 1`: Only for single-count operations
+- `!editorReadonly`: Excluded in read-only editors (for modify operations)
+
+**Progressive Input Pattern**: The `value` argument enables a fluid workflow:
+
+1. Keybinding provides operation context (e.g., direction via `"-"` or `"+"`)
+2. User types distance number immediately
+3. Preview updates in real-time
+4. Enter confirms operation
+
+This creates an "operation → distance → confirm" workflow similar to vim's operator-pending mode.
 
 ## Visual Preview System
 
@@ -396,105 +456,16 @@ The preview system provides **immediate visual feedback** during input validatio
 - **Error Handling**: Graceful error handling with user-friendly messages
 - **Debug Support**: Comprehensive logging through output channel
 
-## Technical Implementation Details
+## Error Handling
 
-### Input Parsing System
+The module handles common edge cases gracefully:
 
-#### Absolute Line Parsing
-
-```typescript
-function parseAbsoluteLineInput(input: string, totalLines: number): number | null {
-  const lineNumber = parseInt(input.trim());
-  return isNaN(lineNumber) || lineNumber < 1 || lineNumber > totalLines ? null : lineNumber;
-}
-```
-
-#### Relative Line Parsing
-
-```typescript
-function parseRelativeLineInput(input: string, settings: Settings): number | null {
-  // Handles: +5, -3, k5, j10, 5
-  // Returns: offset number or null for invalid input
-}
-```
-
-### Navigation Core Functions
-
-#### `navigateToLine(editor, lineOrPosition, args, printOutput)`
-
-- **Flexible Input**: Accepts line number or VS Code Position
-- **Operation Routing**: Dispatches to appropriate operation based on args
-- **Selection Logic**: Creates proper selections for multi-line operations
-- **Error Handling**: Validates bounds and provides user feedback
-
-#### `navigateToRelativeLine(editor, relativeOffset, args, printOutput)`
-
-- **Offset Calculation**: Converts relative offset to absolute target
-- **Bounds Validation**: Ensures target stays within document bounds
-- **Delegation**: Uses `navigateToLine` for actual navigation logic
-
-### Preview System Architecture
-
-#### Decoration Management
-
-```typescript
-class GotoLinePreview {
-  private normalDecorationType: vscode.TextEditorDecorationType;
-  private deleteDecorationType: vscode.TextEditorDecorationType;
-  private copyDecorationType: vscode.TextEditorDecorationType;
-  private cutDecorationType: vscode.TextEditorDecorationType;
-  // + character-level versions for precise selection boundaries
-}
-```
-
-#### Preview Algorithms
-
-1. **Single Line Preview**: Simple line highlighting
-2. **Selection Preview**: Complex multi-line selection with:
-   - Character-level decorations for partial lines
-   - Whole-line decorations for complete lines
-   - Direction-aware selection boundaries
-
-## Error Handling & Edge Cases
-
-### Input Validation
-
-- **Empty Input**: Clear error message requesting line number
-- **Invalid Numbers**: Bounds checking with specific error messages
-- **Out of Range**: Shows valid range and current position
-
-### Navigation Edge Cases
-
+- **Input Validation**: Real-time bounds checking with clear error messages
 - **Document Boundaries**: Prevents navigation beyond first/last line
-- **Empty Documents**: Handles zero-line documents gracefully
-- **Very Large Files**: Efficient handling of documents with many lines
+- **Empty Documents**: Handles zero-line documents without errors
+- **Preview Management**: Clears stale previews on rapid input changes or editor switching
+- **Settings Updates**: Automatically recreates decorations when colors change
 
-### Preview Edge Cases
+---
 
-- **Rapid Input Changes**: Clears previous previews before applying new ones
-- **Editor Changes**: Handles active editor switching during input
-- **Settings Updates**: Recreates decorations when colors change
-
-## Future Enhancement Opportunities
-
-### Potential Additions
-
-1. **Bookmark Integration**: Remember frequently accessed lines
-2. **Search Integration**: Combine with text search for "goto line containing X"
-3. **Multiple Cursor Support**: Navigate multiple cursors simultaneously
-4. **Undo Integration**: Smarter undo boundaries for navigation operations
-5. **Performance Optimization**: Lazy loading for very large files
-
-### Configuration Enhancements
-
-1. **Custom Direction Characters**: Allow any character for up/down navigation
-2. **Animation Settings**: Configurable preview animation speed
-3. **Sound Feedback**: Audio cues for successful/failed operations
-4. **Cursor Memory**: Remember cursor position after navigation
-
-### Operation Extensions
-
-1. **Duplicate Operations**: Copy and paste in single operation
-2. **Move Operations**: Cut and paste to different location
-3. **Transform Operations**: Apply text transformations during navigation
-4. **Multi-Selection**: Build multiple selections across navigation operations
+**Note**: For future enhancement ideas and potential features, see [FUTURE.md](./FUTURE.md)

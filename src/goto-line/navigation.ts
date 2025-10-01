@@ -155,9 +155,18 @@ export async function navigateToLine(
 
     // ? Goto and reveal
     if (!args?.delete && !args?.copy) {
-      // Move cursor to the line
-      editor.selection = new vscode.Selection(position, position);
-      editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+      // // Move cursor to the line start of the line
+      // editor.selection = new vscode.Selection(position, position);
+      // editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+
+      // Move cursor to the end of the line
+      const targetLine = editor.document.lineAt(position.line);
+      const endOfLinePosition = new vscode.Position(position.line, targetLine.text.length);
+      editor.selection = new vscode.Selection(endOfLinePosition, endOfLinePosition);
+      editor.revealRange(
+        new vscode.Range(endOfLinePosition, endOfLinePosition),
+        vscode.TextEditorRevealType.InCenterIfOutsideViewport
+      );
       printOutput?.(`Navigated to line ${displayLineNumber}`);
     } else {
       // After we do anything we reveal the current cursor position

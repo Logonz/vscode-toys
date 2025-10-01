@@ -96,6 +96,14 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
   let lineNumberSettingTimeout: NodeJS.Timeout;
   context.subscriptions.push(
     vscode.commands.registerCommand("vstoys.goto-line.goto-relative", async (args) => {
+      if (args && args.deactivateAllHyper) {
+        try {
+          vscode.commands.executeCommand("vstoys.hyper.deactivateAll");
+        } catch (error) {
+          console.error("Error executing hyper command:", error);
+        }
+      }
+
       console.log(args);
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
@@ -119,6 +127,13 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
         const result = await vscode.window.showInputBox({
           prompt: `Go to relative line (+/- offset)`,
           placeHolder: `Enter relative offset (e.g., +5, -3, 10, ${settingsManager.settings.upCharacter}5, ${settingsManager.settings.downCharacter}5) (current: ${currentLine}/${totalLines})`,
+          // If args.value is set from keybinding, use that as initial value
+          value: args && args.value ? args.value.toString() : "",
+          // Value selection should be at the end and not select the whole text
+          valueSelection: [
+            args && args.value ? args.value.toString().length : 0,
+            args && args.value ? args.value.toString().length : 0,
+          ],
           validateInput: (value: string) => {
             // Clear previous preview
             gotoLinePreview.clearPreview();
