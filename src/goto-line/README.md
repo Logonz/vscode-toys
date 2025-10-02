@@ -187,6 +187,7 @@ For vim users, here's a recommended keybinding setup (requires [hyper layer](../
   "vstoys.goto-line.enabled": true,
   "vstoys.goto-line.upCharacter": "k",
   "vstoys.goto-line.downCharacter": "j",
+  "vstoys.goto-line.defaultLineNumberMode": "auto",
   "vstoys.goto-line.highlightingEnabled": true,
   "vstoys.goto-line.selectColor": "editor.wordHighlightBackground",
   "vstoys.goto-line.deleteColor": "editorMarkerNavigationError.headerBackground",
@@ -194,6 +195,28 @@ For vim users, here's a recommended keybinding setup (requires [hyper layer](../
   "vstoys.goto-line.cutColor": "editorMarkerNavigationWarning.headerBackground"
 }
 ```
+
+### Settings
+
+#### Line Number Restoration
+
+**`vstoys.goto-line.defaultLineNumberMode`**
+
+Controls how line numbers are restored after relative goto operations:
+
+- **`"auto"`** (default): Detects your `editor.lineNumbers` setting at extension startup and restores to that mode
+- **`"on"`**: Always restore to absolute line numbers
+- **`"off"`**: Always restore to no line numbers (relative numbers still show during goto operations)
+- **`"interval"`**: Always restore to interval mode (line numbers every 10 lines)
+- **`"relative"`**: Always restore to relative line numbers
+
+> **Note:** If you change this setting or your `editor.lineNumbers` setting, reload the window (Developer: Reload Window) for the change to take effect.
+
+#### Direction Characters
+
+**`vstoys.goto-line.upCharacter`** and **`vstoys.goto-line.downCharacter`**
+
+Customize the vim-style direction prefixes (default: `"k"` for up, `"j"` for down).
 
 ### Color Customization
 
@@ -246,9 +269,10 @@ Both commands support these arguments:
 
 1. **Live Preview**: As you type, the preview shows exactly what will be selected/copied/deleted
 2. **Auto-Reindent**: Delete operations automatically reindent surrounding code
-3. **Relative Mode**: Temporarily enables relative line numbers for easier navigation
-4. **Command Chaining**: Use `executeCommandAfterGoto` to run commands after navigation
-5. **Pre-filled Input**: Use `value` argument in keybindings for faster workflows
+3. **Relative Mode**: Temporarily enables relative line numbers for easier navigation, then restores your preferred mode
+4. **Line Number Restoration**: Configure `defaultLineNumberMode` to control how line numbers are restored after relative navigation
+5. **Command Chaining**: Use `executeCommandAfterGoto` to run commands after navigation
+6. **Pre-filled Input**: Use `value` argument in keybindings for faster workflows
 
 ## Examples
 

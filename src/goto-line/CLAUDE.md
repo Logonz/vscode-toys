@@ -18,9 +18,10 @@ The Goto Line module provides **advanced line navigation capabilities** that ext
 
 - **Live Preview**: See exactly what will happen before executing the command
 - **Input Validation**: Real-time feedback with bounds checking and error messages
-- **Relative Line Numbers**: Temporarily enables relative line numbers during relative navigation
+- **Relative Line Numbers**: Temporarily enables relative line numbers during relative navigation with automatic restoration
 - **Configurable Highlighting**: Customizable colors for different operation types
 - **Smart Error Handling**: Clear feedback for invalid inputs and out-of-bounds operations
+- **Line Number Mode Restoration**: Intelligent restoration of line number settings after relative navigation
 
 ## Core Commands
 
@@ -65,7 +66,7 @@ The Goto Line module provides **advanced line navigation capabilities** that ext
 - Supports multiple input formats: `+5`, `-3`, `k5`, `j10`, `5`
 - Temporarily enables relative line numbers for context
 - Real-time preview of relative movement
-- Automatic restoration of original line number settings
+- Automatic restoration of line number settings (configurable)
 - Pre-filled input values via `value` argument
 - Integration with hyper layer system
 
@@ -418,6 +419,7 @@ The preview system provides **immediate visual feedback** during input validatio
   "vstoys.goto-line.enabled": true,
   "vstoys.goto-line.upCharacter": "k",
   "vstoys.goto-line.downCharacter": "j",
+  "vstoys.goto-line.defaultLineNumberMode": "auto",
   "vstoys.goto-line.highlightingEnabled": true,
   "vstoys.goto-line.selectColor": "editor.wordHighlightBackground",
   "vstoys.goto-line.deleteColor": "inputValidation.errorBackground",
@@ -426,7 +428,55 @@ The preview system provides **immediate visual feedback** during input validatio
 }
 ```
 
+### Settings Descriptions
+
+#### `vstoys.goto-line.enabled`
+- **Type**: `boolean`
+- **Default**: `true`
+- **Description**: Enable the Goto Line module
+
+#### `vstoys.goto-line.upCharacter`
+- **Type**: `string`
+- **Default**: `"k"`
+- **Description**: Character prefix for moving up in relative goto (e.g., 'k5' to go up 5 lines)
+
+#### `vstoys.goto-line.downCharacter`
+- **Type**: `string`
+- **Default**: `"j"`
+- **Description**: Character prefix for moving down in relative goto (e.g., 'j5' to go down 5 lines)
+
+#### `vstoys.goto-line.defaultLineNumberMode`
+- **Type**: `"auto" | "on" | "off" | "interval" | "relative"`
+- **Default**: `"auto"`
+- **Description**: Line number mode to restore after relative goto operations
+- **Options**:
+  - `"auto"`: Detects your line number mode at extension startup and restores to that mode (requires window reload to detect changes)
+  - `"on"`: Always restore to absolute line numbers
+  - `"off"`: Always restore to no line numbers (relative numbers still show during goto-line operations)
+  - `"interval"`: Always restore to interval mode (line numbers every 10 lines)
+  - `"relative"`: Always restore to relative line numbers
+- **Note**: If you change this setting or your `editor.lineNumbers` setting, you need to reload the window for the change to take effect
+
+#### `vstoys.goto-line.highlightingEnabled`
+- **Type**: `boolean`
+- **Default**: `true`
+- **Description**: Enable line highlighting preview when using goto commands
+
+#### Color Settings
+All color settings accept either theme color IDs (e.g., `"editor.wordHighlightBackground"`) or hex colors (e.g., `"#ff0000"`):
+
+- **`vstoys.goto-line.selectColor`**: Color for highlighting lines during selection operations
+- **`vstoys.goto-line.deleteColor`**: Color for highlighting lines during delete operations
+- **`vstoys.goto-line.copyColor`**: Color for highlighting lines during copy operations
+- **`vstoys.goto-line.cutColor`**: Color for highlighting lines during cut operations (copy + delete)
+
 ### Settings Management
+
+#### Startup Detection
+
+- **Line Number Mode Detection**: Automatically detects your current `editor.lineNumbers` setting at extension startup
+- **Stable Restoration**: Uses the detected mode consistently throughout the session (no runtime detection issues)
+- **Explicit Override**: Can explicitly set the restoration mode instead of using auto-detection
 
 #### Live Configuration Updates
 
