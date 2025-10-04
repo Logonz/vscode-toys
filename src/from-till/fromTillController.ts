@@ -278,10 +278,7 @@ export class FromTillController implements vscode.Disposable {
     }
 
     if (direction === 1) {
-      if (matchPosition.character === 0) {
-        return new vscode.Position(matchPosition.line, 0);
-      }
-      return matchPosition.translate(0, -1);
+      return matchPosition;
     }
 
     const lineLength = editor.document.lineAt(matchPosition.line).text.length;
@@ -341,9 +338,6 @@ export class FromTillController implements vscode.Disposable {
 
     if (!this.currentMatchDecoration) {
       this.currentMatchDecoration = vscode.window.createTextEditorDecorationType({
-        // borderWidth: "1px",
-        // borderStyle: "solid",
-        // borderColor: pickColorType("editorCursor.foreground"),
         before: {
           backgroundColor: pickColorType(currentBackground),
           color: pickColorType(foreground),
@@ -398,9 +392,17 @@ export class FromTillController implements vscode.Disposable {
     }
 
     const document = state.editor.document;
+    const startLine = state.origin.line;
+
     const ranges: vscode.Range[] = [];
-    for (let line = 0; line < document.lineCount; line += 1) {
-      ranges.push(document.lineAt(line).range);
+    if (state.direction === 1) {
+      for (let line = startLine; line < document.lineCount; line += 1) {
+        ranges.push(document.lineAt(line).range);
+      }
+    } else {
+      for (let line = startLine; line >= 0; line -= 1) {
+        ranges.push(document.lineAt(line).range);
+      }
     }
 
     fade(state.editor, ranges);
