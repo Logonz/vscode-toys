@@ -14,6 +14,7 @@ import { activateHyper } from "./hyper/main";
 import { activateMotions } from "./motions/main";
 import { activateAlwaysActive } from "./always-active/main";
 import { activateSemanticJump } from "./jump/main";
+import { activateFromTill } from "./from-till/main";
 
 try {
   require("./debug");
@@ -97,6 +98,12 @@ let vsToys: {
     name: "Jump",
     moduleContext: "jump",
     activator: activateSemanticJump,
+    deactivator: () => {},
+  },
+  {
+    name: "From Till",
+    moduleContext: "from-till",
+    activator: activateFromTill,
     deactivator: () => {},
   },
 ];

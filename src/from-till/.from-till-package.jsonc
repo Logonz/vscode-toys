@@ -1,0 +1,87 @@
+{
+  "contributes": {
+    "commands": [
+      {
+        "command": "vstoys.from-till.findForward",
+        "category": "VsToys",
+        "title": "From Till: Find Forward"
+      },
+      {
+        "command": "vstoys.from-till.findBackward",
+        "category": "VsToys",
+        "title": "From Till: Find Backward"
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "category": "VsToys",
+        "title": "From Till: Till Forward"
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "category": "VsToys",
+        "title": "From Till: Till Backward"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "category": "VsToys",
+        "title": "From Till: Repeat"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "category": "VsToys",
+        "title": "From Till: Repeat Reverse"
+      },
+      {
+        "command": "vstoys.from-till.cancelCapture",
+        "category": "VsToys",
+        "title": "From Till: Cancel Capture"
+      },
+      {
+        "command": "vstoys.from-till.cancelMode",
+        "category": "VsToys",
+        "title": "From Till: Cancel Mode"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        "vstoys.from-till.highlightBackground": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Background color used to flash the matched character. Accepts theme color IDs or hex colors.",
+          "order": 2100
+        },
+        "vstoys.from-till.highlightForeground": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Optional foreground color to use while moving the matched character.",
+          "order": 2101
+        },
+        "vstoys.from-till.highlightCurrentBackground": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Optional background color to use while moving the matched character.",
+          "order": 2102
+        },
+        "vstoys.from-till.highlightDuration": {
+          "type": "number",
+          "default": 150,
+          "minimum": 50,
+          "description": "Duration in milliseconds for the match highlight to remain visible.",
+          "order": 2103
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "vstoys.from-till.cancelCapture",
+        "key": "escape",
+        "when": "editorTextFocus && vstoys.from-till.awaitingChar"
+      },
+      {
+        "command": "vstoys.from-till.cancelMode",
+        "key": "escape",
+        "when": "editorTextFocus && vstoys.from-till.active"
+      }
+    ]
+  }
+}

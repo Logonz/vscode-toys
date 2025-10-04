@@ -153,7 +153,8 @@
       {
         "command": "vstoys.goto-line.goto-relative",
         "category": "VsToys",
-        "title": "VsToys - Goto Line: Go to Relative Line"
+        "title": "VsToys - Goto Line: Go to Relative Line",
+        "ui_font_family": "Consolas"
       },
       {
         "command": "vstoys.git.fileDecorator.refresh",
@@ -169,6 +170,46 @@
         "command": "vstoys.git.stageHunk",
         "category": "VsToys",
         "title": "Git: Stage Hunk at Selection - (VsToys)"
+      },
+      {
+        "command": "vstoys.from-till.findForward",
+        "category": "VsToys",
+        "title": "From Till: Find Forward"
+      },
+      {
+        "command": "vstoys.from-till.findBackward",
+        "category": "VsToys",
+        "title": "From Till: Find Backward"
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "category": "VsToys",
+        "title": "From Till: Till Forward"
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "category": "VsToys",
+        "title": "From Till: Till Backward"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "category": "VsToys",
+        "title": "From Till: Repeat"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "category": "VsToys",
+        "title": "From Till: Repeat Reverse"
+      },
+      {
+        "command": "vstoys.from-till.cancelCapture",
+        "category": "VsToys",
+        "title": "From Till: Cancel Capture"
+      },
+      {
+        "command": "vstoys.from-till.cancelMode",
+        "category": "VsToys",
+        "title": "From Till: Cancel Mode"
       },
       {
         "command": "vstoys.copy-highlight.copy",
@@ -621,35 +662,55 @@
           "description": "Character prefix for moving down in relative goto (e.g., 'j5' to go down 5 lines)",
           "order": 3002
         },
+        "vstoys.goto-line.defaultLineNumberMode": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "on",
+            "off",
+            "interval",
+            "relative"
+          ],
+          "enumDescriptions": [
+            "Detect line number mode at extension startup and restore to that mode (requires restart to detect changes)",
+            "Always restore to absolute line numbers",
+            "Always restore to no line numbers (relative numbers still show during goto-line operations)",
+            "Always restore to interval mode (line numbers every 10 lines)",
+            "Always restore to relative line numbers"
+          ],
+          "description": "Line number mode to restore after relative goto operations. 'auto' detects your current setting at startup. Changing this or your editor.lineNumbers setting requires reloading the window.",
+          "order": 3003
+        },
         "vstoys.goto-line.highlightingEnabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable line highlighting preview when using goto commands",
-          "order": 3003
+          "order": 3004
         },
         "vstoys.goto-line.selectColor": {
           "type": "string",
           "default": "editor.wordHighlightBackground",
           "description": "Color for highlighting lines during selection operations (theme color ID or hex color)",
-          "order": 3004
+          "order": 3005
         },
         "vstoys.goto-line.deleteColor": {
           "type": "string",
           "default": "editorMarkerNavigationError.headerBackground",
           "description": "Color for highlighting lines during delete operations (theme color ID or hex color)",
-          "order": 3005
+          "order": 3006
         },
         "vstoys.goto-line.copyColor": {
           "type": "string",
           "default": "editor.findRangeHighlightBackground",
           "description": "Color for highlighting lines during copy operations (theme color ID or hex color)",
-          "order": 3006
+          "order": 3007
         },
         "vstoys.goto-line.cutColor": {
           "type": "string",
           "default": "editorMarkerNavigationWarning.headerBackground",
           "description": "Color for highlighting lines during cut (args: 'delete' and 'copy' operations create cut) (theme color ID or hex color)",
-          "order": 3007
+          "order": 3008
         },
         "vstoys.git.fileDecorator.enabled": {
           "type": "boolean",
@@ -687,6 +748,31 @@
           "default": true,
           "description": "Enable the Git module in VSCode Toys",
           "order": 4000
+        },
+        "vstoys.from-till.highlightBackground": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Background color used to flash the matched character. Accepts theme color IDs or hex colors.",
+          "order": 2100
+        },
+        "vstoys.from-till.highlightForeground": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Optional foreground color to use while moving the matched character.",
+          "order": 2101
+        },
+        "vstoys.from-till.highlightCurrentBackground": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Optional background color to use while moving the matched character.",
+          "order": 2102
+        },
+        "vstoys.from-till.highlightDuration": {
+          "type": "number",
+          "default": 150,
+          "minimum": 50,
+          "description": "Duration in milliseconds for the match highlight to remain visible.",
+          "order": 2103
         },
         "vstoys.copy-highlight.enabled": {
           "type": "boolean",
@@ -869,6 +955,16 @@
         "key": "alt+s h",
         "command": "vstoys.git.stageHunk",
         "when": "editorTextFocus && vstoys.git.active"
+      },
+      {
+        "command": "vstoys.from-till.cancelCapture",
+        "key": "escape",
+        "when": "editorTextFocus && vstoys.from-till.awaitingChar"
+      },
+      {
+        "command": "vstoys.from-till.cancelMode",
+        "key": "escape",
+        "when": "editorTextFocus && vstoys.from-till.active"
       },
       {
         "command": "vstoys.copy-highlight.copy",
