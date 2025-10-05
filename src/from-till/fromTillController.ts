@@ -89,10 +89,6 @@ export class FromTillController implements vscode.Disposable {
     await this.initializeMode(kind, direction, char);
   }
 
-  private async initializeModeFromMotion(motion: MotionState): Promise<void> {
-    await this.initializeMode(motion.kind, motion.direction, motion.char);
-  }
-
   private async initializeMode(kind: MotionKind, direction: MotionDirection, char: string): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
