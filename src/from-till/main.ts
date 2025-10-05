@@ -14,14 +14,52 @@ export function activateFromTill(name: string, context: vscode.ExtensionContext)
     context.subscriptions.push(disposable);
   };
 
-  register("vstoys.from-till.findForward", () => controller.findForward());
-  register("vstoys.from-till.findBackward", () => controller.findBackward());
-  register("vstoys.from-till.tillForward", () => controller.tillForward());
-  register("vstoys.from-till.tillBackward", () => controller.tillBackward());
-  register("vstoys.from-till.repeat", () => controller.repeat());
-  register("vstoys.from-till.repeatReverse", () => controller.repeatReverse());
-  register("vstoys.from-till.cancelCapture", () => controller.cancelCapture());
-  register("vstoys.from-till.cancelMode", () => controller.cancelMode());
+  function deactivateAllHyperIfNeeded(args: any) {
+    if (args && args.deactivateAllHyper) {
+      try {
+        vscode.commands.executeCommand("vstoys.hyper.deactivateAll");
+      } catch (error) {
+        console.error("Error executing hyper command:", error);
+      }
+    }
+  }
+
+  register("vstoys.from-till.findForward", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.findForward();
+  });
+  register("vstoys.from-till.findBackward", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.findBackward();
+  });
+  register("vstoys.from-till.tillForward", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.tillForward();
+  });
+  register("vstoys.from-till.tillBackward", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.tillBackward();
+  });
+  register("vstoys.from-till.repeat", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.repeat(1);
+  });
+  register("vstoys.from-till.repeatReverse", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.repeat(-1);
+  });
+  register("vstoys.from-till.cancelCapture", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.cancelCapture();
+  });
+  register("vstoys.from-till.cancelMode", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.cancelMode();
+  });
+  register("vstoys.from-till.accept", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.accept();
+  });
 
   output(`${name} activated`);
 }

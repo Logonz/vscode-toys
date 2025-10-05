@@ -52,9 +52,9 @@ export class FromTillController implements vscode.Disposable {
     await this.startMotion("till", -1);
   }
 
-  async repeat(): Promise<void> {
+  async repeat(direction: 1 | -1): Promise<void> {
     if (this.modeState) {
-      this.advanceWithinMode(1);
+      this.advanceWithinMode(direction);
       return;
     }
 
@@ -62,24 +62,6 @@ export class FromTillController implements vscode.Disposable {
       vscode.window.setStatusBarMessage("VSCode Toys: from-till has no motion to repeat", 1500);
       return;
     }
-
-    await this.initializeModeFromMotion(this.lastMotion);
-  }
-
-  async repeatReverse(): Promise<void> {
-    if (this.modeState) {
-      this.advanceWithinMode(-1);
-      return;
-    }
-
-    if (!this.lastMotion) {
-      vscode.window.setStatusBarMessage("VSCode Toys: from-till has no motion to repeat", 1500);
-      return;
-    }
-
-    // Re-initialize in current direction, then move backwards once (if possible)
-    await this.initializeModeFromMotion(this.lastMotion);
-    this.advanceWithinMode(-1);
   }
 
   cancelCapture(): void {
@@ -139,7 +121,7 @@ export class FromTillController implements vscode.Disposable {
     this.lastMotion = { char, direction, kind };
 
     this.applyFadeDecorations();
-    await vscode.commands.executeCommand("setContext", "vstoys.from-till.active", true);
+    await vscode.commands.executeCommand("setContext", "vstoys.from-till.jumpActive", true);
     this.registerModeListeners();
     this.moveToCurrentMatch();
   }
@@ -382,7 +364,7 @@ export class FromTillController implements vscode.Disposable {
     this.modeState = null;
     this.modeDisposables.forEach((disposable) => disposable.dispose());
     this.modeDisposables = [];
-    vscode.commands.executeCommand("setContext", "vstoys.from-till.active", false);
+    vscode.commands.executeCommand("setContext", "vstoys.from-till.jumpActive", false);
   }
 
   private applyFadeDecorations(): void {

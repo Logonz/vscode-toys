@@ -61,13 +61,6 @@
           "default": "activityBarBadge.background",
           "description": "Optional background color to use while moving the matched character.",
           "order": 2102
-        },
-        "vstoys.from-till.highlightDuration": {
-          "type": "number",
-          "default": 150,
-          "minimum": 50,
-          "description": "Duration in milliseconds for the match highlight to remain visible.",
-          "order": 2103
         }
       }
     },
@@ -80,7 +73,65 @@
       {
         "command": "vstoys.from-till.cancelMode",
         "key": "escape",
-        "when": "editorTextFocus && vstoys.from-till.active"
+        "when": "editorTextFocus && vstoys.from-till.jumpActive"
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "key": "ctrl+right",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "key": "ctrl+left",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      // ? NeoVim Style
+      // Eu layout left=, right=.
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": ".",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": ",",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      // Us layout left=, right=;
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": ";",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": ",",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      // ? Vscode - style
+      // Arrow style
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": "right",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": "left",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      // Tab style
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": "tab",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": "shift+tab",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
       }
     ]
   }
