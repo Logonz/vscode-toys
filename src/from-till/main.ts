@@ -56,7 +56,22 @@ export function activateFromTill(name: string, context: vscode.ExtensionContext)
     deactivateAllHyperIfNeeded(args);
     controller.cancelMode();
   });
-  register("vstoys.from-till.accept", (args) => {
+  register("vstoys.from-till.findForwardSelect", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.findForwardSelect();
+  });
+  register("vstoys.from-till.findBackwardSelect", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.findBackwardSelect();
+  });
+  register("vstoys.from-till.tillForwardSelect", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.tillForwardSelect();
+  });
+  register("vstoys.from-till.tillBackwardSelect", (args) => {
+    deactivateAllHyperIfNeeded(args);
+    controller.tillBackwardSelect();
+  });
     deactivateAllHyperIfNeeded(args);
     controller.accept();
   });

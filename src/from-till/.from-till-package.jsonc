@@ -40,6 +40,26 @@
         "command": "vstoys.from-till.cancelMode",
         "category": "VsToys",
         "title": "From Till: Cancel Mode"
+      },
+      {
+        "command": "vstoys.from-till.findForwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Find Forward Select"
+      },
+      {
+        "command": "vstoys.from-till.findBackwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Find Backward Select"
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Till Forward Select"
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Till Backward Select"
       }
     ],
     "configuration": {
@@ -78,12 +98,28 @@
       {
         "command": "vstoys.from-till.tillForward",
         "key": "ctrl+right",
+        "mac": "cmd+right", // This is windows/linux style, on macOS it's usually "option+right"
         "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
         "args": { "deactivateAllHyper": true }
       },
       {
         "command": "vstoys.from-till.tillBackward",
         "key": "ctrl+left",
+        "mac": "cmd+left", // This is windows/linux style, on macOS it's usually "option+right"
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "key": "ctrl+shift+right",
+        "mac": "cmd+shift+right", // This is windows/linux style, on macOS it's usually "option+right"
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "key": "ctrl+shift+left",
+        "mac": "cmd+shift+left", // This is windows/linux style, on macOS it's usually "option+right"
         "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
         "args": { "deactivateAllHyper": true }
       },
