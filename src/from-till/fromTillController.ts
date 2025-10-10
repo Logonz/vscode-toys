@@ -17,6 +17,7 @@ interface ModeState extends MotionState {
   matches: vscode.Position[];
   currentIndex: number;
   origin: vscode.Position;
+  select: boolean;
 }
 
 export class FromTillController implements vscode.Disposable {
@@ -37,19 +38,35 @@ export class FromTillController implements vscode.Disposable {
   }
 
   async findForward(): Promise<void> {
-    await this.startMotion("find", 1);
+    await this.startMotion("find", 1, false);
   }
 
   async findBackward(): Promise<void> {
-    await this.startMotion("find", -1);
+    await this.startMotion("find", -1, false);
   }
 
   async tillForward(): Promise<void> {
-    await this.startMotion("till", 1);
+    await this.startMotion("till", 1, false);
   }
 
   async tillBackward(): Promise<void> {
-    await this.startMotion("till", -1);
+    await this.startMotion("till", -1, false);
+  }
+
+  async findForwardSelect(): Promise<void> {
+    await this.startMotion("find", 1, true);
+  }
+
+  async findBackwardSelect(): Promise<void> {
+    await this.startMotion("find", -1, true);
+  }
+
+  async tillForwardSelect(): Promise<void> {
+    await this.startMotion("till", 1, true);
+  }
+
+  async tillBackwardSelect(): Promise<void> {
+    await this.startMotion("till", -1, true);
   }
 
   async repeat(direction: 1 | -1): Promise<void> {
@@ -78,7 +95,7 @@ export class FromTillController implements vscode.Disposable {
     this.stopMode(true);
   }
 
-  private async startMotion(kind: MotionKind, direction: MotionDirection): Promise<void> {
+  private async startMotion(kind: MotionKind, direction: MotionDirection, select: boolean): Promise<void> {
     this.stopMode();
 
     const char = await this.captureCharacter();
@@ -86,10 +103,19 @@ export class FromTillController implements vscode.Disposable {
       return;
     }
 
-    await this.initializeMode(kind, direction, char);
+    await this.initializeMode(kind, direction, char, select);
   }
 
-  private async initializeMode(kind: MotionKind, direction: MotionDirection, char: string): Promise<void> {
+  // private async initializeModeFromMotion(motion: MotionState): Promise<void> {
+  //   await this.initializeMode(motion.kind, motion.direction, motion.char);
+  // }
+
+  private async initializeMode(
+    kind: MotionKind,
+    direction: MotionDirection,
+    char: string,
+    select: boolean
+  ): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -112,6 +138,7 @@ export class FromTillController implements vscode.Disposable {
       direction,
       kind,
       origin: editor.selection.active,
+      select,
     };
 
     this.lastMotion = { char, direction, kind };
@@ -236,7 +263,11 @@ export class FromTillController implements vscode.Disposable {
     const matchPosition = state.matches[state.currentIndex];
     const destination = this.calculateDestination(state.editor, matchPosition, state.kind, state.direction);
 
-    state.editor.selection = new vscode.Selection(destination, destination);
+    if (state.select) {
+      state.editor.selection = new vscode.Selection(state.origin, destination);
+    } else {
+      state.editor.selection = new vscode.Selection(destination, destination);
+    }
     state.editor.revealRange(
       new vscode.Range(destination, destination),
       vscode.TextEditorRevealType.InCenterIfOutsideViewport

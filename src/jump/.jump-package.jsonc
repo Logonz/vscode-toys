@@ -336,22 +336,22 @@
         "when": "vstoys.semantic-jump.active && vstoys.semantic-jump.targetMode === 'end'"
       },
       {
-        "key": "f19",
-        "command": "vstoys.regular-jump.start",
-        "when": "vstoys.jump.active && hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
-      },
-      {
-        "key": "ctrl+f19",
-        "mac": "cmd+f19",
-        "command": "vstoys.regular-jump.start",
-        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active && !vstoys.semantic-jump.active"
-      },
-      {
         "command": "vstoys.semantic-jump.escape",
         "key": "escape",
         "when": "vstoys.semantic-jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active"
       },
+      // Start hybrid jump in hyper-layer instead of semantic jump
+      {
+        "key": "f19",
+        "command": "vstoys.hybrid-jump.start",
+        "when": "vstoys.jump.active && hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+      },
       // Regular
+      {
+        "key": "alt+f19",
+        "command": "vstoys.regular-jump.start",
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active && !vstoys.semantic-jump.active"
+      },
       {
         "command": "vstoys.regular-jump.escape",
         "key": "escape",
@@ -379,7 +379,8 @@
       },
       // Hyper
       {
-        "key": "alt+f19",
+        "key": "ctrl+f19",
+        "mac": "cmd+f19",
         "command": "vstoys.hybrid-jump.start",
         "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
       },
@@ -400,12 +401,13 @@
       },
       {
         "command": "vstoys.hybrid-jump.next",
-        "key": "alt+f19",
+        "key": "f19",
         "when": "vstoys.hybrid-jump.active"
       },
       {
         "command": "vstoys.hybrid-jump.previous",
-        "key": "ctrl+alt+f19",
+        "key": "ctrl+f19",
+        "mac": "cmd+f19",
         "when": "vstoys.hybrid-jump.active"
       }
     ]

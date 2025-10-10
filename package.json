@@ -153,8 +153,7 @@
       {
         "command": "vstoys.goto-line.goto-relative",
         "category": "VsToys",
-        "title": "VsToys - Goto Line: Go to Relative Line",
-        "ui_font_family": "Consolas"
+        "title": "VsToys - Goto Line: Go to Relative Line"
       },
       {
         "command": "vstoys.git.fileDecorator.refresh",
@@ -210,6 +209,26 @@
         "command": "vstoys.from-till.cancelMode",
         "category": "VsToys",
         "title": "From Till: Cancel Mode"
+      },
+      {
+        "command": "vstoys.from-till.findForwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Find Forward Select"
+      },
+      {
+        "command": "vstoys.from-till.findBackwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Find Backward Select"
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Till Forward Select"
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Till Backward Select"
       },
       {
         "command": "vstoys.copy-highlight.copy",
@@ -767,13 +786,6 @@
           "description": "Optional background color to use while moving the matched character.",
           "order": 2102
         },
-        "vstoys.from-till.highlightDuration": {
-          "type": "number",
-          "default": 150,
-          "minimum": 50,
-          "description": "Duration in milliseconds for the match highlight to remain visible.",
-          "order": 2103
-        },
         "vstoys.copy-highlight.enabled": {
           "type": "boolean",
           "default": true,
@@ -859,20 +871,19 @@
         "when": "vstoys.semantic-jump.active && vstoys.semantic-jump.targetMode === 'end'"
       },
       {
-        "key": "f19",
-        "command": "vstoys.regular-jump.start",
-        "when": "vstoys.jump.active && hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
-      },
-      {
-        "key": "ctrl+f19",
-        "mac": "cmd+f19",
-        "command": "vstoys.regular-jump.start",
-        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active && !vstoys.semantic-jump.active"
-      },
-      {
         "command": "vstoys.semantic-jump.escape",
         "key": "escape",
         "when": "vstoys.semantic-jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active"
+      },
+      {
+        "key": "f19",
+        "command": "vstoys.hybrid-jump.start",
+        "when": "vstoys.jump.active && hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+      },
+      {
+        "key": "alt+f19",
+        "command": "vstoys.regular-jump.start",
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active && !vstoys.semantic-jump.active"
       },
       {
         "command": "vstoys.regular-jump.escape",
@@ -900,7 +911,8 @@
         "when": "vstoys.regular-jump.active"
       },
       {
-        "key": "alt+f19",
+        "key": "ctrl+f19",
+        "mac": "cmd+f19",
         "command": "vstoys.hybrid-jump.start",
         "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
       },
@@ -921,12 +933,13 @@
       },
       {
         "command": "vstoys.hybrid-jump.next",
-        "key": "alt+f19",
+        "key": "f19",
         "when": "vstoys.hybrid-jump.active"
       },
       {
         "command": "vstoys.hybrid-jump.previous",
-        "key": "ctrl+alt+f19",
+        "key": "ctrl+f19",
+        "mac": "cmd+f19",
         "when": "vstoys.hybrid-jump.active"
       },
       {
@@ -964,7 +977,83 @@
       {
         "command": "vstoys.from-till.cancelMode",
         "key": "escape",
-        "when": "editorTextFocus && vstoys.from-till.active"
+        "when": "editorTextFocus && vstoys.from-till.jumpActive"
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "key": "ctrl+right",
+        "mac": "cmd+right",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "key": "ctrl+left",
+        "mac": "cmd+left",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "key": "ctrl+shift+right",
+        "mac": "cmd+shift+right",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "key": "ctrl+shift+left",
+        "mac": "cmd+shift+left",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": ".",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": ",",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": ";",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": ",",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": "right",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": "left",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": "tab",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": "shift+tab",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
       },
       {
         "command": "vstoys.copy-highlight.copy",
