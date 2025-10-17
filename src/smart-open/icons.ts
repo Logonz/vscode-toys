@@ -165,16 +165,22 @@ function FastGetIconForFileSync(file: vscode.Uri): vscode.Uri | undefined {
 
   // Get file extension
   const fileExtension = path.extname(file.fsPath).toLowerCase();
+  // Create all possible variations for lookup
+  const fileExtensionWithoutDot = fileExtension.slice(1); // Remove the dot
+
+  // Check if this binary extension has an icon defined in the theme
   if (binaryFileExtensions.has(fileExtension)) {
-    return undefined;
+    // Allow icon lookup if extension is in theme's fileExtensions
+    if (!extensionToIcon.has(fileExtensionWithoutDot)) {
+      return undefined; // No icon for this binary type
+    }
+    // Continue to icon lookup below (binary files with icons defined)
   }
   // Quick exit if we've already determined this extension has no icon
   if (extensionsWithoutIcons.has(fileExtension)) {
     iconCacheStats.quickExits++;
     return undefined;
   }
-  // Create all possible variations for lookup
-  const fileExtensionWithoutDot = fileExtension.slice(1); // Remove the dot
   const fileName = path.basename(file.fsPath);
   const dotFileNameWithoutDot = fileName.startsWith(".") ? fileName.slice(1) : undefined;
 
@@ -241,7 +247,17 @@ export async function GetIconForFile(file: vscode.Uri): Promise<vscode.Uri | und
   const fileExtension = path.extname(file.fsPath).toLowerCase();
   const fileExtensionWithoutDot = fileExtension.slice(1); // Remove the dot
 
+  // Check if this binary extension has an icon defined
   if (binaryFileExtensions.has(fileExtension)) {
+    // For binary files, check if we have a pre-defined icon from the theme
+    if (extensionToIcon.has(fileExtensionWithoutDot)) {
+      const icon = extensionToIcon.get(fileExtensionWithoutDot);
+      if (icon) {
+        filePathToIcon.set(file.fsPath, icon);
+        return icon;
+      }
+    }
+    // No icon available for this binary type
     return undefined;
   }
 
