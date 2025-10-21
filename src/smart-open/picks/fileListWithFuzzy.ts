@@ -460,6 +460,16 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       }
     });
 
+    const pasteCommand = vscode.commands.registerCommand("vstoys.smart-open.paste", async () => {
+      if (activeInlineInput) {
+        const clipboardText = await vscode.env.clipboard.readText();
+        activeInlineInput.pasteText(clipboardText);
+        // Search will be triggered automatically via onInput callback
+        selectedIndex = 0;
+        updateSelection();
+      }
+    });
+
     // Handle selection from QuickPick
     const disposableAccept = picked.onDidAccept(async () => {
       const selectedItem = picked.selectedItems[0] || picked.items[selectedIndex];
@@ -491,6 +501,7 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       downCommand.dispose();
       enterCommand.dispose();
       backspaceCommand.dispose();
+      pasteCommand.dispose();
       disposableAccept.dispose();
       disposableHide.dispose();
     });

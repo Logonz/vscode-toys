@@ -33,6 +33,12 @@
         "category": "VsToys",
         "title": "Smart Open: Delete Character",
         "enablement": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.paste",
+        "category": "VsToys",
+        "title": "Smart Open: Paste",
+        "enablement": "vstoys.smart-open.searching"
       }
     ],
     "configuration": {
@@ -74,6 +80,12 @@
       {
         "command": "vstoys.smart-open.deleteChar",
         "key": "backspace",
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.paste",
+        "key": "ctrl+v",
+        "mac": "cmd+v",
         "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
       }
     ]

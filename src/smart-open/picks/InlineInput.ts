@@ -47,6 +47,23 @@ export class InlineInput {
     return this.input;
   };
 
+  public pasteText = (clipboardText: string): void => {
+    // Remove all newline characters (Windows: \r\n, Unix: \n, Mac: \r)
+    let sanitized = clipboardText.replace(/[\r\n]+/g, "");
+
+    // Limit length to prevent pasting entire files
+    // 500 chars covers deep paths while preventing file content paste
+    const MAX_PASTE_LENGTH = 500;
+    if (sanitized.length > MAX_PASTE_LENGTH) {
+      sanitized = sanitized.substring(0, MAX_PASTE_LENGTH);
+    }
+
+    // Use existing addInput which handles cancellation chars and callbacks
+    if (sanitized.length > 0) {
+      this.addInput(sanitized);
+    }
+  };
+
   public addInput = (newInput: string): void => {
     // Check if the new input contains any cancellation characters
     for (const char of newInput) {
