@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { pickColorType } from "../helpers/pickColorType";
 import { fade, unfade } from "./fadeDecorator";
+import { FromTillStatusBar } from "./statusBar";
 
 type MotionKind = "find" | "till";
 
@@ -30,11 +31,13 @@ export class FromTillController implements vscode.Disposable {
 
   private allMatchesDecoration: vscode.TextEditorDecorationType | null = null;
   private currentMatchDecoration: vscode.TextEditorDecorationType | null = null;
+  private statusBar = new FromTillStatusBar();
 
   dispose(): void {
     this.cancelCapture();
     this.stopMode();
     this.disposeDecorationTypes();
+    this.statusBar.dispose();
   }
 
   async findForward(): Promise<void> {
@@ -98,11 +101,14 @@ export class FromTillController implements vscode.Disposable {
   private async startMotion(kind: MotionKind, direction: MotionDirection, select: boolean): Promise<void> {
     this.stopMode();
 
+    this.statusBar.showWaiting(kind, direction, select);
     const char = await this.captureCharacter();
     if (!char) {
+      this.statusBar.clear("waiting");
       return;
     }
 
+    this.statusBar.clear("waiting");
     await this.initializeMode(kind, direction, char, select);
   }
 
@@ -274,6 +280,7 @@ export class FromTillController implements vscode.Disposable {
     );
 
     this.applyDecorations();
+    this.statusBar.updateMode(state.char, state.select, state.currentIndex, state.matches.length);
   }
 
   private calculateDestination(
@@ -392,6 +399,7 @@ export class FromTillController implements vscode.Disposable {
     this.modeDisposables.forEach((disposable) => disposable.dispose());
     this.modeDisposables = [];
     vscode.commands.executeCommand("setContext", "vstoys.from-till.jumpActive", false);
+    this.statusBar.clear("cycling");
   }
 
   private applyFadeDecorations(): void {
@@ -487,5 +495,6 @@ export class FromTillController implements vscode.Disposable {
     this.captureDisposables = [];
     this.captureResolver = null;
     vscode.commands.executeCommand("setContext", "vstoys.from-till.awaitingChar", false);
+    this.statusBar.clear("waiting");
   }
 }

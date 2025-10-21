@@ -123,6 +123,30 @@
         "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
         "args": { "deactivateAllHyper": true }
       },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "key": "alt+right",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "key": "alt+left",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "key": "alt+shift+right",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "key": "alt+shift+left",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
       // ? NeoVim Style
       // Eu layout left=, right=.
       {
