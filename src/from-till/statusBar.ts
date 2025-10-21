@@ -64,7 +64,7 @@ export class FromTillStatusBar {
         return "[tab]";
       case "'":
         return "[apostrophe]";
-      case "\"":
+      case '"':
         return "[double-quote]";
       default:
         return `'${char}'`;
