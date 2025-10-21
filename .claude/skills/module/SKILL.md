@@ -1,23 +1,33 @@
 ---
-name: vstoys-module-creation
-description: This skill provides guidance for creating and modifying vstoys modules, including understanding the custom module architecture, JSONC package merging system, and webpack integration patterns. Use this skill when creating new VS Code extension modules, scaffolding new module structures, adding commands with keybindings, implementing configuration settings, understanding how JSONC files merge into package.json during webpack build, modifying existing modules, registering modules in extension.ts, or doing cold-start learning about the vstoys architecture.
+name: module
+description: Create or modify modules for this VS Code extension. Use when you see "create module", "new module", "add module", "modify module", "module template", "scaffold module". Provides templates from assets/templates/blank-module/ and handles JSONC package merging into package.json.
 ---
 
-# VSToys Module Creation & Modification
+# Module Creation & Modification
 
-This skill helps you understand and work with the VSToys module architecture, a custom VS Code extension pattern that differs from standard VS Code API usage. It covers module creation, configuration injection, and the webpack-driven JSONC merging system.
+**Quick start**: Copy `assets/templates/blank-module/` to create a new module in seconds.
 
-## When to Use This Skill
+## What this skill does
 
-- **Cold-start learning**: Understanding how VSToys' custom module system works
-- **Creating new modules**: Scaffolding and implementing complete modules from scratch
-- **Adding module features**: Quick additions like commands, keybindings, configuration settings
-- **Understanding architecture**: How JSONC files merge into package.json at build time
-- **Debugging**: Understanding why module features appear or don't appear
+Creates and modifies modules for this VS Code extension. Handles:
+- Scaffolding from template
+- JSONC package merging
+- Extension registration in `src/extension.ts`
+- Command/keybinding setup
 
-## Quick Start: The VSToys Pattern
+## When Claude should use this
 
-VSToys uses a **modular activation pattern** where each module:
+Trigger keywords in user requests:
+- "create a module" / "create module"
+- "new module"
+- "add a module" / "add module"
+- "modify module" / "update module"
+- "module template"
+- "scaffold module"
+
+## The Module Pattern
+
+This extension uses a **modular activation pattern** where each module:
 1. Lives in its own `src/module-name/` directory
 2. Exports an `activate{ModuleName}` function
 3. Has a `.module-name-package.jsonc` file with its configuration/commands/keybindings
