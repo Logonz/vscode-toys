@@ -320,6 +320,14 @@ let cursorVisible = true;
 let cursorBlinkTimer: NodeJS.Timeout | undefined;
 const timerInterval = 500; //ms
 
+// Default vscode commands for quick pick navigation
+const QUICK_COMMANDS: Record<string, string> = {
+  ">": "workbench.action.showCommands", // If the user types >, show the command palette
+  "%": "workbench.action.quickTextSearch", // If the user types %, show quick text search
+  "#": "workbench.action.showAllSymbols", // If the user types #, go to symbol workspace
+  "@": "workbench.action.gotoSymbol", // If the user types @, go to symbol in file
+  ":": "workbench.action.gotoLine", // If the user types :, go to line
+};
 
 export async function showQuickPickWithInlineSearch(): Promise<void> {
   const activeEditor = vscode.window.activeTextEditor;
@@ -394,6 +402,18 @@ export async function showQuickPickWithInlineSearch(): Promise<void> {
       textEditor: activeEditor,
       onInput: async (input: string, char: string) => {
         console.log(`Received input: "${input}", char: "${char}"`);
+
+        // If the user types a quick command, execute it
+        if (QUICK_COMMANDS[char] && input == char) {
+          picked.hide();
+          cancelBlinkingCursor();
+          if (activeInlineInput) {
+            activeInlineInput.destroy();
+          }
+          activeInlineInput = undefined; // Clear the reference
+          vscode.commands.executeCommand(QUICK_COMMANDS[char]);
+          return;
+        }
 
         // Reset selection when search changes
         selectedIndex = 0;
