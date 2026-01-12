@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "WebSearch",
+      "Bash(npm run compile:*)",
+      "Bash(rg:*)",
+      "Bash(fd:*)",
+      "Skill(skill-creator)",
+      "Skill(module)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

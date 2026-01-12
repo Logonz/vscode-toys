@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
 import { navigateToLine, navigateToRelativeLine } from "./navigation";
 import { GotoLinePreview } from "./preview";
-import { GotoLineSettingsManager, getGotoLineSettings } from "./settings";
+import { GotoLineSettingsManager } from "./settings";
 
 /**
  * Prints the given content on the output channel.
@@ -93,8 +93,17 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
     })
   );
 
+  let lineNumberSettingTimeout: NodeJS.Timeout;
   context.subscriptions.push(
     vscode.commands.registerCommand("vstoys.goto-line.goto-relative", async (args) => {
+      if (args && args.deactivateAllHyper) {
+        try {
+          vscode.commands.executeCommand("vstoys.hyper.deactivateAll");
+        } catch (error) {
+          console.error("Error executing hyper command:", error);
+        }
+      }
+
       console.log(args);
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
@@ -106,9 +115,9 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
       const totalLines = document.lineCount;
       const currentLine = editor.selection.active.line + 1; // VS Code uses 0-based indexing
 
-      // Store current line number settings
+      // Get the line number mode to restore to (based on settings or detected at startup)
       const config = vscode.workspace.getConfiguration("editor");
-      const originalLineNumbers = config.get("lineNumbers");
+      const restoreLineNumbers = settingsManager.getRestoreLineNumberMode();
 
       try {
         // Temporarily enable relative line numbers
@@ -118,6 +127,13 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
         const result = await vscode.window.showInputBox({
           prompt: `Go to relative line (+/- offset)`,
           placeHolder: `Enter relative offset (e.g., +5, -3, 10, ${settingsManager.settings.upCharacter}5, ${settingsManager.settings.downCharacter}5) (current: ${currentLine}/${totalLines})`,
+          // If args.value is set from keybinding, use that as initial value
+          value: args && args.value ? args.value.toString() : "",
+          // Value selection should be at the end and not select the whole text
+          valueSelection: [
+            args && args.value ? args.value.toString().length : 0,
+            args && args.value ? args.value.toString().length : 0,
+          ],
           validateInput: (value: string) => {
             // Clear previous preview
             gotoLinePreview.clearPreview();
@@ -179,8 +195,46 @@ export function activateGotoLine(name: string, context: vscode.ExtensionContext)
           gotoLinePreview.clearPreview();
         }
       } finally {
-        // Always restore the original line number setting and clear preview
-        await config.update("lineNumbers", originalLineNumbers, vscode.ConfigurationTarget.Global);
+        // Always restore the line number setting and clear preview
+        await config.update("lineNumbers", restoreLineNumbers, vscode.ConfigurationTarget.Global);
+
+        // Clear timeout if it exists
+        if (lineNumberSettingTimeout) {
+          clearTimeout(lineNumberSettingTimeout);
+        }
+
+        // Recursively check that the setting has been restored
+        const ensureSettingRestored = async (attemptCount = 0, maxAttempts = 10) => {
+          const config = vscode.workspace.getConfiguration("editor");
+          const currentLineNumbers = config.get("lineNumbers");
+          if (currentLineNumbers !== restoreLineNumbers) {
+            console.warn(
+              `Line numbers setting was not restored correctly (attempt ${
+                attemptCount + 1
+              }/${maxAttempts}). Current: ${currentLineNumbers}, Target: ${restoreLineNumbers}`
+            );
+
+            if (attemptCount < maxAttempts) {
+              // Restore setting if needed
+              await config.update("lineNumbers", restoreLineNumbers, vscode.ConfigurationTarget.Global);
+
+              // Schedule next check
+              lineNumberSettingTimeout = setTimeout(() => {
+                ensureSettingRestored(attemptCount + 1, maxAttempts);
+              }, 50);
+            } else {
+              console.error(
+                `Failed to restore line numbers setting after ${maxAttempts} attempts. Current: ${currentLineNumbers}, Target: ${restoreLineNumbers}`
+              );
+            }
+          } else {
+            console.log(`Line numbers setting successfully restored to: ${restoreLineNumbers}`);
+          }
+        };
+
+        lineNumberSettingTimeout = setTimeout(() => {
+          ensureSettingRestored();
+        }, 50);
         gotoLinePreview.clearPreview();
       }
     })

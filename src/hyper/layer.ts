@@ -8,6 +8,12 @@ import { LayerActivateInput, LayerDeactivateInput } from "./types";
 let anyContextActive = false;
 const activeContexts: Map<string, ActionContext> = new Map();
 const globalContextId = "vstoys.hyper.global";
+const countContextId = "hyper.count";
+function updateCountContext() {
+  const activeCount = Array.from(activeContexts.values()).filter((context) => context && context.IsActive()).length;
+  vscode.commands.executeCommand("setContext", countContextId, activeCount);
+  printHyperOutput(`  Updated count context (${countContextId}) to ${activeCount}`);
+}
 
 export function deactivateAllContexts(args: any) {
   console.log("[vstoys.hyper] DeactivateAll command executed", args);
@@ -15,15 +21,17 @@ export function deactivateAllContexts(args: any) {
   activeContexts.forEach((context) => {
     context.deactivate();
   });
+  updateCountContext();
 }
 
 export function activateGlobalContext() {
   // Activates the global context when any layer context becomes active
   if (!anyContextActive) {
     anyContextActive = true;
-    printHyperOutput("  Activating global context (vstoys.hyper.global)");
+    printHyperOutput(`  Activating global context (${globalContextId})`);
     vscode.commands.executeCommand("setContext", globalContextId, true);
   }
+  updateCountContext();
 }
 
 export function deactivateGlobalContext(contextId: string) {
@@ -40,9 +48,11 @@ export function deactivateGlobalContext(contextId: string) {
   });
 
   if (!anyContextActive) {
-    printHyperOutput("  Deactivating global context (vstoys.hyper.global)");
+    printHyperOutput(`  Deactivating global context (${globalContextId})`);
     vscode.commands.executeCommand("setContext", globalContextId, false);
   }
+
+  updateCountContext();
 }
 
 // Layer management functions
@@ -83,6 +93,7 @@ export function activateLayer(input: LayerActivateInput) {
 
   const timeoutSeconds = input.timeout || 6; // Default timeout from config
   context.activate(input.command, timeoutSeconds);
+  updateCountContext();
 }
 
 export function deactivateLayer(input: LayerDeactivateInput) {
@@ -114,4 +125,5 @@ export function deactivateLayer(input: LayerDeactivateInput) {
       printHyperOutput(`Layer context not found: ${input.layerName}`, false);
     }
   }
+  updateCountContext();
 }

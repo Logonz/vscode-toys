@@ -1,18 +1,39 @@
 {
-	"compilerOptions": {
-		"module": "Node16",
-		"target": "ES2022",
-		"lib": [
-			"ES2022"
-		],
-		"sourceMap": true,
-		"rootDir": "src",
-		"outDir": "dist",
-		"strict": true,   /* enable all strict type-checking options */
-		/* Additional Checks */
-		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-		"noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
-		"forceConsistentCasingInFileNames": true,
-	}
+  "compilerOptions": {
+    "module": "Node16",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "strict": true /* enable all strict type-checking options */,
+
+    /* Module Resolution */
+    "moduleResolution": "Node16",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+
+    /* Type Checking */
+    "noImplicitReturns": true /* Report error when not all code paths in function return a value. */,
+    "noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
+    "noUnusedLocals": true /* Report errors on unused locals. */,
+    // "noUnusedParameters": true /* Report errors on unused parameters. */,
+    // "exactOptionalPropertyTypes": true /* Interpret optional property types as written, rather than adding 'undefined'. */,
+    "noImplicitOverride": true /* Ensure overriding members in derived classes are marked with an override modifier. */,
+    // "noUncheckedIndexedAccess": true /* Include 'undefined' in index signature results */,
+
+    /* Emit */
+    "declaration": false /* Don't generate .d.ts files for extensions */,
+    "removeComments": true /* Remove comments in output */,
+    "importHelpers": false /* Don't use TypeScript helpers (keep bundle smaller) */,
+
+    /* Advanced */
+    "skipLibCheck": true /* Skip type checking of declaration files for faster builds */,
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true /* Enable incremental compilation */,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo" /* Specify file to store incremental compilation information */
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "out", "**/*.test.ts", "**/*.spec.ts"]
 }

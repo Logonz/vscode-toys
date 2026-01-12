@@ -1,6 +1,12 @@
 import { commands, Disposable, StatusBarAlignment, StatusBarItem, TextEditor, window } from "vscode";
 
 const cancellationChars = new Set(["\n"]);
+
+// ? 'a' and 'i' is a special case of "automatic" which means all text objects
+// ? We use 'a' and 'i' to make it natural to quickly press, i.e 'dii' or 'daa'.
+// ? 'i' and 'a' works for both inside and around but naturally 'i' will be used for inside and 'a' for around.
+const validTextObjects = ["i", "a", "(", ")", "[", "]", "{", "}", "<", ">", '"', "'", "`"];
+
 export const subscriptions: Disposable[] = [];
 
 export interface MotionInputProps {
@@ -21,15 +27,19 @@ export class MotionInput {
       window.onDidChangeTextEditorSelection(this._onCancel)
     );
 
-    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
+    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 10000);
     this.updateStatusBar(this.props.operation);
+
+    // TODO: Do we want to make this configurable?
+    // Disable all hyper layers
+    commands.executeCommand("vstoys.hyper.deactivateAll");
 
     // Set context to enable escape key binding
     commands.executeCommand("setContext", "vstoys.motions.inputActive", true);
   }
 
   public updateStatusBar = (text: string): void => {
-    this.statusBarItem.text = `${text}`;
+    this.statusBarItem.text = `░ ${text} ░`;
     this.statusBarItem.show();
   };
 
@@ -49,15 +59,14 @@ export class MotionInput {
       return;
     }
 
-    // Check if it's a number (for count)
-    if (/\d/.test(char) && this.input === "") {
+    // Check if it's a number (for count) - now accepts digits after operation is set
+    if (/\d/.test(char)) {
       this.count += char;
-      this.updateStatusBar(this.count + this.props.operation);
+      this.updateStatusBar(this.props.operation + this.count);
       return;
     }
 
     // Check if it's a valid text object
-    const validTextObjects = ["(", ")", "[", "]", "{", "}", "<", ">", '"', "'", "`"];
     if (validTextObjects.includes(char)) {
       const count = this.count ? parseInt(this.count) : 1;
       this.destroy();
@@ -92,15 +101,19 @@ export class InteractiveMotionInput {
       window.onDidChangeTextEditorSelection(this._onCancel)
     );
 
-    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
+    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 10000);
     this.updateStatusBar("");
+
+    // TODO: Do we want to make this configurable?
+    // Disable all hyper layers
+    commands.executeCommand("vstoys.hyper.deactivateAll");
 
     // Set context to enable escape key binding
     commands.executeCommand("setContext", "vstoys.motions.inputActive", true);
   }
 
   public updateStatusBar = (text: string): void => {
-    this.statusBarItem.text = `Motion: ${text}`;
+    this.statusBarItem.text = `░ Motion: ${text} ░`;
     this.statusBarItem.show();
   };
 
@@ -152,7 +165,6 @@ export class InteractiveMotionInput {
     this.count = countStr;
     this.operation = op + modifier;
 
-    const validTextObjects = ["(", ")", "[", "]", "{", "}", "<", ">", '"', "'", "`"];
     return validTextObjects.includes(textObj);
   }
 }

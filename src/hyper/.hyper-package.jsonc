@@ -25,7 +25,7 @@
               "enabled": true
             }
           ],
-          "description": "List of active Hyper layers to register, activates a layer.",
+          "description": "List of active Hyper layers to register, activates a layer without deactivating others.",
           "items": {
             "type": "object",
             "properties": {
@@ -57,7 +57,7 @@
               "enabled": true
             }
           ],
-          "description": "List of active Hyper layers to register, activates a layer.",
+          "description": "List of active Hyper layers to register, deactivates all other layers then activates a layer.",
           "items": {
             "type": "object",
             "properties": {
@@ -90,6 +90,11 @@
         "key": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
         "mac": "f20", // This is bound to caps-lock (Requires a programmable keyboard)
         "when": "vstoys.hyper.active"
+      },
+      {
+        "key": "f20",
+        "command": "vstoys.hyper.layerDeactivate.hyper-layer",
+        "when": "vstoys.hyper.active && vstoys.hyper.global && hyper-layer"
       },
       // ! Global Exit
       // ? Will exit all and any active repeat contexts

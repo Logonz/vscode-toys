@@ -1,0 +1,9 @@
+{
+  "contributes": {
+    "commands": [],
+    "configuration": {
+      "properties": {}
+    },
+    "keybindings": []
+  }
+}

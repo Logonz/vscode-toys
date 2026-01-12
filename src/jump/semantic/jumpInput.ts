@@ -1,18 +1,12 @@
-import {
-  commands,
-  Disposable,
-  StatusBarAlignment,
-  StatusBarItem,
-  TextEditor,
-  window,
-} from "vscode";
+import { commands, Disposable, StatusBarAlignment, StatusBarItem, TextEditor, window } from "vscode";
 
-const cancellationChars = new Set(["\n", "o"]);
+const cancellationChars = new Set(["\n"]);
 export const subscriptions: Disposable[] = [];
 
-export class InlineInput {
+export class JumpInput {
   statusBarItem: StatusBarItem;
   input = "";
+  allowedChars = new Set("fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV".split(""));
 
   constructor(
     private readonly props: {
@@ -23,30 +17,26 @@ export class InlineInput {
   ) {
     subscriptions.push(
       commands.registerCommand("type", this._onInput),
-      // window.onDidChangeTextEditorSelection(this._onCancel)
+      window.onDidChangeTextEditorSelection(this._onCancel)
     );
 
-    this.statusBarItem = window.createStatusBarItem(
-      StatusBarAlignment.Right,
-      1000
-    );
+    this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 10000);
   }
 
-  public updateStatusBar = (
-    text: string,
-    // numberOfMatches: number,
-    activityIndicatorState: boolean
-  ): void => {
-    const indicator = activityIndicatorState ? "⚪" : "🔴";
-    // ┆ ┇ ┣ ┫ ╏ ▎▐ ░ ▒ ▓
-    this.statusBarItem.text = `░ ${text} ░ ${indicator}`;
-    // this.statusBarItem.text = `${numberOfMatches} ░ ${text} ░ ${indicator}`;
+  public changeAllowedChars = (chars: string[]): void => {
+    this.allowedChars = new Set(chars);
+  };
+
+  public updateStatusBar = (text: string): void => {
+    this.statusBarItem.text = `░ ${text} ░`;
     this.statusBarItem.show();
   };
 
   public destroy = (): void => {
     this.statusBarItem.dispose();
     subscriptions.forEach((subscription) => subscription.dispose());
+    subscriptions.length = 0;
+    this.props.onCancel();
   };
 
   public deleteLastCharacter = (): string => {
@@ -59,7 +49,9 @@ export class InlineInput {
 
     this.input += char;
 
-    if (cancellationChars.has(char)) {
+    this.updateStatusBar(this.input);
+
+    if (cancellationChars.has(char) || !this.allowedChars.has(char)) {
       this._onCancel();
     } else {
       return this.props.onInput(this.input, char);

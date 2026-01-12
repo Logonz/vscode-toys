@@ -7,3 +7,7 @@ node_modules
 *.ts-backup
 *.stackdump
 material-icons.json
+
+*.7z
+
+.shit

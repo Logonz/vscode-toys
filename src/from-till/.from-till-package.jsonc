@@ -1,0 +1,198 @@
+{
+  "contributes": {
+    "commands": [
+      {
+        "command": "vstoys.from-till.findForward",
+        "category": "VsToys",
+        "title": "From Till: Find Forward"
+      },
+      {
+        "command": "vstoys.from-till.findBackward",
+        "category": "VsToys",
+        "title": "From Till: Find Backward"
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "category": "VsToys",
+        "title": "From Till: Till Forward"
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "category": "VsToys",
+        "title": "From Till: Till Backward"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "category": "VsToys",
+        "title": "From Till: Repeat"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "category": "VsToys",
+        "title": "From Till: Repeat Reverse"
+      },
+      {
+        "command": "vstoys.from-till.cancelCapture",
+        "category": "VsToys",
+        "title": "From Till: Cancel Capture"
+      },
+      {
+        "command": "vstoys.from-till.cancelMode",
+        "category": "VsToys",
+        "title": "From Till: Cancel Mode"
+      },
+      {
+        "command": "vstoys.from-till.findForwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Find Forward Select"
+      },
+      {
+        "command": "vstoys.from-till.findBackwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Find Backward Select"
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Till Forward Select"
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Till Backward Select"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        "vstoys.from-till.highlightBackground": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Background color used to flash the matched character. Accepts theme color IDs or hex colors.",
+          "order": 2100
+        },
+        "vstoys.from-till.highlightForeground": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Optional foreground color to use while moving the matched character.",
+          "order": 2101
+        },
+        "vstoys.from-till.highlightCurrentBackground": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Optional background color to use while moving the matched character.",
+          "order": 2102
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "vstoys.from-till.cancelCapture",
+        "key": "escape",
+        "when": "editorTextFocus && vstoys.from-till.awaitingChar"
+      },
+      {
+        "command": "vstoys.from-till.cancelMode",
+        "key": "escape",
+        "when": "editorTextFocus && vstoys.from-till.jumpActive"
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "key": "ctrl+right",
+        "mac": "cmd+right", // This is windows/linux style, on macOS it's usually "option+right"
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "key": "ctrl+left",
+        "mac": "cmd+left", // This is windows/linux style, on macOS it's usually "option+right"
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "key": "ctrl+shift+right",
+        "mac": "cmd+shift+right", // This is windows/linux style, on macOS it's usually "option+right"
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "key": "ctrl+shift+left",
+        "mac": "cmd+shift+left", // This is windows/linux style, on macOS it's usually "option+right"
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "key": "alt+right",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "key": "alt+left",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "key": "alt+shift+right",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "key": "alt+shift+left",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": { "deactivateAllHyper": true }
+      },
+      // ? NeoVim Style
+      // Eu layout left=, right=.
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": ".",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": ",",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      // Us layout left=, right=;
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": ";",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": ",",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      // ? Vscode - style
+      // Arrow style
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": "right",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": "left",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      // Tab style
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": "tab",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": "shift+tab",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      }
+    ]
+  }
+}

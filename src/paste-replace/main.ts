@@ -1,7 +1,107 @@
 import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
+import { pasteReplace } from "./pasteReplace";
 
 let printPasteReplaceOutput: (content: string, reveal?: boolean) => void;
+
+/**
+ * Detect what indentation should be used for a line at the given position
+ * by analyzing the surrounding context and using VSCode's formatting engine
+ * @param editor The active text editor
+ * @param position The position to check indentation for
+ * @returns The indentation string that should be used
+ */
+async function detectSmartIndentation(editor: vscode.TextEditor, position: vscode.Position): Promise<string> {
+  try {
+    const document = editor.document;
+    const lineNumber = position.line;
+
+    // First, try to use VSCode's formatting engine if we have context
+    if (lineNumber > 0) {
+      // Look for the nearest non-empty line above to provide context
+      let contextLineNumber = lineNumber - 1;
+      while (contextLineNumber >= 0) {
+        const line = document.lineAt(contextLineNumber);
+        if (line.text.trim().length > 0) {
+          // Found context line, try to format an empty line after it
+          try {
+            // Create a temporary range that includes the context line and target line
+            const formatRange = new vscode.Range(
+              contextLineNumber,
+              0,
+              lineNumber,
+              document.lineAt(lineNumber).text.length
+            );
+
+            // Get formatting options from editor
+            const options = {
+              tabSize: (editor.options.tabSize as number) || 2,
+              insertSpaces: editor.options.insertSpaces as boolean,
+            };
+
+            // Try to get formatting edits for this range
+            const edits = await vscode.commands.executeCommand<vscode.TextEdit[]>(
+              "vscode.executeFormatRangeProvider",
+              document.uri,
+              formatRange,
+              options
+            );
+
+            // If we got formatting edits, analyze what indentation would be applied
+            if (edits && edits.length > 0) {
+              // Look for edits that affect our target line
+              for (const edit of edits) {
+                if (edit.range.start.line === lineNumber) {
+                  // Extract indentation from the formatted text
+                  const formattedText = edit.newText;
+                  const indentMatch = formattedText.match(/^(\s*)/);
+                  return indentMatch ? indentMatch[1] : "";
+                }
+              }
+            }
+
+            // Fallback: analyze context manually
+            const contextLine = document.lineAt(contextLineNumber);
+            const contextIndent = contextLine.text.match(/^(\s*)/)?.[0] || "";
+            const trimmedText = contextLine.text.trim();
+
+            // Check if this line indicates we should increase indentation
+            const shouldIncreaseIndent = /[{\[\(:]$/.test(trimmedText);
+
+            if (shouldIncreaseIndent) {
+              const indentUnit = options.insertSpaces ? " ".repeat(options.tabSize) : "\t";
+              return contextIndent + indentUnit;
+            } else {
+              return contextIndent;
+            }
+          } catch (formatError) {
+            // Formatting failed, fall back to context analysis
+            const contextLine = document.lineAt(contextLineNumber);
+            return contextLine.text.match(/^(\s*)/)?.[0] || "";
+          }
+        }
+        contextLineNumber--;
+      }
+    }
+
+    // No context above, check below
+    let contextLineNumber = lineNumber + 1;
+    while (contextLineNumber < document.lineCount) {
+      const line = document.lineAt(contextLineNumber);
+      if (line.text.trim().length > 0) {
+        // Found a non-empty line below, use its indentation
+        return line.text.match(/^(\s*)/)?.[0] || "";
+      }
+      contextLineNumber++;
+    }
+
+    // No context found, return empty indentation
+    return "";
+  } catch (error) {
+    // Fallback: return empty indentation
+    return "";
+  }
+}
 
 /**
  * Detect the line ending format used in the document
@@ -82,11 +182,94 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   printPasteReplaceOutput = createOutputChannel(`${name}`);
   printPasteReplaceOutput(`${name} activating`);
 
-  const smartPaste = async () => {
+  /**
+   * Simple wrapper for the separated paste replace functionality
+   */
+  const pasteReplaceCommand = async () => {
+    await pasteReplace((content: string) => printPasteReplaceOutput(content));
+  };
+
+  /**
+   * Smart Paste: Intelligent, context-aware pasting
+   * - Analyzes selection type to determine behavior
+   * - Uses smart indentation detection for empty lines
+   * - Falls back to standard paste for partial selections
+   * - Context-aware behavior
+   */
+  const smartPaste = async (useSmartSelectionLogic: boolean = true) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       vscode.window.showErrorMessage("No active editor");
       return;
+    }
+
+    // Get configuration setting for reindent behavior
+    const config = vscode.workspace.getConfiguration("vstoys.paste-replace");
+    const shouldReindent = config.get<boolean>("reindentBeforePaste", true);
+
+    // Check if we have actual text selections (not just cursors)
+    const hasSelections = editor.selections.some((selection) => !selection.isEmpty);
+
+    if (hasSelections) {
+      let shouldUseCustomReplacement = false;
+
+      if (useSmartSelectionLogic) {
+        // Smart logic: Check if selections should use custom line replacement logic
+        shouldUseCustomReplacement = editor.selections.some((selection) => {
+          if (selection.isEmpty) return false;
+
+          // For single-line selections, only use custom replacement if selection spans entire line content
+          if (selection.start.line === selection.end.line) {
+            const line = editor.document.lineAt(selection.start.line);
+            const linePrefix = line.text.substring(0, selection.start.character);
+            const lineSuffix = line.text.substring(selection.end.character);
+
+            // Use custom replacement only if selection starts at line beginning (after whitespace)
+            // and ends at line end (or only whitespace after)
+            return linePrefix.trim() === "" && lineSuffix.trim() === "";
+          }
+
+          // For multi-line selections, check if they start/end at line boundaries
+          const startLine = editor.document.lineAt(selection.start.line);
+          const endLine = editor.document.lineAt(selection.end.line);
+
+          // Check if selection starts at the beginning of the line (after whitespace only)
+          const startLinePrefix = startLine.text.substring(0, selection.start.character);
+          const startsAtLineBeginning = startLinePrefix.trim() === "";
+
+          // Check if selection ends at the end of the line or line boundary
+          const endsAtLineEnd = selection.end.character >= endLine.text.length || selection.end.character === 0;
+
+          // Use custom replacement only if selection starts at line beginning AND ends at line boundary
+          return startsAtLineBeginning && endsAtLineEnd;
+        });
+      } else {
+        // Old behavior: Always use custom replacement for any selection
+        shouldUseCustomReplacement = true;
+      }
+
+      if (shouldUseCustomReplacement) {
+        const behaviorType = useSmartSelectionLogic ? "smart full-line selections" : "selected text (classic behavior)";
+        printPasteReplaceOutput(`Using custom replace for ${behaviorType}`);
+
+        // First delete the selected text to create empty/whitespace-only lines
+        await vscode.commands.executeCommand("deleteRight");
+
+        // Reindent the now empty/whitespace lines if enabled
+        if (shouldReindent) {
+          await vscode.commands.executeCommand("editor.action.reindentselectedlines");
+        }
+
+        // Use our custom replace functionality for the now empty lines
+        const useSmartIndentation = useSmartSelectionLogic; // Smart paste uses smart indentation, Replace uses simple matching
+        await replaceLineWithClipboard(useSmartIndentation);
+        return;
+      } else {
+        printPasteReplaceOutput("Using standard paste for partial selections");
+        // For partial selections (mid-line start/end), use VSCode's default paste behavior
+        await vscode.commands.executeCommand("editor.action.clipboardPasteAction");
+        return;
+      }
     }
 
     // Check if any cursor is on a line with only whitespace
@@ -99,8 +282,13 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
 
     if (shouldUseReplaceMode) {
       printPasteReplaceOutput("Using custom replace for whitespace-only lines");
+
+      // For whitespace-only lines, our smart indentation detection handles proper indentation
+      // No need to reindent since we'll calculate the correct indentation anyway
+
       // Use our custom replace functionality for whitespace-only lines
-      await replaceLineWithClipboard();
+      const useSmartIndentation = useSmartSelectionLogic; // Smart paste uses smart indentation, Replace uses simple matching
+      await replaceLineWithClipboard(useSmartIndentation);
     } else {
       printPasteReplaceOutput("Using standard paste for non-empty lines");
       // Use VSCode's default paste action for lines with content
@@ -108,7 +296,7 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
     }
   };
 
-  const replaceLineWithClipboard = async () => {
+  const replaceLineWithClipboard = async (useSmartIndentation: boolean = false) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       vscode.window.showErrorMessage("No active editor");
@@ -126,47 +314,126 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
       const lineEnding = detectLineEnding(editor.document);
       const clipboardLines = clipboardText.split(/\r?\n/);
 
-      // Collect all cursor positions and sort them in reverse order (bottom to top)
+      // Separate selections from cursors, and sort selections in reverse order (bottom to top)
       // This prevents line number shifts from affecting subsequent operations
-      const cursors = editor.selections.map((selection) => selection.active.line).sort((a, b) => b - a); // Sort in descending order
+      const selections = editor.selections.filter((selection) => !selection.isEmpty);
+      const cursors = editor.selections.filter((selection) => selection.isEmpty);
 
-      // Remove duplicates (in case multiple cursors are on the same line)
-      const uniqueCursors = [...new Set(cursors)];
+      // Sort selections by start position in reverse order
+      selections.sort((a, b) => b.start.compareTo(a.start));
 
-      // Process each cursor position
-      await editor.edit((editBuilder) => {
-        for (const currentLine of uniqueCursors) {
+      // Pre-calculate indentation for cursor positions
+      const cursorIndentations: Map<number, string> = new Map();
+
+      if (cursors.length > 0) {
+        const cursorLines = cursors.map((selection) => selection.active.line);
+        const uniqueCursorLines = [...new Set(cursorLines)];
+
+        for (const currentLine of uniqueCursorLines) {
           const lineText = editor.document.lineAt(currentLine);
+          const cursorPosition = new vscode.Position(currentLine, 0);
 
-          // Extract leading whitespace (indentation) for this line
-          const leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
+          let leadingWhitespace = "";
 
-          // Process multi-line clipboard content with relative indentation for this cursor
+          if (useSmartIndentation && lineText.text.trim() === "") {
+            printPasteReplaceOutput("Detecting smart indentation");
+            // For smart paste on empty/whitespace lines, detect smart indentation
+            try {
+              leadingWhitespace = await detectSmartIndentation(editor, cursorPosition);
+            } catch (error) {
+              // Fallback to existing logic
+              leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
+            }
+          } else {
+            printPasteReplaceOutput("Using existing indentation");
+            // For replace paste or non-empty lines, use existing indentation
+            leadingWhitespace = lineText.text.match(/^\s*/)?.[0] || "";
+          }
+
+          cursorIndentations.set(currentLine, leadingWhitespace);
+        }
+      }
+
+      await editor.edit((editBuilder) => {
+        // Handle actual text selections first
+        for (const selection of selections) {
+          // For selections, determine indentation based on selection position
+          const startLine = editor.document.lineAt(selection.start.line);
+
+          // Check if selection starts at the beginning of the line (after whitespace only)
+          const linePrefix = startLine.text.substring(0, selection.start.character);
+          const isStartOfLine = linePrefix.trim() === "";
+
+          let leadingWhitespace = "";
+          if (isStartOfLine) {
+            // Selection starts at beginning of line - use line's indentation
+            leadingWhitespace = linePrefix;
+          }
+          // If not at start of line, don't add any indentation (leadingWhitespace stays "")
+
+          // Process multi-line clipboard content with relative indentation
           const processedLines = processMultiLineContent(clipboardLines, leadingWhitespace);
 
-          const fullLineRange = lineText.range;
-
           if (processedLines.length === 1) {
-            // Single line: simple replacement
-            editBuilder.replace(fullLineRange, processedLines[0]);
+            // Single line: simple replacement of selection
+            editBuilder.replace(selection, processedLines[0]);
           } else {
-            // Multi-line: replace first line, then insert additional lines
-            editBuilder.replace(fullLineRange, processedLines[0]);
+            // Multi-line: replace selection with first line, then insert additional lines
+            editBuilder.replace(selection, processedLines[0]);
 
-            // Insert additional lines after the current line using document's line ending
-            const endOfCurrentLine = fullLineRange.end;
+            // Insert additional lines after the selection using document's line ending
+            const endOfSelection = selection.end;
             const additionalLines = lineEnding + processedLines.slice(1).join(lineEnding);
-            editBuilder.insert(endOfCurrentLine, additionalLines);
+            editBuilder.insert(endOfSelection, additionalLines);
+          }
+        }
+
+        // Handle cursor positions (no selection) - use pre-calculated indentations
+        if (cursors.length > 0) {
+          // Collect all cursor positions and sort them in reverse order (bottom to top)
+          const cursorLines = cursors.map((selection) => selection.active.line).sort((a, b) => b - a);
+
+          // Remove duplicates (in case multiple cursors are on the same line)
+          const uniqueCursorLines = [...new Set(cursorLines)];
+
+          // Process each cursor position using pre-calculated indentations
+          for (const currentLine of uniqueCursorLines) {
+            const lineText = editor.document.lineAt(currentLine);
+            const leadingWhitespace = cursorIndentations.get(currentLine) || "";
+
+            // Process multi-line clipboard content with relative indentation for this cursor
+            const processedLines = processMultiLineContent(clipboardLines, leadingWhitespace);
+
+            const fullLineRange = lineText.range;
+
+            if (processedLines.length === 1) {
+              // Single line: simple replacement
+              editBuilder.replace(fullLineRange, processedLines[0]);
+            } else {
+              // Multi-line: replace first line, then insert additional lines
+              editBuilder.replace(fullLineRange, processedLines[0]);
+
+              // Insert additional lines after the current line using document's line ending
+              const endOfCurrentLine = fullLineRange.end;
+              const additionalLines = lineEnding + processedLines.slice(1).join(lineEnding);
+              editBuilder.insert(endOfCurrentLine, additionalLines);
+            }
           }
         }
       });
 
-      const cursorCount = uniqueCursors.length;
-      const lineNumbers = uniqueCursors
-        .sort((a, b) => a - b)
-        .map((line) => line + 1)
-        .join(", ");
-      printPasteReplaceOutput(`Replaced ${cursorCount} line(s) [${lineNumbers}] with clipboard content`);
+      // Log what was done
+      if (selections.length > 0) {
+        printPasteReplaceOutput(`Replaced ${selections.length} selection(s) with clipboard content`);
+      }
+      if (cursors.length > 0) {
+        const uniqueCursorLines = [...new Set(cursors.map((s) => s.active.line))];
+        const lineNumbers = uniqueCursorLines
+          .sort((a, b) => a - b)
+          .map((line) => line + 1)
+          .join(", ");
+        printPasteReplaceOutput(`Replaced ${uniqueCursorLines.length} line(s) [${lineNumbers}] with clipboard content`);
+      }
     } catch (error) {
       vscode.window.showErrorMessage(`Paste replace failed: ${error}`);
       printPasteReplaceOutput(`Error: ${error}`);
@@ -174,8 +441,9 @@ export function activatePasteReplace(name: string, context: vscode.ExtensionCont
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", replaceLineWithClipboard),
-    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", smartPaste)
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteReplace", pasteReplaceCommand),
+    // TODO: This function is not working as i want... i disabled all the package.json assignments.
+    vscode.commands.registerCommand("vstoys.paste-replace.clipboardPasteSmart", () => smartPaste(true))
   );
 
   vscode.commands.executeCommand("setContext", "vstoys.paste-replace.active", true);

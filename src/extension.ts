@@ -9,8 +9,12 @@ import { activateFileDecorator } from "./git-file-decorator/main";
 import { activateRegisters } from "./registers/main";
 import { activateGotoLine } from "./goto-line/main";
 import { activatePasteReplace } from "./paste-replace/main";
+import { activateSmartOpen, deactivateSmartOpen } from "./smart-open/main";
 import { activateHyper } from "./hyper/main";
 import { activateMotions } from "./motions/main";
+import { activateAlwaysActive } from "./always-active/main";
+import { activateSemanticJump } from "./jump/main";
+import { activateFromTill } from "./from-till/main";
 
 try {
   require("./debug");
@@ -25,6 +29,12 @@ let vsToys: {
   deactivator: () => void;
 }[] = [
   {
+    name: "Always Active",
+    moduleContext: "always-active",
+    activator: activateAlwaysActive,
+    deactivator: () => {},
+  },
+  {
     name: "Clear Line",
     moduleContext: "clear-line",
     activator: activateClearLine,
@@ -35,15 +45,6 @@ let vsToys: {
     moduleContext: "copy-highlight",
     activator: activateCopyHighlight,
     deactivator: () => {},
-  },
-  {
-    // ! DEPRECATED
-    name: "Dot Repeat",
-    moduleContext: "dot-repeat",
-    // activator: activateDotRepeat,
-    activator: () => {},
-    deactivator: () => {},
-    // ! DEPRECATED
   },
   {
     name: "Hyper Layer",
@@ -58,8 +59,8 @@ let vsToys: {
     deactivator: () => {},
   },
   {
-    name: "File Decorator",
-    moduleContext: "file-decorator",
+    name: "Git File Decorator",
+    moduleContext: "git-file-decorator",
     activator: (name, context) => activateFileDecorator(name, context),
     deactivator: () => {},
   },
@@ -82,9 +83,27 @@ let vsToys: {
     deactivator: () => {},
   },
   {
+    name: "Smart Open",
+    moduleContext: "smart-open",
+    activator: activateSmartOpen,
+    deactivator: deactivateSmartOpen,
+  },
+  {
     name: "Motions",
     moduleContext: "motions",
     activator: (name, context) => activateMotions(name, context, createOutputChannel),
+    deactivator: () => {},
+  },
+  {
+    name: "Jump",
+    moduleContext: "jump",
+    activator: activateSemanticJump,
+    deactivator: () => {},
+  },
+  {
+    name: "From Till",
+    moduleContext: "from-till",
+    activator: activateFromTill,
     deactivator: () => {},
   },
 ];
@@ -115,12 +134,17 @@ export function activate(context: vscode.ExtensionContext) {
   printChannelOutput("vstoys.installed context set to true");
 
   vsToys.forEach((toy) => {
+    const start = performance.now();
     const fullContext = `vstoys.${toy.moduleContext}.active`;
     // TODO: Check if the "toy" should be enabled or not
     printChannelOutput(`---> Loading Module: ${toy.name}, Activating Context: ${fullContext}`);
     console.log(`---> Loading Module: ${toy.name}, Activating Context: ${fullContext}`);
     vscode.commands.executeCommand("setContext", fullContext, true);
     toy.activator(toy.name, context);
+    const end = performance.now();
+    const duration = end - start;
+    printChannelOutput(`---> Module: ${toy.name} activated in ${duration}ms`);
+    console.log(`---> Module: ${toy.name} activated in ${duration}ms`);
   });
 }
 

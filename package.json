@@ -2,7 +2,7 @@
   "name": "vstoys",
   "displayName": "VsToys",
   "description": "VsCode Toys is a collection of utilities for Visual Studio Code.",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "Logonz",
   "icon": "VsCodeToys-icon-512x512.png",
   "license": "MIT",
@@ -28,6 +28,45 @@
   "contributes": {
     "commands": [
       {
+        "command": "vstoys.debug.showQuickPick",
+        "title": "VSCode Toys: Show Debug Menu"
+      },
+      {
+        "command": "vstoys.smart-open.showQuickPick",
+        "title": "Smart Open: Search Files",
+        "category": "VsToys"
+      },
+      {
+        "command": "vstoys.smart-open.navigateUp",
+        "category": "VsToys",
+        "title": "Smart Open: Navigate Up",
+        "enablement": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.navigateDown",
+        "category": "VsToys",
+        "title": "Smart Open: Navigate Down",
+        "enablement": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.selectFile",
+        "category": "VsToys",
+        "title": "Smart Open: Select File",
+        "enablement": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.deleteChar",
+        "category": "VsToys",
+        "title": "Smart Open: Delete Character",
+        "enablement": "vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.paste",
+        "category": "VsToys",
+        "title": "Smart Open: Paste",
+        "enablement": "vstoys.smart-open.searching"
+      },
+      {
         "command": "vstoys.registers.showRegisterPastePicker",
         "category": "VsToys",
         "title": "Registers: Show Register Paste Picker"
@@ -48,9 +87,64 @@
         "title": "Paste Replace"
       },
       {
-        "command": "vstoys.paste-replace.clipboardPasteSmart",
+        "command": "vstoys.motions.start",
         "category": "VsToys",
-        "title": "Paste Smart"
+        "title": "Motions: Start Interactive"
+      },
+      {
+        "command": "vstoys.motions.di",
+        "category": "VsToys",
+        "title": "Motions: Delete Inside"
+      },
+      {
+        "command": "vstoys.motions.da",
+        "category": "VsToys",
+        "title": "Motions: Delete Around"
+      },
+      {
+        "command": "vstoys.motions.yi",
+        "category": "VsToys",
+        "title": "Motions: Yank Inside"
+      },
+      {
+        "command": "vstoys.motions.ya",
+        "category": "VsToys",
+        "title": "Motions: Yank Around"
+      },
+      {
+        "command": "vstoys.motions.vi",
+        "category": "VsToys",
+        "title": "Motions: Select Inside"
+      },
+      {
+        "command": "vstoys.motions.va",
+        "category": "VsToys",
+        "title": "Motions: Select Around"
+      },
+      {
+        "command": "vstoys.motions.escape",
+        "category": "VsToys",
+        "title": "Motions: Escape/Cancel"
+      },
+      {
+        "command": "vstoys.semantic-jump.jump.start",
+        "category": "VsToys",
+        "title": "Semantic Jump: Start Jump Mode (Start)"
+      },
+      {
+        "command": "vstoys.semantic-jump.jump.end",
+        "category": "VsToys",
+        "title": "Semantic Jump: Start Jump Mode (End)"
+      },
+      {
+        "command": "vstoys.semantic-jump.debug",
+        "category": "VsToys",
+        "title": "Semantic Jump: Debug Mode (Show All Tokens)"
+      },
+      {
+        "command": "vstoys.hybrid-jump.start",
+        "category": "VsToys",
+        "title": "Hybrid Jump: Start Hybrid Jump Mode"
       },
       {
         "command": "vstoys.hyper.deactivateAll",
@@ -83,6 +177,66 @@
         "title": "Git: Stage Hunk at Selection - (VsToys)"
       },
       {
+        "command": "vstoys.from-till.findForward",
+        "category": "VsToys",
+        "title": "From Till: Find Forward"
+      },
+      {
+        "command": "vstoys.from-till.findBackward",
+        "category": "VsToys",
+        "title": "From Till: Find Backward"
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "category": "VsToys",
+        "title": "From Till: Till Forward"
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "category": "VsToys",
+        "title": "From Till: Till Backward"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "category": "VsToys",
+        "title": "From Till: Repeat"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "category": "VsToys",
+        "title": "From Till: Repeat Reverse"
+      },
+      {
+        "command": "vstoys.from-till.cancelCapture",
+        "category": "VsToys",
+        "title": "From Till: Cancel Capture"
+      },
+      {
+        "command": "vstoys.from-till.cancelMode",
+        "category": "VsToys",
+        "title": "From Till: Cancel Mode"
+      },
+      {
+        "command": "vstoys.from-till.findForwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Find Forward Select"
+      },
+      {
+        "command": "vstoys.from-till.findBackwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Find Backward Select"
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Till Forward Select"
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "category": "VsToys",
+        "title": "From Till: Till Backward Select"
+      },
+      {
         "command": "vstoys.copy-highlight.copy",
         "category": "VsToys",
         "title": "Copy Highlight: Copy"
@@ -101,6 +255,21 @@
           "default": true,
           "description": "Global enable/disable for the VSCode Toys",
           "order": 100
+        },
+        "vstoys.smart-open.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Smart Open module in VSCode Toys"
+        },
+        "vstoys.smart-open.debugDetails": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable detailed debugging information for the Smart Open module"
+        },
+        "vstoys.smart-open.maxWorkspaceFiles": {
+          "type": "number",
+          "default": 5000,
+          "description": "Maximum number of files to index in the workspace, tip is to use gitignore to exclude files"
         },
         "vstoys.registers.enabled": {
           "type": "boolean",
@@ -126,6 +295,307 @@
           "description": "Enable the Paste Replace module in VSCode Toys",
           "order": 7000
         },
+        "vstoys.paste-replace.reindentBeforePaste": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically reindent lines before pasting content when using smart paste",
+          "order": 7001
+        },
+        "vstoys.motions.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Motions module in VSCode Toys",
+          "order": 3000
+        },
+        "vstoys.motions.foregroundColor": {
+          "type": "string",
+          "description": "Foreground color for yank highlighting",
+          "order": 3001
+        },
+        "vstoys.motions.backgroundColor": {
+          "type": "string",
+          "default": "editor.wordHighlightBackground",
+          "description": "Background color for yank highlighting\\nFor more information about color check out https://code.visualstudio.com/api/references/theme-color for more available colors\\nrgba(R, G, B, A) is also supported",
+          "order": 3002
+        },
+        "vstoys.motions.timeout": {
+          "type": "number",
+          "default": 100,
+          "description": "Highlight timeout duration in milliseconds for yank operations",
+          "order": 3003
+        },
+        "vstoys.jump.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Jump module in VSCode Toys",
+          "order": 8000
+        },
+        "vstoys.semantic-jump.jumpCharacters": {
+          "type": "string",
+          "default": "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV",
+          "description": "Characters used for semantic jumps. Low density uses only the first 8 (‘home row’) characters for single-label targets. Medium density keeps those singles and builds two-key sequences from every lowercase character in the string. High density expands the first and second key to include lowercase, uppercase, and any other symbols from the string. Later characters remain available as conflict fallbacks.",
+          "order": 8001
+        },
+        "vstoys.semantic-jump.includedTokenTypes": {
+          "type": "array",
+          "default": [
+            "function",
+            "method",
+            "class",
+            "interface",
+            "type",
+            "enum",
+            "enumMember",
+            "variable",
+            "property",
+            "parameter",
+            "namespace",
+            "typeParameter",
+            "struct",
+            "decorator",
+            "event",
+            "macro",
+            "label"
+          ],
+          "description": "Semantic token types to include in jump targets",
+          "items": {
+            "type": "string"
+          },
+          "order": 8002
+        },
+        "vstoys.semantic-jump.includeAllTokenTypes": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include ALL semantic token types (overrides includedTokenTypes when true)",
+          "order": 8003
+        },
+        "vstoys.semantic-jump.mode": {
+          "type": "string",
+          "enum": [
+            "simple",
+            "adaptive",
+            "progressive"
+          ],
+          "default": "adaptive",
+          "description": "Jump mode: simple (original), adaptive (Flash.nvim-style density), progressive (always two-char)",
+          "enumDescriptions": [
+            "Original simple mode with fixed character assignment",
+            "Adaptive mode that adjusts to target density (recommended)",
+            "Progressive mode that always uses two-character sequences"
+          ],
+          "order": 8004
+        },
+        "vstoys.semantic-jump.clusteringEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Group related tokens (e.g., property chains) to reduce clutter",
+          "order": 8005
+        },
+        "vstoys.semantic-jump.tokenPriorities": {
+          "type": "object",
+          "default": {
+            "function": 100,
+            "method": 100,
+            "class": 90,
+            "interface": 85,
+            "type": 80,
+            "enum": 75,
+            "decorator": 70,
+            "namespace": 65,
+            "variable": 50,
+            "property": 40,
+            "parameter": 30,
+            "enumMember": 25,
+            "event": 20,
+            "macro": 15,
+            "label": 10
+          },
+          "description": "Priority scores for semantic token types (higher = better jump characters)",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "order": 8006
+        },
+        "vstoys.semantic-jump.decorationBackgroundColor": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Background color for jump character decorations",
+          "order": 8008
+        },
+        "vstoys.semantic-jump.decorationForegroundColor": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Foreground color for jump character decorations",
+          "order": 8009
+        },
+        "vstoys.regular-jump.caseSensitive": {
+          "type": "boolean",
+          "default": false,
+          "description": "Case sensitive search for regular jump",
+          "order": 8100
+        },
+        "vstoys.regular-jump.maxMatches": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum number of matches to show",
+          "order": 8101
+        },
+        "vstoys.regular-jump.minWordLength": {
+          "type": "number",
+          "default": 0,
+          "description": "Minimum word length to match (0 = no limit)",
+          "order": 8102
+        },
+        "vstoys.regular-jump.minPatternLength": {
+          "type": "number",
+          "default": 2,
+          "description": "Minimum pattern length before transitioning to jump mode",
+          "order": 8103
+        },
+        "vstoys.regular-jump.maxMatchesForAutoJump": {
+          "type": "number",
+          "default": 20,
+          "description": "Maximum matches to auto-transition to jump mode",
+          "order": 8104
+        },
+        "vstoys.regular-jump.autoJumpSingleMatch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically jump when only one match remains",
+          "order": 8105
+        },
+        "vstoys.regular-jump.jumpCharacters": {
+          "type": "string",
+          "default": "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV",
+          "description": "Characters used for jumping in regular jump mode. Ordered by priority: first chars = home row (preferred for single chars), remaining = extended set for sequences and conflict avoidance",
+          "order": 8106
+        },
+        "vstoys.regular-jump.primaryForegroundColor": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Theme color for primary (current) match text color - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8107
+        },
+        "vstoys.regular-jump.primaryMatchColor": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Theme color for primary (current) match highlighting - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8108
+        },
+        "vstoys.regular-jump.secondaryForegroundColor": {
+          "type": "string",
+          "default": "activityBarBadge.foreground",
+          "description": "Theme color for secondary (current) match highlighting - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8109
+        },
+        "vstoys.regular-jump.secondaryMatchColor": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Theme color for secondary matches highlighting - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8110
+        },
+        "vstoys.regular-jump.jumpLabelBackgroundColor": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Theme color for jump character label background - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8111
+        },
+        "vstoys.regular-jump.jumpLabelForegroundColor": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Theme color for jump character label text - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8112
+        },
+        "vstoys.regular-jump.primaryBorderColor": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Theme color for the border around the primary match, empty string does not draw a border - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8113
+        },
+        "vstoys.hybrid-jump.caseSensitive": {
+          "type": "boolean",
+          "default": false,
+          "description": "Case sensitive search for hybrid jump",
+          "order": 8200
+        },
+        "vstoys.hybrid-jump.maxMatches": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum number of matches to show in hybrid mode",
+          "order": 8201
+        },
+        "vstoys.hybrid-jump.minWordLength": {
+          "type": "number",
+          "default": 0,
+          "description": "Minimum word length to match in hybrid mode (0 = no limit)",
+          "order": 8202
+        },
+        "vstoys.hybrid-jump.minPatternLength": {
+          "type": "number",
+          "default": 3,
+          "description": "Minimum pattern length before showing jump characters (longer than regular jump for better pattern building)",
+          "order": 8203
+        },
+        "vstoys.hybrid-jump.maxMatchesForAutoJump": {
+          "type": "number",
+          "default": 30,
+          "description": "Maximum matches to show jump characters (vs continue typing) - higher than regular jump for more exploration",
+          "order": 8204
+        },
+        "vstoys.hybrid-jump.autoJumpSingleMatch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically jump when only one match remains (key feature for hybrid mode)",
+          "order": 8205
+        },
+        "vstoys.hybrid-jump.jumpCharacters": {
+          "type": "string",
+          "default": "fjdkslaghrueiwoncmvFJDKSLAGHRUEIWONCMV",
+          "description": "Characters used for jumping in hybrid mode. Ordered by priority: first chars = home row (preferred for single chars), remaining = extended set for sequences and conflict avoidance",
+          "order": 8206
+        },
+        "vstoys.hybrid-jump.primaryForegroundColor": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Theme color for primary (current) match text color in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8207
+        },
+        "vstoys.hybrid-jump.primaryMatchColor": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Theme color for primary (current) match highlighting in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8208
+        },
+        "vstoys.hybrid-jump.secondaryForegroundColor": {
+          "type": "string",
+          "default": "activityBarBadge.foreground",
+          "description": "Theme color for secondary match text color in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8209
+        },
+        "vstoys.hybrid-jump.secondaryMatchColor": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Theme color for secondary matches highlighting in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8210
+        },
+        "vstoys.hybrid-jump.jumpLabelBackgroundColor": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Theme color for jump character label background in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8211
+        },
+        "vstoys.hybrid-jump.jumpLabelForegroundColor": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Theme color for jump character label text in hybrid mode - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8212
+        },
+        "vstoys.hybrid-jump.primaryBorderColor": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Theme color for the border around the primary match in hybrid mode, empty string does not draw a border - use hex e.g (#FFFFFF) or theme names (editor.foreground)",
+          "order": 8213
+        },
         "vstoys.hyper.enabled": {
           "type": "boolean",
           "default": true,
@@ -140,7 +610,7 @@
               "enabled": true
             }
           ],
-          "description": "List of active Hyper layers to register, activates a layer.",
+          "description": "List of active Hyper layers to register, activates a layer without deactivating others.",
           "items": {
             "type": "object",
             "properties": {
@@ -174,7 +644,7 @@
               "enabled": true
             }
           ],
-          "description": "List of active Hyper layers to register, activates a layer.",
+          "description": "List of active Hyper layers to register, deactivates all other layers then activates a layer.",
           "items": {
             "type": "object",
             "properties": {
@@ -217,23 +687,55 @@
           "description": "Character prefix for moving down in relative goto (e.g., 'j5' to go down 5 lines)",
           "order": 3002
         },
+        "vstoys.goto-line.defaultLineNumberMode": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "on",
+            "off",
+            "interval",
+            "relative"
+          ],
+          "enumDescriptions": [
+            "Detect line number mode at extension startup and restore to that mode (requires restart to detect changes)",
+            "Always restore to absolute line numbers",
+            "Always restore to no line numbers (relative numbers still show during goto-line operations)",
+            "Always restore to interval mode (line numbers every 10 lines)",
+            "Always restore to relative line numbers"
+          ],
+          "description": "Line number mode to restore after relative goto operations. 'auto' detects your current setting at startup. Changing this or your editor.lineNumbers setting requires reloading the window.",
+          "order": 3003
+        },
         "vstoys.goto-line.highlightingEnabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable line highlighting preview when using goto commands",
-          "order": 3003
+          "order": 3004
         },
         "vstoys.goto-line.selectColor": {
           "type": "string",
           "default": "editor.wordHighlightBackground",
           "description": "Color for highlighting lines during selection operations (theme color ID or hex color)",
-          "order": 3004
+          "order": 3005
         },
         "vstoys.goto-line.deleteColor": {
           "type": "string",
-          "default": "inputValidation.errorBackground",
+          "default": "editorMarkerNavigationError.headerBackground",
           "description": "Color for highlighting lines during delete operations (theme color ID or hex color)",
-          "order": 3005
+          "order": 3006
+        },
+        "vstoys.goto-line.copyColor": {
+          "type": "string",
+          "default": "editor.findRangeHighlightBackground",
+          "description": "Color for highlighting lines during copy operations (theme color ID or hex color)",
+          "order": 3007
+        },
+        "vstoys.goto-line.cutColor": {
+          "type": "string",
+          "default": "editorMarkerNavigationWarning.headerBackground",
+          "description": "Color for highlighting lines during cut (args: 'delete' and 'copy' operations create cut) (theme color ID or hex color)",
+          "order": 3008
         },
         "vstoys.git.fileDecorator.enabled": {
           "type": "boolean",
@@ -272,6 +774,24 @@
           "description": "Enable the Git module in VSCode Toys",
           "order": 4000
         },
+        "vstoys.from-till.highlightBackground": {
+          "type": "string",
+          "default": "activityErrorBadge.background",
+          "description": "Background color used to flash the matched character. Accepts theme color IDs or hex colors.",
+          "order": 2100
+        },
+        "vstoys.from-till.highlightForeground": {
+          "type": "string",
+          "default": "button.foreground",
+          "description": "Optional foreground color to use while moving the matched character.",
+          "order": 2101
+        },
+        "vstoys.from-till.highlightCurrentBackground": {
+          "type": "string",
+          "default": "activityBarBadge.background",
+          "description": "Optional background color to use while moving the matched character.",
+          "order": 2102
+        },
         "vstoys.copy-highlight.enabled": {
           "type": "boolean",
           "default": true,
@@ -305,15 +825,35 @@
     },
     "keybindings": [
       {
+        "command": "vstoys.smart-open.navigateUp",
+        "key": "up",
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.navigateDown",
+        "key": "down",
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.selectFile",
+        "key": "enter",
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.deleteChar",
+        "key": "backspace",
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
+      },
+      {
+        "command": "vstoys.smart-open.paste",
+        "key": "ctrl+v",
+        "mac": "cmd+v",
+        "when": "vstoys.smart-open.active && vstoys.smart-open.searching"
+      },
+      {
         "command": "vstoys.paste-replace.clipboardPasteReplace",
         "key": "ctrl+shift+v",
         "mac": "cmd+shift+v",
-        "when": "editorTextFocus && vstoys.paste-replace.active"
-      },
-      {
-        "command": "vstoys.paste-replace.clipboardPasteSmart",
-        "key": "ctrl+v",
-        "mac": "cmd+v",
         "when": "editorTextFocus && vstoys.paste-replace.active"
       },
       {
@@ -323,10 +863,107 @@
         "when": "vstoys.paste-replace.active"
       },
       {
+        "command": "vstoys.motions.escape",
+        "key": "escape",
+        "when": "vstoys.motions.inputActive"
+      },
+      {
+        "key": "f19",
+        "command": "vstoys.semantic-jump.jump.end",
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+      },
+      {
+        "key": "f19",
+        "command": "vstoys.semantic-jump.jump.end",
+        "when": "vstoys.semantic-jump.active && vstoys.semantic-jump.targetMode === 'start'"
+      },
+      {
+        "key": "f19",
+        "command": "vstoys.semantic-jump.jump.start",
+        "when": "vstoys.semantic-jump.active && vstoys.semantic-jump.targetMode === 'end'"
+      },
+      {
+        "command": "vstoys.semantic-jump.escape",
+        "key": "escape",
+        "when": "vstoys.semantic-jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active"
+      },
+      {
+        "key": "f19",
+        "command": "vstoys.hybrid-jump.start",
+        "when": "vstoys.jump.active && hyper-active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+      },
+      {
+        "key": "alt+f19",
+        "command": "vstoys.regular-jump.start",
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.hybrid-jump.active && !vstoys.semantic-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.escape",
+        "key": "escape",
+        "when": "vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.backspace",
+        "key": "backspace",
+        "when": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.enter",
+        "key": "enter",
+        "when": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.next",
+        "key": "f19",
+        "when": "vstoys.regular-jump.active"
+      },
+      {
+        "command": "vstoys.regular-jump.previous",
+        "key": "ctrl+f19",
+        "when": "vstoys.regular-jump.active"
+      },
+      {
+        "key": "ctrl+f19",
+        "mac": "cmd+f19",
+        "command": "vstoys.hybrid-jump.start",
+        "when": "vstoys.jump.active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active && !vstoys.hybrid-jump.active"
+      },
+      {
+        "command": "vstoys.hybrid-jump.escape",
+        "key": "escape",
+        "when": "vstoys.hybrid-jump.active && !vstoys.regular-jump.active && !vstoys.semantic-jump.active"
+      },
+      {
+        "command": "vstoys.hybrid-jump.backspace",
+        "key": "backspace",
+        "when": "vstoys.hybrid-jump.active"
+      },
+      {
+        "command": "vstoys.hybrid-jump.enter",
+        "key": "enter",
+        "when": "vstoys.hybrid-jump.active"
+      },
+      {
+        "command": "vstoys.hybrid-jump.next",
+        "key": "f19",
+        "when": "vstoys.hybrid-jump.active"
+      },
+      {
+        "command": "vstoys.hybrid-jump.previous",
+        "key": "ctrl+f19",
+        "mac": "cmd+f19",
+        "when": "vstoys.hybrid-jump.active"
+      },
+      {
         "command": "vstoys.hyper.layerActivate.hyper-layer",
         "key": "f20",
         "mac": "f20",
         "when": "vstoys.hyper.active"
+      },
+      {
+        "key": "f20",
+        "command": "vstoys.hyper.layerDeactivate.hyper-layer",
+        "when": "vstoys.hyper.active && vstoys.hyper.global && hyper-layer"
       },
       {
         "command": "vstoys.hyper.deactivateAll",
@@ -345,6 +982,124 @@
         "when": "editorTextFocus && vstoys.git.active"
       },
       {
+        "command": "vstoys.from-till.cancelCapture",
+        "key": "escape",
+        "when": "editorTextFocus && vstoys.from-till.awaitingChar"
+      },
+      {
+        "command": "vstoys.from-till.cancelMode",
+        "key": "escape",
+        "when": "editorTextFocus && vstoys.from-till.jumpActive"
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "key": "ctrl+right",
+        "mac": "cmd+right",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "key": "ctrl+left",
+        "mac": "cmd+left",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "key": "ctrl+shift+right",
+        "mac": "cmd+shift+right",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "key": "ctrl+shift+left",
+        "mac": "cmd+shift+left",
+        "when": "vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillForward",
+        "key": "alt+right",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillBackward",
+        "key": "alt+left",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillForwardSelect",
+        "key": "alt+shift+right",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.tillBackwardSelect",
+        "key": "alt+shift+left",
+        "when": "isMac && vstoys.from-till.active && hyper-layer && editorTextFocus",
+        "args": {
+          "deactivateAllHyper": true
+        }
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": ".",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": ",",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": ";",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": ",",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": "right",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": "left",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeat",
+        "key": "tab",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
+        "command": "vstoys.from-till.repeatReverse",
+        "key": "shift+tab",
+        "when": "vstoys.from-till.jumpActive && editorTextFocus"
+      },
+      {
         "command": "vstoys.copy-highlight.copy",
         "key": "ctrl+c",
         "mac": "cmd+c",
@@ -353,7 +1108,7 @@
       {
         "key": "d c",
         "command": "vstoys.clear-line.clearLines",
-        "when": "editorTextFocus && hyper-layer-active && vstoys.clear-line.active && !vstoys.dot-repeat.active"
+        "when": "editorTextFocus && hyper-layer && vstoys.clear-line.active && !vstoys.dot-repeat.active"
       }
     ],
     "fileDecorations": [
@@ -361,7 +1116,10 @@
         "id": "fileExplorerDecorator",
         "label": "File Explorer Decorator"
       }
-    ]
+    ],
+    "views": {},
+    "menus": {},
+    "viewsContainers": {}
   },
   "scripts": {
     "ext": "vsce package --allow-star-activation -o vscode-toys.vsix && code --install-extension vscode-toys.vsix",
@@ -372,13 +1130,14 @@
     "twatch": "tsc-watch -p ./",
     "watch": "webpack --watch --node-env development",
     "package": "webpack --node-env production --devtool hidden-source-map",
+    "analyze": "cross-env ANALYZE_BUNDLE=true webpack --node-env production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src",
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@types/deindent": "^0.1.3",
     "@types/mocha": "^10.0.8",
     "@types/node": "20.x",
     "@types/tmp": "^0.2.6",
@@ -396,16 +1155,14 @@
     "tsc-watch": "^6.2.0",
     "typescript": "^5.6.2",
     "webpack": "^5.95.0",
+    "webpack-bundle-analyzer": "^4.10.2",
     "webpack-cli": "^5.1.4",
     "webpack-merge": "^6.0.1"
   },
   "dependencies": {
-    "@hediet/node-reload": "^0.8.0",
-    "@hediet/std": "^0.6.0",
-    "@types/deindent": "^0.1.3",
     "deindent": "^0.1.0",
+    "globify-gitignore": "^1.0.3",
     "ignore": "^6.0.2",
-    "minimatch": "^10.0.1",
     "parse-diff": "^0.11.1",
     "tmp": "^0.2.3"
   }

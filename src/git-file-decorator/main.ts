@@ -1,7 +1,15 @@
 import * as vscode from "vscode";
 import * as child_process from "child_process";
 import * as path from "path";
-import { file } from "tmp";
+import { createOutputChannel } from "../extension";
+
+/**
+ * Prints the given content on the output channel.
+ *
+ * @param content The content to be printed.
+ * @param reveal Whether the output channel should be revealed.
+ */
+export let printGitFileDecoratorOutput: (content: string, reveal?: boolean) => void;
 
 export class GitFileDecorator implements vscode.FileDecorationProvider {
   private readonly _onDidChangeFileDecorations: vscode.EventEmitter<vscode.Uri | vscode.Uri[]> =
@@ -25,61 +33,65 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
   readonly onDidChangeFileDecorations: vscode.Event<vscode.Uri | vscode.Uri[]> = this._onDidChangeFileDecorations.event;
 
   constructor() {
-    // Listen for file changes to dynamically update decorations
-    // vscode.workspace.onDidChangeTextDocument((event) => {
-    //   console.log(`[vstoys] File changed: ${event.document.uri.fsPath}`);
-    //   this.refreshCache();
-    //   this.refresh(event.document.uri);
-    // });
-
-    vscode.workspace.onDidSaveTextDocument((document) => {
-      console.log(`[vstoys] File saved: ${document.uri.fsPath}`);
+    // Lazy mans lazy loading
+    setTimeout(() => {
+      this.updateConfig();
       this.refreshCache();
-      this.refresh(document.uri);
-    });
 
-    vscode.workspace.onDidDeleteFiles((event) => {
-      this.refreshCache();
-      event.files.forEach((file) => {
-        console.log(`[vstoys] File deleted: ${file.fsPath}`);
-        this.refresh(file);
+      // Listen for file changes to dynamically update decorations
+      // vscode.workspace.onDidChangeTextDocument((event) => {
+      //   console.log(`[vstoys] File changed: ${event.document.uri.fsPath}`);
+      //   this.refreshCache();
+      //   this.refresh(event.document.uri);
+      // });
+
+      vscode.workspace.onDidSaveTextDocument((document) => {
+        console.log(`[vstoys] File saved: ${document.uri.fsPath}`);
+        this.refreshCache();
+        this.refresh(document.uri);
       });
-    });
 
-    vscode.workspace.onDidCreateFiles((event) => {
-      this.refreshCache();
-      event.files.forEach((file) => {
-        console.log(`[vstoys] File created: ${file.fsPath}`);
-        this.refresh(file);
+      vscode.workspace.onDidDeleteFiles((event) => {
+        this.refreshCache();
+        event.files.forEach((file) => {
+          console.log(`[vstoys] File deleted: ${file.fsPath}`);
+          this.refresh(file);
+        });
       });
-    });
 
-    vscode.workspace.onDidRenameFiles((event) => {
-      this.refreshCache();
-      event.files.forEach((file) => {
-        console.log(`[vstoys] File renamed: ${file.oldUri.fsPath} to ${file.newUri.fsPath}`);
-        this.refresh(file.newUri);
+      vscode.workspace.onDidCreateFiles((event) => {
+        this.refreshCache();
+        event.files.forEach((file) => {
+          console.log(`[vstoys] File created: ${file.fsPath}`);
+          this.refresh(file);
+        });
       });
-    });
 
-    vscode.workspace.onDidChangeWorkspaceFolders(() => {
-      console.log(`[vstoys] Workspace folders changed.`);
-      this.refreshCache();
-      this.refresh();
-    });
+      vscode.workspace.onDidRenameFiles((event) => {
+        this.refreshCache();
+        event.files.forEach((file) => {
+          console.log(`[vstoys] File renamed: ${file.oldUri.fsPath} to ${file.newUri.fsPath}`);
+          this.refresh(file.newUri);
+        });
+      });
 
-    vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration("vstoys.git.fileDecorator")) {
-        console.log(`[vstoys] File decorator configuration changed.`);
-        this.updateConfig();
+      vscode.workspace.onDidChangeWorkspaceFolders(() => {
+        console.log(`[vstoys] Workspace folders changed.`);
         this.refreshCache();
         this.refresh();
-      }
-    });
+      });
 
-    this.updateConfig();
-    this.refreshCache();
-    this.schedulePeriodicRefresh();
+      vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration("vstoys.git.fileDecorator")) {
+          console.log(`[vstoys] File decorator configuration changed.`);
+          this.updateConfig();
+          this.refreshCache();
+          this.refresh();
+        }
+      });
+
+      this.schedulePeriodicRefresh();
+    }, 100);
   }
 
   private updateConfig(): void {
@@ -103,7 +115,9 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
     const minInterval = Math.max(currentInterval, 1000); // Ensure minimum interval of 1 second
 
     if (this.additionalDelay > 0) {
-      console.log(`[vstoys] Scheduling periodic refresh every ${minInterval} ms (base: ${this.refreshInterval} + delay: ${this.additionalDelay})`);
+      console.log(
+        `[vstoys] Scheduling periodic refresh every ${minInterval} ms (base: ${this.refreshInterval} + delay: ${this.additionalDelay})`
+      );
     }
     // else {
     //   console.log(`[vstoys] Scheduling periodic refresh every ${minInterval} ms`);
@@ -159,7 +173,8 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
 
       // Cache Git diff
       this.gitDiffCache = child_process
-        .execSync(`git diff ${this.targetBranch} --name-only`, { cwd })
+        // TODO: Make sure the branch name is clean to avoid command injection
+        .execSync(`git diff ${this.targetBranch.replace(/[^/a-zA-Z0-9._-]/g, "")} --name-only`, { cwd })
         .toString()
         .split("\n")
         .map((line) => line.trim());
@@ -188,7 +203,9 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
       return undefined;
     }
     if (this.gitDiffCache.length === 0 && this.gitStatusCache.length === 0) {
-      console.log(`[vstoys] No Git cache available, skipping decoration for ${uri.fsPath}, Are you in a Git repository and have git installed?`);
+      console.log(
+        `[vstoys] No Git cache available, skipping decoration for ${uri.fsPath}, Are you in a Git repository and have git installed?`
+      );
       return undefined;
     }
 
@@ -247,9 +264,10 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
   }
 }
 
-
 export function activateFileDecorator(name: string, context: vscode.ExtensionContext) {
   console.log(`${name} extension activated.`);
+
+  printGitFileDecoratorOutput = createOutputChannel("Git File Decorator");
 
   const decorator = new GitFileDecorator();
   context.subscriptions.push(vscode.window.registerFileDecorationProvider(decorator));

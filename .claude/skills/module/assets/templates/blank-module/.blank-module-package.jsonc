@@ -1,0 +1,31 @@
+{
+  "contributes": {
+    "commands": [
+      // Define commands this module provides
+      // {
+      //   "command": "vstoys.module.action",
+      //   "category": "VsToys",
+      //   "title": "Module: Do Something"
+      // }
+    ],
+    "keybindings": [
+      // Define keybindings that trigger commands
+      // {
+      //   "command": "vstoys.module.action",
+      //   "key": "ctrl+shift+x",
+      //   "when": "editorTextFocus && vstoys.module.active"
+      // }
+    ],
+    "configuration": {
+      "properties": {
+        // Define settings users can configure
+        // "vstoys.module.enabled": {
+        //   "type": "boolean",
+        //   "default": true,
+        //   "description": "Enable this module",
+        //   "order": 1000
+        // }
+      }
+    }
+  }
+}

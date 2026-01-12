@@ -13,6 +13,7 @@ The Motions module brings vim-style text object operations to VSCode, allowing u
 - Braces: `{` `}`
 - Angle brackets: `<` `>`
 - Quotes: `"` `'` `` ` ``
+- **Automatic**: `i` `a` - Finds closest text object of any type
 
 ### Operations
 
@@ -29,6 +30,17 @@ All operations support count prefixes:
 
 - `2di(` - Delete inside 2nd outer parentheses
 - `3ya"` - Yank around 3rd outer quotes
+- `2dii` - Delete inside 2nd closest text object (automatic)
+
+### Automatic Text Object Selection
+
+The `i` and `a` characters work as "automatic" text objects that find the closest text object of any type:
+
+- `dii` - Delete inside closest text object (quotes, brackets, etc.)
+- `2yaa` - Yank around 2nd closest text object
+- `vii` - Select inside closest text object
+
+Example: In `("hello")` with cursor on `h`, `dii` deletes `hello` (closest), `2dii` deletes `("hello")` (second closest).
 
 ### Usage Modes
 
@@ -48,8 +60,21 @@ All operations support count prefixes:
 - `main.ts` - Module activation, command registration, configuration
 - `motionOperations.ts` - Core motion execution logic
 - `motionInput.ts` - Input capture classes (MotionInput, InteractiveMotionInput)
-- `textObjects.ts` - Text object detection algorithms
+- `textObjects.ts` - Text object detection algorithms (improved bracket finding logic)
 - `.motions-package.jsonc` - VS Code commands and settings configuration
+
+### Text Object Detection Improvements
+
+**Fixed Bracket Nesting Issues**: The bracket finding algorithm was completely rewritten to use the same proximity-based logic as quotes, fixing issues where nested brackets would select the wrong scope.
+
+**Automatic Text Object Detection**: New `findAnyTextObject` function finds all text objects around the cursor and sorts them by proximity, enabling automatic text object selection with `i` and `a` characters.
+
+**Key Algorithm Changes**:
+
+- Single-pass collection of opening/closing delimiters
+- Proximity-based pairing (closest delimiters to cursor are paired first)
+- Distance-based sorting for automatic selection
+- Consistent behavior across all text object types
 
 ### Key Features
 
@@ -57,6 +82,8 @@ All operations support count prefixes:
 - **Live config updates** - Settings changes apply immediately
 - **Visual feedback** - Yank operations highlight affected text
 - **Multi-cursor support** - Works with multiple selections
+- **Reliable bracket detection** - Fixed nesting issues with improved proximity-based algorithm
+- **Automatic text object selection** - Smart detection of closest text objects with `i`/`a`
 
 ## Future Enhancements
 

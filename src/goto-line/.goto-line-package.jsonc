@@ -30,27 +30,55 @@
         },
         "vstoys.goto-line.downCharacter": {
           "type": "string",
-          "default": "j",
+          "default": "j", // J being down is crazy to me, but lets lean to learning people neovim bindings.
           "description": "Character prefix for moving down in relative goto (e.g., 'j5' to go down 5 lines)",
           "order": 3002
+        },
+        "vstoys.goto-line.defaultLineNumberMode": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "on", "off", "interval", "relative"],
+          "enumDescriptions": [
+            "Detect line number mode at extension startup and restore to that mode (requires restart to detect changes)",
+            "Always restore to absolute line numbers",
+            "Always restore to no line numbers (relative numbers still show during goto-line operations)",
+            "Always restore to interval mode (line numbers every 10 lines)",
+            "Always restore to relative line numbers"
+          ],
+          "description": "Line number mode to restore after relative goto operations. 'auto' detects your current setting at startup. Changing this or your editor.lineNumbers setting requires reloading the window.",
+          "order": 3003
         },
         "vstoys.goto-line.highlightingEnabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable line highlighting preview when using goto commands",
-          "order": 3003
+          "order": 3004
         },
         "vstoys.goto-line.selectColor": {
           "type": "string",
           "default": "editor.wordHighlightBackground",
           "description": "Color for highlighting lines during selection operations (theme color ID or hex color)",
-          "order": 3004
+          "order": 3005
         },
         "vstoys.goto-line.deleteColor": {
           "type": "string",
-          "default": "inputValidation.errorBackground",
+          // "default": "inputValidation.errorBackground",
+          "default": "editorMarkerNavigationError.headerBackground",
           "description": "Color for highlighting lines during delete operations (theme color ID or hex color)",
-          "order": 3005
+          "order": 3006
+        },
+        "vstoys.goto-line.copyColor": {
+          "type": "string",
+          "default": "editor.findRangeHighlightBackground",
+          "description": "Color for highlighting lines during copy operations (theme color ID or hex color)",
+          "order": 3007
+        },
+        "vstoys.goto-line.cutColor": {
+          "type": "string",
+          // "default": "editor.findMatchHighlightBackground",
+          "default": "editorMarkerNavigationWarning.headerBackground",
+          "description": "Color for highlighting lines during cut (args: 'delete' and 'copy' operations create cut) (theme color ID or hex color)",
+          "order": 3008
         }
       }
     },

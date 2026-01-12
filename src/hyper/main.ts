@@ -17,6 +17,10 @@ export function activateHyper(name: string, context: vscode.ExtensionContext) {
   printHyperOutput = createOutputChannel(name);
   printHyperOutput(`${name} activating`);
 
+  // Initialize the count context to 0
+  vscode.commands.executeCommand("setContext", "hyper.count", 0);
+  printHyperOutput("Initialized hyper.count context to 0");
+
   startConfigListeners(context);
 
   // Register the deactivateAll command

@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { createOutputChannel } from "../extension";
+import { pickColorType } from "../helpers/pickColorType";
 
 const ConfigSpace = "vstoys.copy-highlight";
 
@@ -68,17 +69,6 @@ export function activateCopyHighlight(name: string, context: vscode.ExtensionCon
   );
 
   printCopyHighlightOutput(`${name} activated`, false);
-}
-
-/**
- * @param inputColor Takes a theme ID (like `editor.background`) or color string (like `#ffffff`) and returns vscode.ThemeColor or unchanged color string
- */
-function pickColorType(inputColor: string): vscode.ThemeColor | string {
-  if (/[a-z]+\.[a-z]+/i.test(inputColor)) {
-    return new vscode.ThemeColor(inputColor);
-  } else {
-    return inputColor;
-  }
 }
 
 function getSelections(editor: vscode.TextEditor): readonly vscode.Selection[] | vscode.Range[] {
