@@ -72,9 +72,6 @@ export function activateFromTill(name: string, context: vscode.ExtensionContext)
     deactivateAllHyperIfNeeded(args);
     controller.tillBackwardSelect();
   });
-    deactivateAllHyperIfNeeded(args);
-    controller.accept();
-  });
 
   output(`${name} activated`);
 }
