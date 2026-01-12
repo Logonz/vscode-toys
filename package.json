@@ -1129,7 +1129,7 @@
     "tcompile": "tsc -p ./",
     "twatch": "tsc-watch -p ./",
     "watch": "webpack --watch --node-env development",
-    "package": "webpack --node-env production --devtool hidden-source-map",
+    "package": "webpack --config webpack.config.mjs --node-env production --devtool hidden-source-map",
     "analyze": "cross-env ANALYZE_BUNDLE=true webpack --node-env production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
