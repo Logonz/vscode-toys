@@ -35,7 +35,7 @@ jobs:
       - name: Package extension
         id: package
         run: |
-          vsce package -o vstoys-${{ steps.package-version.outputs.version }}.vsix
+          vsce package --allow-star-activation -o vstoys-${{ steps.package-version.outputs.version }}.vsix
           echo "vsix_path=vstoys-${{ steps.package-version.outputs.version }}.vsix" >> $GITHUB_OUTPUT
 
       - name: Publish release
