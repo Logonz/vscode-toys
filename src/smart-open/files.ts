@@ -109,24 +109,42 @@ export async function GetAllFilesInWorkspace(filterString: string = ""): Promise
 
     // console.log("VS Code search.exclude settings:", searchExcludeCache);
     // console.log("VS Code files.exclude settings:", filesExcludeCache);
+    try {
+      const createExcludeStart = performance.now();
+      const mergedExcludePattern = await createExcludeGlobPattern(folderPath);
+      const createExcludeEnd = performance.now();
+      console.log(`  createExcludeGlobPattern: ${(createExcludeEnd - createExcludeStart).toFixed(2)}ms`);
 
-    const createExcludeStart = performance.now();
-    const mergedExcludePattern = await createExcludeGlobPattern(folderPath);
-    const createExcludeEnd = performance.now();
-    console.log(`  createExcludeGlobPattern: ${(createExcludeEnd - createExcludeStart).toFixed(2)}ms`);
+      const findStart = performance.now();
+      const files = await vscode.workspace.findFiles(pattern, mergedExcludePattern, 2000);
+      const findEnd = performance.now();
+      console.log(`  File finding: ${(findEnd - findStart).toFixed(2)}ms (found ${files.length} files)`);
 
-    const findStart = performance.now();
-    const files = await vscode.workspace.findFiles(pattern, mergedExcludePattern, 2000);
-    const findEnd = performance.now();
-    console.log(`  File finding: ${(findEnd - findStart).toFixed(2)}ms (found ${files.length} files)`);
+      // Only apply filtering if filterString has content and is not a glob pattern
+      const filteredFiles =
+        filterString.length > 0 && !/[*?]/.test(filterString)
+          ? files.filter((f) => f.fsPath.toLowerCase().includes(filterString.toLowerCase()))
+          : files;
 
-    // Only apply filtering if filterString has content and is not a glob pattern
-    const filteredFiles =
-      filterString.length > 0 && !/[*?]/.test(filterString)
-        ? files.filter((f) => f.fsPath.toLowerCase().includes(filterString.toLowerCase()))
-        : files;
+      allFiles.push(...filteredFiles);
+    } catch (error: any) {
+      console.log(`  Error processing workspace folder "${workspaceFolder.name}": ${error.message}`);
 
-    allFiles.push(...filteredFiles);
+      // Keep the exclude glob SMALL (big obvious folders only)
+      const minimalExclude = "{**/.git/**,**/node_modules/**,**/.svn/**,**/.hg/**}";
+      const findStart = performance.now();
+      const files = await vscode.workspace.findFiles(pattern, minimalExclude, 20000);
+      const findEnd = performance.now();
+      console.log(`  File finding: ${(findEnd - findStart).toFixed(2)}ms (found ${files.length} files)`);
+
+      // Only apply filtering if filterString has content and is not a glob pattern
+      const filteredFiles =
+        filterString.length > 0 && !/[*?]/.test(filterString)
+          ? files.filter((f) => f.fsPath.toLowerCase().includes(filterString.toLowerCase()))
+          : files;
+
+      allFiles.push(...filteredFiles);
+    }
 
     const folderEnd = performance.now();
     console.log(`Workspace folder "${workspaceFolder.name}" total: ${(folderEnd - folderStart).toFixed(2)}ms`);
