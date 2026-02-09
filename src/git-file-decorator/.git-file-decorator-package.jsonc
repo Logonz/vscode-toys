@@ -33,12 +33,18 @@
           "description": "Interval in milliseconds for refreshing file decorations (minimum 1000ms)",
           "order": 5003
         },
+        "vstoys.git.fileDecorator.autoDetectDefaultBranch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect the default remote branch (refs/remotes/origin/HEAD) for Git diff comparisons",
+          "order": 5004
+        },
         "vstoys.git.fileDecorator.targetBranch": {
           "type": "string",
           "default": "main",
           "description": "Target branch for Git diff comparisons",
           "ignoreSync": true,
-          "order": 5004
+          "order": 5005
         }
       }
     }
