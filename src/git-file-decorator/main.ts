@@ -26,7 +26,9 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
   // Configuration
   private enabled: boolean = true;
   private refreshInterval: number = 5000;
-  private targetBranch: string = "main";
+  private targetBranchSetting: string = "main";
+  private effectiveTargetBranch: string = "main";
+  private autoDetectDefaultBranch: boolean = true;
   private enableColor: boolean = true;
   private enableBadge: boolean = true;
 
@@ -98,9 +100,28 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
     const config = vscode.workspace.getConfiguration("vstoys.git.fileDecorator");
     this.enabled = config.get("enabled", true);
     this.refreshInterval = config.get("refreshInterval", 5000);
-    this.targetBranch = config.get("targetBranch", "main");
+    this.targetBranchSetting = config.get("targetBranch", "main");
+    this.autoDetectDefaultBranch = config.get("autoDetectDefaultBranch", true);
     this.enableColor = config.get("enableColor", true);
     this.enableBadge = config.get("enableBadge", true);
+  }
+
+  private detectDefaultBranch(cwd: string): string | undefined {
+    try {
+      const output = child_process.execSync("git symbolic-ref refs/remotes/origin/HEAD", { cwd }).toString().trim();
+      if (!output) {
+        return undefined;
+      }
+      const prefix = "refs/remotes/origin/";
+      if (output.startsWith(prefix)) {
+        return output.slice(prefix.length);
+      }
+      const match = output.match(/refs\/remotes\/origin\/(.+)/);
+      return match?.[1];
+    } catch (error) {
+      console.log(`[vstoys] Could not auto-detect default branch, using '${this.targetBranchSetting}'.`);
+      return undefined;
+    }
   }
 
   private isEnabled(): boolean {
@@ -148,21 +169,8 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
 
       const cwd = workspaceFolder.uri.fsPath;
 
-      // Detect default branch if set to main or master
-      if (this.targetBranch === "main" || this.targetBranch === "master") {
-        try {
-          const branchOutput = child_process.execSync("git branch --list main master", { cwd }).toString();
-          if (branchOutput.includes("main")) {
-            this.targetBranch = "main";
-          } else if (branchOutput.includes("master")) {
-            this.targetBranch = "master";
-          }
-        } catch (e) {
-          // Fails if not in a git repo or git is not installed.
-          // We can ignore the error and use the default branch from the config.
-          console.log(`[vstoys] Could not detect default branch, using '${this.targetBranch}'.`);
-        }
-      }
+      const detectedBranch = this.autoDetectDefaultBranch ? this.detectDefaultBranch(cwd) : undefined;
+      this.effectiveTargetBranch = detectedBranch ?? this.targetBranchSetting;
 
       // Cache Git status
       this.gitStatusCache = child_process
@@ -174,7 +182,10 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
       // Cache Git diff
       this.gitDiffCache = child_process
         // TODO: Make sure the branch name is clean to avoid command injection
-        .execSync(`git diff ${this.targetBranch.replace(/[^/a-zA-Z0-9._-]/g, "")} --name-only`, { cwd })
+        .execSync(
+          `git diff ${this.effectiveTargetBranch.replace(/[^/a-zA-Z0-9._-]/g, "")} --name-only`,
+          { cwd }
+        )
         .toString()
         .split("\n")
         .map((line) => line.trim());
@@ -231,7 +242,7 @@ export class GitFileDecorator implements vscode.FileDecorationProvider {
         return {
           color: this.enableColor ? new vscode.ThemeColor("button.foreground") : undefined,
           badge: this.enableBadge ? "C" : undefined,
-          tooltip: `Changed (differs from ${this.targetBranch})`,
+          tooltip: `Changed (differs from ${this.effectiveTargetBranch})`,
         };
       }
     } catch (error) {
