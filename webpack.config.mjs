@@ -45,6 +45,7 @@ function mergePackageJSON() {
   packageJson.contributes.views = {};
   packageJson.contributes.menus = {};
   packageJson.contributes.viewsContainers = {};
+  packageJson.contributes.colors = [];
 
   // Get all files called "inject-package.json" under the src folder
   const injectFiles = sync("src/**/.*-package.jsonc");

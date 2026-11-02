@@ -7,6 +7,18 @@
         "title": "File Decorator: Refresh Decorations - (VsToys)"
       }
     ],
+    "colors": [
+      {
+        "id": "vstoys.gitFileDecorator.changedForeground",
+        "description": "Color of files the current branch changed since it split off the target branch (Git File Decorator).",
+        "defaults": {
+          "dark": "#FFFFFF",
+          "light": "#000000",
+          "highContrast": "#FFFFFF",
+          "highContrastLight": "#000000"
+        }
+      }
+    ],
     "configuration": {
       "properties": {
         "vstoys.git.fileDecorator.enabled": {
@@ -24,25 +36,19 @@
         "vstoys.git.fileDecorator.enableColor": {
           "type": "boolean",
           "default": true,
-          "description": "Enable color for file decorations",
+          "description": "Color decorated files with the vstoys.gitFileDecorator.changedForeground theme color (customizable via workbench.colorCustomizations).",
           "order": 5002
-        },
-        "vstoys.git.fileDecorator.refreshInterval": {
-          "type": "number",
-          "default": 5000,
-          "description": "Interval in milliseconds for refreshing file decorations (minimum 1000ms)",
-          "order": 5003
         },
         "vstoys.git.fileDecorator.autoDetectDefaultBranch": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically detect the default remote branch (refs/remotes/origin/HEAD) for Git diff comparisons",
+          "description": "Compare against the remote's default branch (refs/remotes/origin/HEAD, e.g. origin/main). Falls back to Target Branch when the repository has none.",
           "order": 5004
         },
         "vstoys.git.fileDecorator.targetBranch": {
           "type": "string",
           "default": "main",
-          "description": "Target branch for Git diff comparisons",
+          "description": "Branch to compare against when auto-detect is off or finds nothing. Files the current branch changed since it split off this branch get decorated. Any git ref works, e.g. main or origin/develop.",
           "ignoreSync": true,
           "order": 5005
         }

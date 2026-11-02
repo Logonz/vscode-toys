@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
-import * as child_process from "child_process";
-import * as path from "path";
 import { createOutputChannel } from "../extension";
+import { GitFileDecorator, SETTINGS_SECTION } from "./decorator";
+import type { GitExtension } from "./git";
 
 /**
  * Prints the given content on the output channel.
@@ -11,275 +11,54 @@ import { createOutputChannel } from "../extension";
  */
 export let printGitFileDecoratorOutput: (content: string, reveal?: boolean) => void;
 
-export class GitFileDecorator implements vscode.FileDecorationProvider {
-  private readonly _onDidChangeFileDecorations: vscode.EventEmitter<vscode.Uri | vscode.Uri[]> =
-    new vscode.EventEmitter<vscode.Uri | vscode.Uri[]>();
-  private gitStatusCache: string[] = [];
-  private gitDiffCache: string[] = [];
-  private refreshTimeout: NodeJS.Timeout | undefined;
-  private additionalDelay: number = 0;
-
-  // Constants
-  private readonly MAX_BACKOFF_DELAY: number = 120000; // 2 minutes maximum delay
-  private readonly DELAY_INCREMENT: number = 10000; // 10 seconds added per failure
-
-  // Configuration
-  private enabled: boolean = true;
-  private refreshInterval: number = 5000;
-  private targetBranchSetting: string = "main";
-  private effectiveTargetBranch: string = "main";
-  private autoDetectDefaultBranch: boolean = true;
-  private enableColor: boolean = true;
-  private enableBadge: boolean = true;
-
-  readonly onDidChangeFileDecorations: vscode.Event<vscode.Uri | vscode.Uri[]> = this._onDidChangeFileDecorations.event;
-
-  constructor() {
-    // Lazy mans lazy loading
-    setTimeout(() => {
-      this.updateConfig();
-      this.refreshCache();
-
-      // Listen for file changes to dynamically update decorations
-      // vscode.workspace.onDidChangeTextDocument((event) => {
-      //   console.log(`[vstoys] File changed: ${event.document.uri.fsPath}`);
-      //   this.refreshCache();
-      //   this.refresh(event.document.uri);
-      // });
-
-      vscode.workspace.onDidSaveTextDocument((document) => {
-        console.log(`[vstoys] File saved: ${document.uri.fsPath}`);
-        this.refreshCache();
-        this.refresh(document.uri);
-      });
-
-      vscode.workspace.onDidDeleteFiles((event) => {
-        this.refreshCache();
-        event.files.forEach((file) => {
-          console.log(`[vstoys] File deleted: ${file.fsPath}`);
-          this.refresh(file);
-        });
-      });
-
-      vscode.workspace.onDidCreateFiles((event) => {
-        this.refreshCache();
-        event.files.forEach((file) => {
-          console.log(`[vstoys] File created: ${file.fsPath}`);
-          this.refresh(file);
-        });
-      });
-
-      vscode.workspace.onDidRenameFiles((event) => {
-        this.refreshCache();
-        event.files.forEach((file) => {
-          console.log(`[vstoys] File renamed: ${file.oldUri.fsPath} to ${file.newUri.fsPath}`);
-          this.refresh(file.newUri);
-        });
-      });
-
-      vscode.workspace.onDidChangeWorkspaceFolders(() => {
-        console.log(`[vstoys] Workspace folders changed.`);
-        this.refreshCache();
-        this.refresh();
-      });
-
-      vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration("vstoys.git.fileDecorator")) {
-          console.log(`[vstoys] File decorator configuration changed.`);
-          this.updateConfig();
-          this.refreshCache();
-          this.refresh();
-        }
-      });
-
-      this.schedulePeriodicRefresh();
-    }, 100);
-  }
-
-  private updateConfig(): void {
-    const config = vscode.workspace.getConfiguration("vstoys.git.fileDecorator");
-    this.enabled = config.get("enabled", true);
-    this.refreshInterval = config.get("refreshInterval", 5000);
-    this.targetBranchSetting = config.get("targetBranch", "main");
-    this.autoDetectDefaultBranch = config.get("autoDetectDefaultBranch", true);
-    this.enableColor = config.get("enableColor", true);
-    this.enableBadge = config.get("enableBadge", true);
-  }
-
-  private detectDefaultBranch(cwd: string): string | undefined {
-    try {
-      const output = child_process.execSync("git symbolic-ref refs/remotes/origin/HEAD", { cwd }).toString().trim();
-      if (!output) {
-        return undefined;
-      }
-      const prefix = "refs/remotes/origin/";
-      if (output.startsWith(prefix)) {
-        return output.slice(prefix.length);
-      }
-      const match = output.match(/refs\/remotes\/origin\/(.+)/);
-      return match?.[1];
-    } catch (error) {
-      console.log(`[vstoys] Could not auto-detect default branch, using '${this.targetBranchSetting}'.`);
-      return undefined;
-    }
-  }
-
-  private isEnabled(): boolean {
-    return this.enabled;
-  }
-
-  private schedulePeriodicRefresh() {
-    if (this.refreshTimeout) {
-      clearTimeout(this.refreshTimeout);
-    }
-    const currentInterval = this.refreshInterval + this.additionalDelay;
-    const minInterval = Math.max(currentInterval, 1000); // Ensure minimum interval of 1 second
-
-    if (this.additionalDelay > 0) {
-      console.log(
-        `[vstoys] Scheduling periodic refresh every ${minInterval} ms (base: ${this.refreshInterval} + delay: ${this.additionalDelay})`
-      );
-    }
-    // else {
-    //   console.log(`[vstoys] Scheduling periodic refresh every ${minInterval} ms`);
-    // }
-
-    this.refreshTimeout = setTimeout(() => {
-      if (this.isEnabled()) {
-        this.refreshCache();
-        this.refresh();
-      }
-      this.schedulePeriodicRefresh();
-    }, minInterval);
-  }
-
-  private refreshCache(): void {
-    if (!this.isEnabled()) {
-      console.log("[vstoys] File decorator is disabled. Not refreshing cache.");
-      this.gitStatusCache = [];
-      this.gitDiffCache = [];
-      return;
-    }
-    try {
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (!workspaceFolder) {
-        console.log(`[vstoys] No workspace folder found.`);
-        return;
-      }
-
-      const cwd = workspaceFolder.uri.fsPath;
-
-      const detectedBranch = this.autoDetectDefaultBranch ? this.detectDefaultBranch(cwd) : undefined;
-      this.effectiveTargetBranch = detectedBranch ?? this.targetBranchSetting;
-
-      // Cache Git status
-      this.gitStatusCache = child_process
-        .execSync(`git status --porcelain`, { cwd })
-        .toString()
-        .split("\n")
-        .map((line) => line.trim());
-
-      // Cache Git diff
-      this.gitDiffCache = child_process
-        // TODO: Make sure the branch name is clean to avoid command injection
-        .execSync(
-          `git diff ${this.effectiveTargetBranch.replace(/[^/a-zA-Z0-9._-]/g, "")} --name-only`,
-          { cwd }
-        )
-        .toString()
-        .split("\n")
-        .map((line) => line.trim());
-
-      console.log(`[vstoys] Git cache refreshed.`);
-
-      // Reset delay on successful refresh
-      this.additionalDelay = 0;
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("not found")) {
-        console.error(`[vstoys] Git is not installed or not found in PATH.`);
-      } else {
-        console.error(`[vstoys] Error refreshing Git cache:`, error);
-      }
-
-      // Increase delay by increment on failure, cap at maximum delay
-      this.additionalDelay = Math.min(this.additionalDelay + this.DELAY_INCREMENT, this.MAX_BACKOFF_DELAY);
-      if (this.additionalDelay > 0) {
-        console.log(`[vstoys] Git cache refresh failed, increasing delay to ${this.additionalDelay / 1000} seconds.`);
-      }
-    }
-  }
-
-  provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
-    if (!this.isEnabled()) {
-      return undefined;
-    }
-    if (this.gitDiffCache.length === 0 && this.gitStatusCache.length === 0) {
-      console.log(
-        `[vstoys] No Git cache available, skipping decoration for ${uri.fsPath}, Are you in a Git repository and have git installed?`
-      );
-      return undefined;
-    }
-
-    const filePath = uri.fsPath;
-
-    try {
-      const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
-      if (!workspaceFolder) {
-        console.log(`[vstoys] File ${filePath} is not in a workspace folder.`);
-        return undefined;
-      }
-
-      // Use path.relative for correct platform handling, then normalize to forward slashes
-      const relativeFilePath = path.relative(workspaceFolder.uri.fsPath, filePath).replace(/\\/g, "/");
-      // console.log(`[vstoys] Checking decoration for file: ${relativeFilePath}`, filePath);
-
-      // Use cached data to determine decoration
-      if (
-        this.gitDiffCache.includes(relativeFilePath) &&
-        !this.gitStatusCache.some((statusLine) => statusLine.endsWith(relativeFilePath))
-      ) {
-        // console.log(`[vstoys] File ${filePath} differs from ${this.targetBranch} and has no unstaged changes, applying decoration.`);
-        return {
-          color: this.enableColor ? new vscode.ThemeColor("button.foreground") : undefined,
-          badge: this.enableBadge ? "C" : undefined,
-          tooltip: `Changed (differs from ${this.effectiveTargetBranch})`,
-        };
-      }
-    } catch (error) {
-      console.error(`[vstoys] Error checking Git status for ${filePath}:`, error);
-    }
-
-    // console.log(`[vstoys] No decoration applied for file: ${filePath}`);
-    return undefined;
-  }
-
-  refresh(uri?: vscode.Uri): void {
-    // console.log(`[vstoys] Refreshing decorations.`);
-    if (uri) {
-      this._onDidChangeFileDecorations.fire(uri);
-    } else {
-      const workspaceFolders = vscode.workspace.workspaceFolders;
-      if (workspaceFolders) {
-        const allFilesPromises = workspaceFolders.map((folder) => {
-          return vscode.workspace.findFiles(new vscode.RelativePattern(folder, "**/*"));
-        });
-
-        Promise.all(allFilesPromises).then((results) => {
-          const allFiles = results.flat();
-          this._onDidChangeFileDecorations.fire(allFiles);
-        });
-      } else {
-        this._onDidChangeFileDecorations.fire([]);
-      }
-    }
-  }
-}
-
+/**
+ * Runs the decorator while both the built-in Git extension and `vstoys.git.fileDecorator.enabled` are on,
+ * starting and stopping it as either changes.
+ */
 export function activateFileDecorator(name: string, context: vscode.ExtensionContext) {
   console.log(`${name} extension activated.`);
-
   printGitFileDecoratorOutput = createOutputChannel("Git File Decorator");
 
-  const decorator = new GitFileDecorator();
-  context.subscriptions.push(vscode.window.registerFileDecorationProvider(decorator));
+  let decorator: GitFileDecorator | undefined;
+  context.subscriptions.push(
+    { dispose: () => decorator?.dispose() },
+    vscode.commands.registerCommand("vstoys.git.fileDecorator.refresh", async () => {
+      if (decorator) {
+        await decorator.refreshAll();
+      } else {
+        printGitFileDecoratorOutput("Not running: it is disabled in settings, or the built-in Git extension is.", true);
+      }
+    })
+  );
+
+  const gitExtension = vscode.extensions.getExtension<GitExtension>("vscode.git");
+  if (!gitExtension) {
+    printGitFileDecoratorOutput("The built-in Git extension is missing, so file decorations are off.");
+    return;
+  }
+
+  gitExtension.activate().then(
+    (git) => {
+      const startOrStop = () => {
+        const shouldRun = git.enabled && vscode.workspace.getConfiguration(SETTINGS_SECTION).get("enabled", true);
+        if (shouldRun && !decorator) {
+          decorator = new GitFileDecorator(git.getAPI(1), printGitFileDecoratorOutput);
+        } else if (!shouldRun && decorator) {
+          decorator.dispose();
+          decorator = undefined;
+        }
+      };
+      context.subscriptions.push(
+        // The Git extension fires this before its API is ready (getAPI still throws), so react a microtask later.
+        git.onDidChangeEnablement(() => queueMicrotask(startOrStop)),
+        vscode.workspace.onDidChangeConfiguration((event) => {
+          if (event.affectsConfiguration(`${SETTINGS_SECTION}.enabled`)) {
+            startOrStop();
+          }
+        })
+      );
+      startOrStop();
+    },
+    (error) => printGitFileDecoratorOutput(`Could not activate the built-in Git extension: ${error}`)
+  );
 }
