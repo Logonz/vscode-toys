@@ -1,223 +1,163 @@
+/**
+ * fzy's match scoring (https://github.com/jhawthorn/fzy), with scores scaled by 1000.
+ *
+ * A matched character earns a bonus when it starts a path segment, a word or a camelCase hump,
+ * consecutive matches earn the most, and every skipped character costs a little.
+ */
 
+const SCORE_GAP_LEADING = -5;
+const SCORE_GAP_TRAILING = -5;
+const SCORE_GAP_INNER = -10;
+const SCORE_MATCH_CONSECUTIVE = 1000;
+const SCORE_MATCH_SLASH = 900;
+const SCORE_MATCH_WORD = 800;
+const SCORE_MATCH_CAPITAL = 700;
+const SCORE_MATCH_DOT = 600;
 
-// const SCORE_GAP_LEADING = -0.005;
-// const SCORE_GAP_TRAILING = -0.005;
-// const SCORE_GAP_INNER = -0.01;
-// const SCORE_MATCH_CONSECUTIVE = 1.0;
-// const SCORE_MATCH_SLASH = 0.9;
-// const SCORE_MATCH_WORD = 0.8;
-// const SCORE_MATCH_CAPITAL = 0.7;
-// const SCORE_MATCH_DOT = 0.6;
-// const SCORE_MAX = Number.POSITIVE_INFINITY;
-// const SCORE_MIN = Number.NEGATIVE_INFINITY;
-// const MATCH_MAX_LENGTH = 1024;
-
-// export const SCALE_FACTOR = 1000;
-
-// const SCORE_GAP_LEADING = -5; // -0.005 * 1000
-// const SCORE_GAP_TRAILING = -5; // -0.005 * 1000
-// const SCORE_GAP_INNER = -10; // -0.01 * 1000
-// const SCORE_MATCH_CONSECUTIVE = 1000; // 1.0 * 1000
-// const SCORE_MATCH_SLASH = 900; // 0.9 * 1000
-// const SCORE_MATCH_WORD = 800; // 0.8 * 1000
-// const SCORE_MATCH_CAPITAL = 700; // 0.7 * 1000
-// const SCORE_MATCH_DOT = 600; // 0.6 * 1000
-// const SCORE_MAX = Number.POSITIVE_INFINITY;
-// // export const SCORE_MAX = 10000000000000;
-// // export const SCORE_MAX = Number.MAX_SAFE_INTEGER;
-// const SCORE_MIN = Number.NEGATIVE_INFINITY;
-// // export const SCORE_MIN = -10000000000000;
-// // export const SCORE_MIN = Number.MIN_SAFE_INTEGER;
-// const MATCH_MAX_LENGTH = 1024;
-
-export const SCALE_FACTOR = 1000;
-
-// Penalty for each non-matching character before the first match
-const SCORE_GAP_LEADING = -5; // -0.005 * 1000
-// Penalty for each non-matching character after the last match
-const SCORE_GAP_TRAILING = -5; // -0.005 * 1000
-// Penalty for each non-matching character between matches
-const SCORE_GAP_INNER = -10; // -0.01 * 1000
-
-// Bonus when characters match consecutively (e.g., "ab" in "abc")
-const SCORE_MATCH_CONSECUTIVE = 1000; // 1.0 * 1000
-// Bonus when character matches right after a path separator "/"
-const SCORE_MATCH_SLASH = 900; // 0.9 * 1000
-// Bonus when character matches after word boundary (-, _, space)
-const SCORE_MATCH_WORD = 800; // 0.8 * 1000
-// Bonus when character matches at camelCase boundary (lowercase->uppercase)
-const SCORE_MATCH_CAPITAL = 700; // 0.7 * 1000
-// Bonus when character matches right after a dot "."
-const SCORE_MATCH_DOT = 600; // 0.6 * 1000
-
-// Maximum and minimum possible scores
-const SCORE_MAX = Number.POSITIVE_INFINITY;
-const SCORE_MIN = Number.NEGATIVE_INFINITY;
+/** Longer haystacks are not scored (as in fzy); they still match, with quality 0. */
 const MATCH_MAX_LENGTH = 1024;
-const pathSep = "/";
 
-function hasMatch(needle: string, haystack: string): boolean {
-  needle = needle.toLowerCase();
-  haystack = haystack.toLowerCase();
+const SLASH = 47; // "/"
+const DASH = 45; // "-"
+const UNDERSCORE = 95; // "_"
+const SPACE = 32; // " "
+const DOT = 46; // "."
 
-  let j = 0;
+// Scoring is synchronous and runs for every candidate file, so the rows are allocated once and reused.
+const bonus = new Float64Array(MATCH_MAX_LENGTH);
+let previousRowD = new Float64Array(MATCH_MAX_LENGTH);
+let previousRowM = new Float64Array(MATCH_MAX_LENGTH);
+let currentRowD = new Float64Array(MATCH_MAX_LENGTH);
+let currentRowM = new Float64Array(MATCH_MAX_LENGTH);
+
+/** Whether every character of `needle` appears in `haystack`, in order. */
+export function hasMatch(needle: string, haystack: string): boolean {
+  let from = 0;
   for (let i = 0; i < needle.length; i++) {
-    j = haystack.indexOf(needle.charAt(i), j);
-    if (j === -1) {
+    const found = haystack.indexOf(needle[i], from);
+    if (found === -1) {
       return false;
-    } else {
-      j += 1;
     }
+    from = found + 1;
   }
-
   return true;
 }
 
-function isLower(c: string): boolean {
-  return /[a-z]/.test(c);
+/**
+ * How well `needle` matches, from 0 (barely) to 1 (an exact match, or every character consecutive from the
+ * start of a path segment). Call only after `hasMatch(needle, comparable)` succeeded.
+ *
+ * @param comparable The haystack as compared with `needle`: lowercased for a case-insensitive match.
+ * @param original The haystack with its original casing, which decides where camelCase humps are.
+ */
+export function matchQuality(needle: string, comparable: string, original: string): number {
+  const n = needle.length;
+  const m = comparable.length;
+  if (n === 0 || m > MATCH_MAX_LENGTH) {
+    return 0;
+  }
+  const bestPossible = SCORE_MATCH_SLASH + (n - 1) * SCORE_MATCH_CONSECUTIVE;
+  const raw = n === 1 ? singleCharScore(needle.charCodeAt(0), comparable, original) : score(needle, comparable, original);
+  return Math.min(1, Math.max(0, raw / bestPossible));
 }
 
-function isUpper(c: string): boolean {
-  return /[A-Z]/.test(c);
+/**
+ * The highest `matchQuality()` a needle of length `n` could reach in a haystack of length `m`, in O(1):
+ * no character earns more than a consecutive match and every unmatched character costs at least 5.
+ * Lets ranking skip aligning files that could not reach the results anyway.
+ */
+export function matchQualityCeiling(n: number, m: number): number {
+  if (n === 0 || m > MATCH_MAX_LENGTH) {
+    return 0;
+  }
+  const bestPossible = SCORE_MATCH_SLASH + (n - 1) * SCORE_MATCH_CONSECUTIVE;
+  const cheapestGap = Math.max(SCORE_GAP_LEADING, SCORE_GAP_TRAILING, SCORE_GAP_INNER);
+  return Math.max(0, (bestPossible + (m - n) * cheapestGap) / bestPossible);
 }
 
-function precomputeBonus(haystack: string): number[] {
-  const matchBonus: number[] = [];
-
-  let lastChar = pathSep;
-  for (let i = 0; i < haystack.length; i++) {
-    const thisChar = haystack.charAt(i);
-    if (lastChar === pathSep) {
-      matchBonus[i] = SCORE_MATCH_SLASH;
-    } else if (lastChar === '-' || lastChar === '_' || lastChar === ' ') {
-      matchBonus[i] = SCORE_MATCH_WORD;
-    } else if (lastChar === '.') {
-      matchBonus[i] = SCORE_MATCH_DOT;
-    } else if (isLower(lastChar) && isUpper(thisChar)) {
-      matchBonus[i] = SCORE_MATCH_CAPITAL;
-    } else {
-      matchBonus[i] = 0;
+/**
+ * `score()` for a one-character needle, without the matrix: the characters before a match are leading gaps
+ * and those after it trailing gaps, so each match position's score is known directly. The first keystroke
+ * matches almost every file, which makes this the most frequent case.
+ */
+function singleCharScore(needleChar: number, comparable: string, original: string): number {
+  const m = comparable.length;
+  let best = -Infinity;
+  let lastChar = SLASH;
+  for (let j = 0; j < m; j++) {
+    const thisChar = original.charCodeAt(j);
+    if (comparable.charCodeAt(j) === needleChar) {
+      const matchScore = bonusFor(lastChar, thisChar) + j * SCORE_GAP_LEADING + (m - 1 - j) * SCORE_GAP_TRAILING;
+      best = Math.max(best, matchScore);
     }
-
     lastChar = thisChar;
   }
-
-  return matchBonus;
+  return best;
 }
 
-function compute(needle: string, haystack: string, D: number[][], M: number[][]): void {
-  const matchBonus = precomputeBonus(haystack);
+function score(needle: string, comparable: string, original: string): number {
   const n = needle.length;
-  const m = haystack.length;
-  const lowerNeedle = needle.toLowerCase();
-  const lowerHaystack = haystack.toLowerCase();
-
-  const haystackChars = lowerHaystack.split('');
+  const m = comparable.length;
+  precomputeBonus(original);
 
   for (let i = 0; i < n; i++) {
-    D[i] = [];
-    M[i] = [];
-
-    let prevScore = SCORE_MIN;
+    const needleChar = needle.charCodeAt(i);
     const gapScore = i === n - 1 ? SCORE_GAP_TRAILING : SCORE_GAP_INNER;
-    const needleChar = lowerNeedle.charAt(i);
+    let bestEndingHere = -Infinity;
 
     for (let j = 0; j < m; j++) {
-      if (needleChar === haystackChars[j]) {
-        let score = SCORE_MIN;
+      if (comparable.charCodeAt(j) === needleChar) {
+        let matchScore = -Infinity;
         if (i === 0) {
-          score = (j * SCORE_GAP_LEADING) + matchBonus[j];
+          matchScore = j * SCORE_GAP_LEADING + bonus[j];
         } else if (j > 0) {
-          const a = M[i - 1][j - 1] + matchBonus[j];
-          const b = D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE;
-          score = Math.max(a, b);
+          matchScore = Math.max(
+            previousRowM[j - 1] + bonus[j],
+            previousRowD[j - 1] + SCORE_MATCH_CONSECUTIVE
+          );
         }
-        D[i][j] = score;
-        prevScore = Math.max(score, prevScore + gapScore);
-        M[i][j] = prevScore;
+        currentRowD[j] = matchScore;
+        bestEndingHere = Math.max(matchScore, bestEndingHere + gapScore);
       } else {
-        D[i][j] = SCORE_MIN;
-        prevScore = prevScore + gapScore;
-        M[i][j] = prevScore;
+        currentRowD[j] = -Infinity;
+        bestEndingHere = bestEndingHere + gapScore;
       }
+      currentRowM[j] = bestEndingHere;
     }
+
+    [previousRowD, currentRowD] = [currentRowD, previousRowD];
+    [previousRowM, currentRowM] = [currentRowM, previousRowM];
+  }
+  return previousRowM[m - 1];
+}
+
+function precomputeBonus(haystack: string): void {
+  let lastChar = SLASH;
+  for (let j = 0; j < haystack.length; j++) {
+    const thisChar = haystack.charCodeAt(j);
+    bonus[j] = bonusFor(lastChar, thisChar);
+    lastChar = thisChar;
   }
 }
 
-function score(needle: string, haystack: string): number {
-  const n = needle.length;
-  const m = haystack.length;
-
-  if (n === 0 || m === 0 || m > MATCH_MAX_LENGTH || n > MATCH_MAX_LENGTH) {
-    // console.log("Returning SCORE_MIN");
-    // return SCORE_MIN;
-    return 0;
-  } else if (n === m) {
-    // console.log("Returning SCORE_MAX");
-    // return SCORE_MAX;
-    return 0;
-  } else {
-    const D: number[][] = [];
-    const M: number[][] = [];
-    compute(needle, haystack, D, M);
-    return M[n - 1][m - 1];
+/** The bonus for matching `thisChar` when it follows `lastChar` (a "/" before the first character). */
+function bonusFor(lastChar: number, thisChar: number): number {
+  if (lastChar === SLASH) {
+    return SCORE_MATCH_SLASH;
+  } else if (lastChar === DASH || lastChar === UNDERSCORE || lastChar === SPACE) {
+    return SCORE_MATCH_WORD;
+  } else if (lastChar === DOT) {
+    return SCORE_MATCH_DOT;
+  } else if (isLowerAscii(lastChar) && isUpperAscii(thisChar)) {
+    return SCORE_MATCH_CAPITAL;
   }
+  return 0;
 }
 
-function positions(needle: string, haystack: string): number[] {
-  const n = needle.length;
-  const m = haystack.length;
-
-  if (n === 0 || m === 0 || m > MATCH_MAX_LENGTH || n > MATCH_MAX_LENGTH) {
-    return [];
-  } else if (n === m) {
-    const consecutive: number[] = [];
-    for (let i = 0; i < n; i++) {
-      consecutive[i] = i;
-    }
-    return consecutive;
-  }
-
-  const D: number[][] = [];
-  const M: number[][] = [];
-  compute(needle, haystack, D, M);
-
-  const positions: number[] = [];
-  let matchRequired = false;
-  let j = m - 1;
-  for (let i = n - 1; i >= 0; i--) {
-    while (j >= 0) {
-      if (D[i][j] !== SCORE_MIN && (matchRequired || D[i][j] === M[i][j])) {
-        matchRequired = (i > 0) && (j > 0) && (M[i][j] === D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE);
-        positions[i] = j;
-        j = j - 1;
-        break;
-      } else {
-        j = j - 1;
-      }
-    }
-  }
-
-  return positions;
+function isLowerAscii(code: number): boolean {
+  return code >= 97 && code <= 122;
 }
 
-function getScoreMin(): number {
-  return SCORE_MIN;
+function isUpperAscii(code: number): boolean {
+  return code >= 65 && code <= 90;
 }
-
-function getScoreMax(): number {
-  return SCORE_MAX;
-}
-
-function getScoreFloor(): number {
-  return (MATCH_MAX_LENGTH + 1) * SCORE_GAP_INNER;
-}
-
-export {
-  hasMatch,
-  score,
-  positions,
-  getScoreMin,
-  getScoreMax,
-  getScoreFloor,
-};

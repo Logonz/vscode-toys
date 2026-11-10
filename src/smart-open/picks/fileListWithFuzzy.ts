@@ -1,324 +1,27 @@
 import * as vscode from "vscode";
-import { GetIconForFile, batchLoadIcons, getIconCacheStats } from "../icons";
-import { GetAllFilesInWorkspace } from "../files";
-import { GetCustomLabelForFile, IsCustomLabelsEnabled } from "../../helpers/customEditorLabelService";
-import { FileQuickPickItem } from "./interface/IFileQuickPickItem";
-import { UriExt } from "./interface/IUriExt";
+import { IsCustomLabelsEnabled } from "../../helpers/customEditorLabelService";
+import type { CoChangeCache } from "../coChange";
+import { fileUri, locate, type FileIndex, type FileLocation, type IndexedFile } from "../fileIndex";
+import { changedFileKeys } from "../git";
+import type { AccessHistory } from "../history";
+import type { LearnedRanking, ShownResult } from "../learning";
+import { narrowsSearch, parseQuery } from "../query";
+import {
+  baseScore,
+  rank,
+  SIGNALS,
+  signalValues,
+  type RankedFile,
+  type Ranking,
+  type RankingContext,
+  type Weights,
+} from "../ranking";
 import { InlineInput } from "./InlineInput";
-import { DEFAULT_SCORE_CONFIG, GitScorer } from "../scoring";
-import { scoreCalculator } from "../main";
-import { getCursorBlinkingSetting, getCursorCharFromSettings } from "./cursor";
-import path from "path";
 
-// Ugly, but lets us enable and disable this for now.
-let detailsDebug = false;
-export function updateDetailsDebug(value: boolean) {
-  detailsDebug = value;
-}
-
-// Module-level reference to active InlineInput for forwarding QuickPick input
-let activeInlineInput: InlineInput | undefined;
-
-let filesCache: vscode.Uri[] = [];
-
-// Debounce timer for file/icon loading
-let fileLoadDebounceTimer: NodeJS.Timeout | undefined;
-
-if (process.env.NODE_ENV !== "development") {
-  vscode.window.onDidChangeWindowState((event) => {
-    if (!event.focused && activeInlineInput) {
-      activeInlineInput.destroy();
-    }
-  });
-}
-
-// Switch editor or file listener
-vscode.window.onDidChangeActiveTextEditor(async (editor) => {
-  console.log("Active editor changed:", editor?.document.uri);
-  if (DEFAULT_SCORE_CONFIG.enabled.git) {
-    if (editor?.document) {
-      // The active file
-      const fileObject: UriExt = {
-        uri: editor.document.uri,
-        fsPath: editor.document.uri.fsPath,
-        fileName: path.basename(editor.document.uri.fsPath),
-        relativePath: vscode.workspace.asRelativePath(editor.document.uri),
-        customLabel: "",
-      };
-
-      const activeWorkspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
-      const context = { activeEditor: editor, activeWorkspaceFolder };
-      // Re-evaluate the scoring when the active editor changes
-      scoreCalculator.getScorer<GitScorer>("git")?.calculateScore("", fileObject, context);
-    }
-  }
-
-  // Clear existing debounce timer
-  if (fileLoadDebounceTimer) {
-    clearTimeout(fileLoadDebounceTimer);
-  }
-
-  // Debounce file and icon loading
-  fileLoadDebounceTimer = setTimeout(() => {
-    // TODO: Use a real file watcher here instead of doing it each time we change active editor
-    const fileLoadStart = performance.now();
-    GetAllFilesInWorkspace().then((files) => {
-      filesCache = files;
-      const fileLoadEnd = performance.now();
-      console.log(`  File loading: ${(fileLoadEnd - fileLoadStart).toFixed(2)}ms (${filesCache.length} files)`);
-
-      // TODO: Use a real file watcher here instead of doing it each time we change active editor
-      const iconLoadStart = performance.now();
-      batchLoadIcons(filesCache).then(() => {
-        const iconLoadEnd = performance.now();
-        console.log(`  Icon loading: ${(iconLoadEnd - iconLoadStart).toFixed(2)}ms (${filesCache.length} files)`);
-      });
-    });
-  }, 200); // 200ms debounce delay
-});
-
-const picked = vscode.window.createQuickPick<FileQuickPickItem>();
-picked.matchOnDescription = false;
-picked.matchOnDetail = false;
-// picked.enabled = false; // This works and is good, but it disables mouse interactions
-picked.ignoreFocusOut = true;
-const baseTitle = "Smart Open";
-picked.title = baseTitle;
-picked.placeholder = `Select file to open - Custom Labels ${IsCustomLabelsEnabled() ? "ENABLED" : "DISABLED"}`;
-
-picked.onDidChangeValue((value) => {
-  console.log("Input changed:", value);
-
-  // Forward input to active InlineInput if available and value has content
-  if (value.length > 0 && activeInlineInput) {
-    activeInlineInput.handleDirectInput(value);
-  }
-
-  picked.value = "";
-  const activeEditor = vscode.window.activeTextEditor || vscode.window.visibleTextEditors[0];
-  vscode.window.showTextDocument(activeEditor.document);
-});
-
-function includeParts(input: string, lowercaseParts: string[]): boolean {
-  const lowerInput = input.toLowerCase();
-  for (const part of lowercaseParts) {
-    if (!lowerInput.includes(part)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-export async function showFileListWithFuzzy(input: string): Promise<void> {
-  const totalStart = performance.now();
-
-  console.log("=== Performance Profile: showFileListWithFuzzy ===");
-
-  // Get the currently active editor for context-aware scoring
-  const activeEditor = vscode.window.activeTextEditor;
-  // const activeFilePath = activeEditor?.document.uri.fsPath;
-
-  const activeWorkspaceFolder = activeEditor
-    ? vscode.workspace.getWorkspaceFolder(activeEditor.document.uri)
-    : undefined;
-
-  const fileLoadStart = performance.now();
-  // const files = await GetAllFilesInWorkspace();
-  const files: vscode.Uri[] = filesCache.length > 0 ? filesCache : await GetAllFilesInWorkspace();
-  const fileLoadEnd = performance.now();
-  console.log(`1. File loading: ${(fileLoadEnd - fileLoadStart).toFixed(2)}ms (${files.length} files)`);
-
-  // Batch load icons for all files
-  const iconLoadStart = performance.now();
-  await batchLoadIcons(files);
-  const iconLoadEnd = performance.now();
-  console.log(`2. Icon loading: ${(iconLoadEnd - iconLoadStart).toFixed(2)}ms (${files.length} files)`);
-  console.log(`   Icon: Average per file: ${((iconLoadEnd - iconLoadStart) / files.length).toFixed(2)}ms`);
-
-  // Custom label processing using cached configuration
-  let filterMatchFiles: UriExt[] = [];
-
-  // Profiling variables
-  const totalProcessingStart = performance.now();
-  let totalLabelProcessingTime = 0;
-  let totalFilterProcessingTime = 0;
-
-  // Use cached configuration instead of reading from workspace every time
-  files.forEach((file) => {
-    // Filter the files by the input, we want to filter by custom labels.
-    const labelProcessStart = performance.now();
-    const customLabel = GetCustomLabelForFile(file);
-    const labelProcessEnd = performance.now();
-    totalLabelProcessingTime += labelProcessEnd - labelProcessStart;
-
-    const relativePath = vscode.workspace.asRelativePath(file);
-
-    // Quick check if the file should even be included.
-    const filterProcessingStart = performance.now();
-
-    let matches = false;
-    if (input) {
-      const parts = input.toLowerCase().split(/\s+/);
-      if (customLabel) {
-        matches = includeParts(customLabel, parts);
-        // If custom label doesn't match, try relative path
-        if (!matches) {
-          matches = includeParts(relativePath, parts);
-        }
-        // If it doesn't have a custom label search by relativePath
-      } else {
-        matches = includeParts(relativePath, parts);
-      }
-      // ? Profiling
-      const filterProcessingEnd = performance.now();
-      totalFilterProcessingTime += filterProcessingEnd - filterProcessingStart;
-
-      if (!matches) {
-        // ?-Profiling
-        return; // Skip files that don't match the input
-      }
-    }
-
-    const fileObject: UriExt = {
-      uri: file,
-      fsPath: file.fsPath,
-      fileName: path.basename(file.fsPath),
-      relativePath: relativePath,
-      customLabel: customLabel,
-    };
-    filterMatchFiles.push(fileObject);
-  });
-
-  const totalProcessingEnd = performance.now();
-  console.log(
-    `3. UriExt Creation: ${(totalProcessingEnd - totalProcessingStart).toFixed(2)}ms (${filterMatchFiles.length} files)`
-  );
-  console.log(`   CustomLabel: ${totalLabelProcessingTime.toFixed(2)}ms`);
-  console.log(`   Filter: ${totalFilterProcessingTime.toFixed(2)}ms`);
-
-  const items: FileQuickPickItem[] = [];
-
-  const context = activeEditor ? { activeEditor, activeWorkspaceFolder } : undefined;
-
-  const fileProcessingStart = performance.now();
-  for (let i = 0; i < filterMatchFiles.length; i++) {
-    const fileInfo = filterMatchFiles[i];
-
-    // Do not include the current file in the suggestions
-    // if (activeFilePath && fileInfo.fsPath === activeFilePath) {
-    //   continue;
-    // }
-
-    // Get the precached icons
-    const icon = await GetIconForFile(fileInfo.uri);
-
-    // Calculate comprehensive score using the new scoring system
-    const fileScore = scoreCalculator.calculateScore(input, fileInfo, context);
-
-    // Skip files that are marked as hidden by scorers
-    if (fileScore === null) {
-      continue;
-    }
-
-    const pathWithoutFilename = fileInfo.relativePath.includes("/")
-      ? fileInfo.relativePath.replace(/\/[^\/]+$/, "")
-      : "";
-
-    items.push({
-      label: fileInfo.customLabel || fileInfo.fileName,
-      description: pathWithoutFilename,
-      // detail: pathWithoutFilename, // Let's not add detail, we do add in normalizeScores but that has a toggle
-      file: fileInfo.uri,
-      iconPath: icon ? icon : new vscode.ThemeIcon("file"),
-      score: fileScore, // Store the complete score object
-    });
-
-    if (i % 100 === 0) {
-      console.log(`  - Processed ${i + 1}/${filterMatchFiles.length} files`);
-    }
-  }
-  console.log(`  - Processed ${filterMatchFiles.length}/${filterMatchFiles.length} files`);
-
-  const fileProcessingEnd = performance.now();
-  console.log(
-    `4. File processing: ${(fileProcessingEnd - fileProcessingStart).toFixed(2)}ms (${filterMatchFiles.length} files)`
-  );
-
-  const normalizeStart = performance.now();
-  const normalizedItems = scoreCalculator.normalizeScores(items, detailsDebug);
-  const normalizeEnd = performance.now();
-  console.log(`5. Score normalization: ${(normalizeEnd - normalizeStart).toFixed(2)}ms`);
-
-  const sortingStart = performance.now();
-  // Sort by final score (or fallback to fuzzy score), then by filename length, lastly by path
-  // This is to avoid jumping lines in different cases
-  const sortedItems = normalizedItems.sort((a, b) => {
-    const scoreDiff = b.score.finalScore - a.score.finalScore;
-    if (scoreDiff !== 0) {
-      return scoreDiff;
-    }
-    // If scores are equal, sort by filename length (shorter first)
-    const lengthDiff = a.file.path.length - b.file.path.length;
-    if (lengthDiff !== 0) {
-      return lengthDiff;
-    }
-
-    // Finally, sort alphabetically by path
-    return a.file.path.localeCompare(b.file.path);
-  });
-  const sortingEnd = performance.now();
-  console.log(`6. Sorting: ${(sortingEnd - sortingStart).toFixed(2)}ms`);
-
-  // ! Remove when proposed API is implemented.
-  // https://vscode.dev/github/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.quickPickSortByLabel.d.ts
-  // https://github.com/microsoft/vscode/issues/73904
-  // if((quickPickObject as any).sortByLabel !== false) {
-  // * With the new inlineinput implemementation we don't need this at all.
-  // const maxLength = sortedItems.length.toString().length; // TODO Needed if you are doing the length addition sorting below
-  // for (let i = 0; i < sortedItems.length; i++) {
-  //   // TODO: Look into this more, it almost looks like the \u00A0 (NO-BREAK-SPACE) just "cancels" sorting internally??
-  //   // TODO So we don't have to use multiple spaces, we could use a single non-breaking space
-  //   // TODO https://www.fileformat.info/info/unicode/char/00a0/index.htm
-  //   const item = sortedItems[i];
-  //   const length = i.toString().length;
-
-  //   if (length < maxLength) {
-  //     const diff = maxLength - length;
-  //     // const spaces = "1".repeat(diff);
-  //     const spaces = "\u00A0".repeat(diff);
-  //     // console.log(diff, maxLength, length, `'${spaces}'${item.label}`);
-
-  //     sortedItems[i].label = `${spaces}${item.label}`;
-  //     // sortedItems[i].label = `${spaces}${i} ${item.label}`;
-  //   } else {
-  //     // console.log(0, maxLength, length, `'\u00A0'${item.label}`);
-  //     sortedItems[i].label = `\u00A0${item.label}`;
-  //     // sortedItems[i].label = `${i} ${item.label}`;
-  //   }
-  // }
-
-  const activeEditorForQuickPick = vscode.window.activeTextEditor || vscode.window.visibleTextEditors[0];
-  const quickPickStart = performance.now();
-  picked.items = sortedItems;
-  picked.show();
-  vscode.window.showTextDocument(activeEditorForQuickPick.document);
-  const quickPickEnd = performance.now();
-  console.log(`4. QuickPick display: ${(quickPickEnd - quickPickStart).toFixed(2)}ms`);
-
-  const totalEnd = performance.now();
-  console.log(`=== Total time: ${(totalEnd - totalStart).toFixed(2)}ms ===`);
-
-  const stats = getIconCacheStats();
-  console.log(
-    `Icon cache stats: ${stats.hits} hits, ${stats.extensionHits} ext hits, ${stats.misses} misses, ${stats.quickExits} quick exits`
-  );
-  console.log(`Custom labels enabled: ${IsCustomLabelsEnabled()}, processed ${filterMatchFiles.length} files`);
-}
-
-// Cursor blinking state
-let cursorVisible = true;
-let cursorBlinkTimer: NodeJS.Timeout | undefined;
-const timerInterval = 500; //ms
+/** Nobody scrolls further, and sending fewer items keeps the QuickPick fast in giant repositories. */
+const RESULT_LIMIT = 300;
+const BASE_TITLE = "Smart Open";
+const SEARCHING_CONTEXT = "vstoys.smart-open.searching";
 
 // Default vscode commands for quick pick navigation
 const QUICK_COMMANDS: Record<string, string> = {
@@ -329,225 +32,366 @@ const QUICK_COMMANDS: Record<string, string> = {
   ":": "workbench.action.gotoLine", // If the user types :, go to line
 };
 
+export interface PickerServices {
+  readonly index: FileIndex;
+  readonly history: AccessHistory;
+  readonly learning: LearnedRanking;
+  readonly coChange: CoChangeCache;
+}
+
+interface FileQuickPickItem extends vscode.QuickPickItem {
+  readonly file: IndexedFile;
+}
+
+let services: PickerServices;
+let openPicker: PickerSession | undefined;
+/** True while the first file index is being built for a picker that is about to open. */
+let waitingForIndex = false;
+
+/** Call once on activation, before the first `showQuickPickWithInlineSearch()`. */
+export function initializeSmartOpenPicker(pickerServices: PickerServices): vscode.Disposable[] {
+  services = pickerServices;
+  const disposables: vscode.Disposable[] = [
+    services.index.onDidUpdate(() => openPicker?.refresh()),
+    { dispose: () => openPicker?.end() },
+  ];
+  if (process.env.NODE_ENV !== "development") {
+    disposables.push(
+      vscode.window.onDidChangeWindowState((event) => {
+        if (!event.focused) {
+          openPicker?.end();
+        }
+      })
+    );
+  }
+  return disposables;
+}
+
 export async function showQuickPickWithInlineSearch(): Promise<void> {
+  if (openPicker || waitingForIndex) {
+    return; // Already open, or about to be.
+  }
+  // The first build must finish before there is anything to show; later ones run behind the open picker.
+  if (!services.index.hasBuilt) {
+    waitingForIndex = true;
+    try {
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Window, title: "Smart Open: indexing files" },
+        () => services.index.refreshIfNeeded()
+      );
+    } finally {
+      waitingForIndex = false;
+    }
+  } else {
+    void services.index.refreshIfNeeded();
+  }
+
   const activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
     vscode.window.showErrorMessage("No active editor found");
     return;
   }
+  const picker = new PickerSession(activeEditor);
+  openPicker = picker;
+  try {
+    await picker.start();
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to start inline search: ${error}`);
+    picker.end();
+  }
+}
 
-  // Set context to enable search keybindings
-  await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", true);
+/** Ranking data that stays the same while the picker is open, until the file index or co-change data updates. */
+interface RankingData {
+  readonly files: readonly IndexedFile[];
+  readonly context: RankingContext;
+  readonly weights: Weights;
+  /** `baseScore()` of each file in `files`. */
+  readonly baseScores: Float64Array;
+}
 
-  // Start with empty search to show all files
-  await showFileListWithFuzzy("");
+/** One open picker: its QuickPick, the input capture, the commands bound while it is open, and its ranking. */
+class PickerSession {
+  private readonly quickPick = vscode.window.createQuickPick<FileQuickPickItem>();
+  private readonly disposables: vscode.Disposable[] = [this.quickPick];
+  private input: InlineInput | undefined;
+  private data: RankingData;
+  private ranking: Ranking = { results: [], matches: new Int32Array(0) };
+  /** The input `ranking` is for; undefined until the first search after (re)creating `data`. */
+  private rankedInput: string | undefined;
+  private selectedIndex = 0;
+  private searchPending = false;
+  private ended = false;
 
-  let selectedIndex = 0;
-  const cursorChar = getCursorCharFromSettings();
+  constructor(private readonly editor: vscode.TextEditor) {
+    this.quickPick.matchOnDescription = false;
+    this.quickPick.matchOnDetail = false;
+    // this.quickPick.enabled = false; // This works and is good, but it disables mouse interactions
+    this.quickPick.ignoreFocusOut = true;
+    this.quickPick.title = BASE_TITLE;
+    this.quickPick.placeholder = `Select file to open - Custom Labels ${IsCustomLabelsEnabled() ? "ENABLED" : "DISABLED"}`;
+    this.data = createRankingData(editor);
+  }
 
-  function cancelBlinkingCursor() {
-    if (cursorBlinkTimer) {
-      clearInterval(cursorBlinkTimer);
-      cursorBlinkTimer = undefined;
+  async start(): Promise<void> {
+    // Set context to enable search keybindings
+    await vscode.commands.executeCommand("setContext", SEARCHING_CONTEXT, true);
+    if (this.ended) {
+      return; // Closed while waiting (e.g. the window lost focus); end() already reset the context.
     }
-    cursorVisible = false;
+
+    // Start with empty search to show all files; this shows the QuickPick and gives focus back to the editor.
+    this.search("");
+
+    this.input = new InlineInput({
+      textEditor: this.editor,
+      onInput: (input, char) => this.onInput(input, char),
+      onCancel: () => this.end(),
+    });
+
+    this.disposables.push(
+      this.quickPick.onDidChangeValue((value) => {
+        // Typing reached the QuickPick's own input (e.g. after a click into it): forward it, keep the value
+        // empty so VS Code does not re-sort, and give focus back to the editor where InlineInput listens.
+        if (value.length > 0) {
+          this.input?.handleDirectInput(value);
+        }
+        this.quickPick.value = "";
+        const activeEditor = vscode.window.activeTextEditor || vscode.window.visibleTextEditors[0];
+        if (activeEditor) {
+          vscode.window.showTextDocument(activeEditor.document);
+        }
+      }),
+      vscode.window.onDidChangeActiveTextEditor(() => this.end()),
+      vscode.commands.registerCommand("vstoys.smart-open.navigateUp", () => {
+        if (this.selectedIndex > 0) {
+          this.selectedIndex--;
+          this.updateSelection();
+        }
+      }),
+      vscode.commands.registerCommand("vstoys.smart-open.navigateDown", () => {
+        if (this.selectedIndex < this.quickPick.items.length - 1) {
+          this.selectedIndex++;
+          this.updateSelection();
+        }
+      }),
+      vscode.commands.registerCommand("vstoys.smart-open.selectFile", () => {
+        if (this.searchPending) {
+          this.runSearch(false); // Enter right after typing picks from the results for what was typed.
+        }
+        this.open(this.selectedIndex);
+      }),
+      vscode.commands.registerCommand("vstoys.smart-open.deleteChar", () => {
+        this.input?.deleteLastCharacter();
+        this.scheduleSearch();
+      }),
+      vscode.commands.registerCommand("vstoys.smart-open.paste", async () => {
+        const clipboardText = await vscode.env.clipboard.readText();
+        this.input?.pasteText(clipboardText); // Searches through onInput.
+      }),
+      // A click picks what was shown, so no pending search runs first.
+      this.quickPick.onDidAccept(() => {
+        const item = this.quickPick.selectedItems[0] ?? this.quickPick.items[this.selectedIndex];
+        this.open(this.quickPick.items.indexOf(item));
+      }),
+      this.quickPick.onDidHide(() => this.end())
+    );
+
+    this.updateSelection();
+    this.input.updateStatusBar("Search files...", true);
+  }
+
+  /** Closes the picker and releases everything it bound. Safe to call any number of times, from any path. */
+  end(): void {
+    if (this.ended) {
+      return;
+    }
+    this.ended = true;
+    if (openPicker === this) {
+      openPicker = undefined;
+    }
+    this.disposables.forEach((disposable) => disposable.dispose()); // Disposing the QuickPick hides it.
+    this.input?.destroy(); // Calls onCancel, which returns here and stops at `ended`.
+    void vscode.commands.executeCommand("setContext", SEARCHING_CONTEXT, false);
+  }
+
+  /** Re-ranks after the file index or co-change data changed, keeping the highlighted file if it is still listed. */
+  refresh(): void {
+    if (this.ended) {
+      return;
+    }
+    this.data = createRankingData(this.editor);
+    this.rankedInput = undefined;
+    this.runSearch(true);
+  }
+
+  private onInput(input: string, char: string): void {
+    // If the user types a quick command, execute it
+    if (QUICK_COMMANDS[char] && input === char) {
+      this.end();
+      vscode.commands.executeCommand(QUICK_COMMANDS[char]);
+      return;
+    }
+    this.scheduleSearch();
+  }
+
+  /** Keystrokes that arrive faster than ranking runs share one search of the latest input. */
+  private scheduleSearch(): void {
+    if (!this.searchPending) {
+      this.searchPending = true;
+      setImmediate(() => this.runSearch(false));
+    }
+  }
+
+  /** Ranks the current input and shows it; `keepSelection` keeps the highlighted file if it is still listed. */
+  private runSearch(keepSelection: boolean): void {
+    this.searchPending = false;
+    if (this.ended || !this.input) {
+      return;
+    }
+    const selectedKey = keepSelection ? this.quickPick.items[this.selectedIndex]?.file.key : undefined;
+    this.search(this.input.input);
+    this.selectedIndex = Math.max(0, this.quickPick.items.findIndex((item) => item.file.key === selectedKey));
+    this.updateSelection();
+  }
+
+  private search(input: string): void {
+    // Typing on narrows the previous matches, so only the first keystrokes scan the whole workspace.
+    const candidates =
+      this.rankedInput !== undefined && narrowsSearch(this.rankedInput, input) ? this.ranking.matches : undefined;
+    const { files, baseScores, weights } = this.data;
+    this.ranking = rank(files, baseScores, parseQuery(input), weights, RESULT_LIMIT, candidates);
+    this.rankedInput = input;
+
+    const showDetails = vscode.workspace.getConfiguration("vstoys.smart-open").get("debugDetails", false);
+    this.quickPick.items = this.ranking.results.map((result) => this.toItem(result, showDetails));
+
+    // Showing the QuickPick takes focus, but typing only reaches InlineInput through the editor.
+    const activeEditorForQuickPick = vscode.window.activeTextEditor || vscode.window.visibleTextEditors[0];
+    this.quickPick.show();
+    if (activeEditorForQuickPick) {
+      vscode.window.showTextDocument(activeEditorForQuickPick.document);
+    }
   }
 
   // Update QuickPick selection
-  const updateSelection = () => {
-    if (picked.items.length > 0) {
-      selectedIndex = Math.max(0, Math.min(selectedIndex, picked.items.length - 1));
-      picked.activeItems = [picked.items[selectedIndex]];
+  private updateSelection(): void {
+    const items = this.quickPick.items;
+    const matchCount = this.ranking.matches.length;
+    if (items.length > 0) {
+      this.selectedIndex = Math.max(0, Math.min(this.selectedIndex, items.length - 1));
+      this.quickPick.activeItems = [items[this.selectedIndex]];
 
-      if (activeInlineInput) {
-        const itemCount = picked.items.length;
-        activeInlineInput.updateStatusBar(
-          // `Search: ${activeInlineInput.input} [${selectedIndex + 1}/${itemCount}]`,
-          `${activeInlineInput.input} [${selectedIndex + 1}/${itemCount}]`,
-          true
-        );
-
-        // picked.placeholder = `Search: ${activeInlineInput.input} [${selectedIndex + 1}/${itemCount}]`;
-        picked.title = `${baseTitle} - [${selectedIndex + 1}/${itemCount}]`;
-        const cursor = cursorVisible ? cursorChar : "";
-        picked.placeholder = `${activeInlineInput.input}${cursor}`;
+      if (this.input) {
+        this.input.updateStatusBar(`${this.input.input} [${this.selectedIndex + 1}/${matchCount}]`, true);
+        this.quickPick.title = `${BASE_TITLE} - [${this.selectedIndex + 1}/${matchCount}]`;
+        this.quickPick.placeholder = this.input.input;
       }
-    } else {
+    } else if (this.input) {
       // No found items
-      if (activeInlineInput) {
-        // picked.placeholder = `Search: ${activeInlineInput.input} [0/0]`;
-        picked.title = `${baseTitle} - [0/0]`;
-        const cursor = cursorVisible ? cursorChar : "";
-        picked.placeholder = `${activeInlineInput.input}${cursor}`;
-      } else {
-        picked.title = `${baseTitle}`;
-        picked.placeholder = `Search: (No InlineInput)`;
-      }
+      this.quickPick.title = `${BASE_TITLE} - [0/0]`;
+      this.quickPick.placeholder = this.input.input;
     }
-  };
-
-  try {
-    if (getCursorBlinkingSetting()) {
-      // Start cursor blinking timer
-      cursorVisible = true;
-      cursorBlinkTimer = setInterval(() => {
-        cursorVisible = !cursorVisible;
-        updateSelection();
-      }, timerInterval); // Blink every 500ms (1 second cycle)
-    } else {
-      cursorVisible = true; // Always visible if blinking is disabled
-    }
-
-    activeInlineInput = new InlineInput({
-      textEditor: activeEditor,
-      onInput: async (input: string, char: string) => {
-        console.log(`Received input: "${input}", char: "${char}"`);
-
-        // If the user types a quick command, execute it
-        if (QUICK_COMMANDS[char] && input == char) {
-          picked.hide();
-          cancelBlinkingCursor();
-          if (activeInlineInput) {
-            activeInlineInput.destroy();
-          }
-          activeInlineInput = undefined; // Clear the reference
-          vscode.commands.executeCommand(QUICK_COMMANDS[char]);
-          return;
-        }
-
-        // Reset selection when search changes
-        selectedIndex = 0;
-
-        // Update the QuickPick with filtered results
-        await showFileListWithFuzzy(input);
-
-        // Update selection after items change
-        updateSelection();
-      },
-      onCancel: async () => {
-        await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
-        picked.hide();
-        cancelBlinkingCursor();
-        if (activeInlineInput) {
-          activeInlineInput.destroy();
-        }
-        activeInlineInput = undefined; // Clear the reference
-      },
-    });
-
-    const changedEditor = vscode.window.onDidChangeActiveTextEditor((editor) => {
-      picked.hide();
-      console.log("XXXX", editor);
-    });
-
-    // Register arrow key commands
-    const upCommand = vscode.commands.registerCommand("vstoys.smart-open.navigateUp", () => {
-      if (selectedIndex > 0) {
-        selectedIndex--;
-        updateSelection();
-      }
-    });
-
-    const downCommand = vscode.commands.registerCommand("vstoys.smart-open.navigateDown", () => {
-      if (selectedIndex < picked.items.length - 1) {
-        selectedIndex++;
-        updateSelection();
-      }
-    });
-
-    const enterCommand = vscode.commands.registerCommand("vstoys.smart-open.selectFile", async () => {
-      const selectedItem = picked.items[selectedIndex];
-      if (selectedItem) {
-        await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
-        picked.hide();
-        cancelBlinkingCursor();
-        openFile(selectedItem.file);
-        if (activeInlineInput) {
-          activeInlineInput.destroy();
-        }
-        activeInlineInput = undefined; // Clear the reference
-      }
-    });
-
-    const backspaceCommand = vscode.commands.registerCommand("vstoys.smart-open.deleteChar", () => {
-      if (activeInlineInput) {
-        const newInput = activeInlineInput.deleteLastCharacter();
-        // Trigger search with new input
-        showFileListWithFuzzy(newInput).then(() => {
-          selectedIndex = 0;
-          updateSelection();
-        });
-      }
-    });
-
-    const pasteCommand = vscode.commands.registerCommand("vstoys.smart-open.paste", async () => {
-      if (activeInlineInput) {
-        const clipboardText = await vscode.env.clipboard.readText();
-        activeInlineInput.pasteText(clipboardText);
-        // Search will be triggered automatically via onInput callback
-        selectedIndex = 0;
-        updateSelection();
-      }
-    });
-
-    // Handle selection from QuickPick
-    const disposableAccept = picked.onDidAccept(async () => {
-      const selectedItem = picked.selectedItems[0] || picked.items[selectedIndex];
-      if (selectedItem) {
-        await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
-        picked.hide();
-        cancelBlinkingCursor();
-        openFile(selectedItem.file);
-        if (activeInlineInput) {
-          activeInlineInput.destroy();
-        }
-        activeInlineInput = undefined; // Clear the reference
-      }
-    });
-
-    // Handle QuickPick hide
-    const disposableHide = picked.onDidHide(async () => {
-      await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
-
-      // Clear cursor blink timer
-      cancelBlinkingCursor();
-
-      if (activeInlineInput) {
-        activeInlineInput.destroy();
-      }
-      activeInlineInput = undefined; // Clear the reference
-      changedEditor.dispose();
-      upCommand.dispose();
-      downCommand.dispose();
-      enterCommand.dispose();
-      backspaceCommand.dispose();
-      pasteCommand.dispose();
-      disposableAccept.dispose();
-      disposableHide.dispose();
-    });
-
-    // Set initial selection
-    updateSelection();
-
-    // Initialize status bar
-    activeInlineInput.updateStatusBar("Search files...", true);
-  } catch (error) {
-    vscode.window.showErrorMessage(`Failed to start inline search: ${error}`);
-    await vscode.commands.executeCommand("setContext", "vstoys.smart-open.searching", false);
-    if (activeInlineInput) {
-      activeInlineInput.destroy();
-    }
-    activeInlineInput = undefined; // Clear the reference
   }
+
+  /** Opens the result at `position` and teaches the ranking from the pick. */
+  private open(position: number): void {
+    const item = this.quickPick.items[position];
+    if (!item) {
+      return;
+    }
+    this.learnFromPick(position);
+    this.end();
+    openFile(fileUri(item.file));
+  }
+
+  private learnFromPick(position: number): void {
+    const { files, context } = this.data;
+    const shown = this.ranking.results.slice(0, position + 2).map((result): ShownResult => {
+      const file = files[result.fileIndex];
+      return { signals: signalValues(file, result.text, context), isCurrentFile: file.key === context.current?.key };
+    });
+    services.learning.learnFromPick(shown, position);
+  }
+
+  private toItem(result: RankedFile, showDetails: boolean): FileQuickPickItem {
+    const file = this.data.files[result.fileIndex];
+    return {
+      label: file.label,
+      description: file.directory,
+      detail: showDetails ? this.scoreBreakdown(result) : undefined,
+      // VS Code draws the active file icon theme's icon from these, also over remote connections.
+      resourceUri: fileUri(file),
+      iconPath: vscode.ThemeIcon.File,
+      file,
+    };
+  }
+
+  /** e.g. "251.3 = pathMatch 138.2 + nameMatch 99.1 + frecency 14.0" */
+  private scoreBreakdown(result: RankedFile): string {
+    const { files, context, weights } = this.data;
+    const values = signalValues(files[result.fileIndex], result.text, context);
+    const parts = SIGNALS.filter((signal) => values[signal] > 0).map(
+      (signal) => `${signal} ${(values[signal] * weights[signal]).toFixed(1)}`
+    );
+    return `${result.score.toFixed(1)} = ${parts.join(" + ") || "0"}`;
+  }
+}
+
+function createRankingData(editor: vscode.TextEditor): RankingData {
+  const files = services.index.current;
+  const current = locate(editor.document.uri);
+  const history = services.history.scores(current?.key);
+  const context: RankingContext = {
+    current,
+    previousKey: history.previousKey,
+    openTabKeys: openTabKeys(),
+    changedKeys: changedFileKeys(),
+    frecency: history.frecency,
+    recency: history.recency,
+    relationship: history.relationship,
+    coChange: coChangeScores(editor.document.uri, current) ?? new Map(),
+  };
+  const weights = services.learning.weights;
+  const baseScores = new Float64Array(files.length);
+  for (let i = 0; i < files.length; i++) {
+    baseScores[i] = baseScore(files[i], context, weights);
+  }
+  return { files, context, weights, baseScores };
+}
+
+function openTabKeys(): Set<string> {
+  const keys = new Set<string>();
+  for (const tab of vscode.window.tabGroups.all.flatMap((group) => group.tabs)) {
+    const input = tab.input;
+    const uri =
+      input instanceof vscode.TabInputText || input instanceof vscode.TabInputCustom || input instanceof vscode.TabInputNotebook
+        ? input.uri
+        : input instanceof vscode.TabInputTextDiff
+          ? input.modified
+          : undefined;
+    const key = uri && locate(uri)?.key;
+    if (key) {
+      keys.add(key);
+    }
+  }
+  return keys;
+}
+
+/** Undefined while disabled, or until git has finished; the open picker re-ranks once it has. */
+function coChangeScores(uri: vscode.Uri, current: FileLocation | undefined): ReadonlyMap<string, number> | undefined {
+  const folder = current && vscode.workspace.workspaceFolders?.[current.folderIndex];
+  if (!folder || !vscode.workspace.getConfiguration("vstoys.smart-open").get("gitCoChange", false)) {
+    return undefined;
+  }
+  return services.coChange.lookup(uri.fsPath, folder.uri.fsPath, () => openPicker?.refresh());
 }
 
 async function openFile(uri: vscode.Uri): Promise<void> {
   try {
     const doc = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(doc);
-
-    // File opening is already tracked by RecencyScorer via onDidChangeActiveTextEditor
-    // No need to manually record here anymore
+    // The visit is recorded by the history's active-editor listener.
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to open file: ${error}`);
   }

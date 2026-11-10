@@ -1,0 +1,11 @@
+{
+  // Unit tests for modules that do not need a running VS Code (`npm run test:unit`).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "out/unit",
+    "tsBuildInfoFile": "./out/unit/.tsbuildinfo",
+    "sourceMap": false
+  },
+  "include": ["src/test/smart-open/**/*.ts"],
+  "exclude": []
+}

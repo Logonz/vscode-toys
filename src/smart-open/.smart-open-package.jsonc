@@ -52,12 +52,17 @@
         "vstoys.smart-open.debugDetails": {
           "type": "boolean",
           "default": false,
-          "description": "Enable detailed debugging information for the Smart Open module"
+          "description": "Show each result's score breakdown (which signals contributed, and how much) under its name"
         },
         "vstoys.smart-open.maxWorkspaceFiles": {
           "type": "number",
-          "default": 5000,
-          "description": "Maximum number of files to index in the workspace, tip is to use gitignore to exclude files"
+          "default": 200000,
+          "description": "Maximum number of files to index. Files ignored by git, files.exclude or search.exclude are never indexed"
+        },
+        "vstoys.smart-open.gitCoChange": {
+          "type": "boolean",
+          "default": false,
+          "description": "Rank files that were often committed together with the current file higher. Reads up to a year of git history for the current file in the background each time the picker opens on a new file"
         }
       }
     },

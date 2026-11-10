@@ -1,44 +1,45 @@
 import { commands, Disposable, StatusBarAlignment, StatusBarItem, TextEditor, window } from "vscode";
 
 const cancellationChars = new Set(["\n"]);
-// const cancellationChars = new Set(["\n", "o"]);
-export const subscriptions: Disposable[] = [];
 
+/**
+ * Captures typing through the `type` command while the editor keeps focus, so the QuickPick's own input stays
+ * empty and VS Code never re-filters or re-sorts the items. Cancels when the editor's selection changes.
+ */
 export class InlineInput {
   statusBarItem: StatusBarItem;
   input = "";
+  private readonly subscriptions: Disposable[];
+  private destroyed = false;
 
   constructor(
     private readonly props: {
       textEditor: TextEditor;
-      onInput(input: string, char: string): any;
-      onCancel(...args: any[]): any;
+      onInput(input: string, char: string): void;
+      onCancel(): void;
     }
   ) {
-    subscriptions.push(
+    this.subscriptions = [
       commands.registerCommand("type", this._onInput),
-      window.onDidChangeTextEditorSelection(this._onCancel)
-    );
-
+      window.onDidChangeTextEditorSelection(this.destroy),
+    ];
     this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
   }
 
-  public updateStatusBar = (
-    text: string,
-    // numberOfMatches: number,
-    activityIndicatorState: boolean
-  ): void => {
+  public updateStatusBar = (text: string, activityIndicatorState: boolean): void => {
     const indicator = activityIndicatorState ? "⚪" : "🔴";
-    // ┆ ┇ ┣ ┫ ╏ ▎▐ ░ ▒ ▓
     this.statusBarItem.text = `░ ${text} ░ ${indicator}`;
-    // this.statusBarItem.text = `${numberOfMatches} ░ ${text} ░ ${indicator}`;
     this.statusBarItem.show();
   };
 
+  /** Releases the `type` command and calls `onCancel`, once however many paths lead here. */
   public destroy = (): void => {
+    if (this.destroyed) {
+      return;
+    }
+    this.destroyed = true;
     this.statusBarItem.dispose();
-    subscriptions.forEach((subscription) => subscription.dispose());
-    // Run onCancel
+    this.subscriptions.forEach((subscription) => subscription.dispose());
     this.props.onCancel();
   };
 
@@ -68,7 +69,7 @@ export class InlineInput {
     // Check if the new input contains any cancellation characters
     for (const char of newInput) {
       if (cancellationChars.has(char)) {
-        this._onCancel();
+        this.destroy();
         return;
       }
     }
@@ -87,10 +88,5 @@ export class InlineInput {
 
   private readonly _onInput = ({ text }: { text: string }) => {
     this.addInput(text);
-  };
-
-  private readonly _onCancel = (...args: any[]) => {
-    this.destroy();
-    return this.props.onCancel(args);
   };
 }

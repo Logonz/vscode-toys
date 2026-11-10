@@ -110,6 +110,11 @@ export class GitFileDecorator implements vscode.FileDecorationProvider, vscode.D
     return undefined;
   }
 
+  /** Files the branch changed since its target branch, without files that have local changes. */
+  branchChangedFiles(): vscode.Uri[] {
+    return [...this.repositories.values()].flatMap(({ comparison }) => [...(comparison?.decoratedFiles.values() ?? [])]);
+  }
+
   /** Re-renders every decoration now (badge or color settings may have changed), then re-diffs every repository. */
   async refreshAll(): Promise<void> {
     this.changeEmitter.fire(undefined);

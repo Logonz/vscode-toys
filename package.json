@@ -7,7 +7,7 @@
   "icon": "VsCodeToys-icon-512x512.png",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.89.1"
+    "vscode": "^1.108.0"
   },
   "tags": [
     "dot-repeat",
@@ -264,12 +264,17 @@
         "vstoys.smart-open.debugDetails": {
           "type": "boolean",
           "default": false,
-          "description": "Enable detailed debugging information for the Smart Open module"
+          "description": "Show each result's score breakdown (which signals contributed, and how much) under its name"
         },
         "vstoys.smart-open.maxWorkspaceFiles": {
           "type": "number",
-          "default": 5000,
-          "description": "Maximum number of files to index in the workspace, tip is to use gitignore to exclude files"
+          "default": 200000,
+          "description": "Maximum number of files to index. Files ignored by git, files.exclude or search.exclude are never indexed"
+        },
+        "vstoys.smart-open.gitCoChange": {
+          "type": "boolean",
+          "default": false,
+          "description": "Rank files that were often committed together with the current file higher. Reads up to a year of git history for the current file in the background each time the picker opens on a new file"
         },
         "vstoys.registers.enabled": {
           "type": "boolean",
@@ -1146,14 +1151,15 @@
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "test:unit": "tsc -p tsconfig.unit.json && mocha --ui tdd \"out/unit/test/smart-open/**/*.test.js\""
   },
   "devDependencies": {
     "@types/deindent": "^0.1.3",
     "@types/mocha": "^10.0.8",
     "@types/node": "20.x",
     "@types/tmp": "^0.2.6",
-    "@types/vscode": "^1.89.1",
+    "@types/vscode": "^1.108.0",
     "@typescript-eslint/eslint-plugin": "^8.7.0",
     "@typescript-eslint/parser": "^8.7.0",
     "@vscode/test-cli": "^0.0.10",
@@ -1173,7 +1179,6 @@
   },
   "dependencies": {
     "deindent": "^0.1.0",
-    "globify-gitignore": "^1.0.3",
     "ignore": "^6.0.2",
     "parse-diff": "^0.11.1",
     "tmp": "^0.2.3"

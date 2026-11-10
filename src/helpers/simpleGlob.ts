@@ -6,7 +6,12 @@
 /**
  * Convert a glob pattern to a RegExp
  */
-function globToRegExp(pattern: string): RegExp {
+export function globToRegExp(pattern: string): RegExp {
+  return new RegExp("^" + globToSource(pattern) + "$");
+}
+
+/** The unanchored regex source for `pattern`; brace alternatives are converted the same way. */
+function globToSource(pattern: string): string {
   let regexStr = "";
   let i = 0;
 
@@ -83,7 +88,7 @@ function globToRegExp(pattern: string): RegExp {
         if (braceDepth === 0) {
           const braceContent = pattern.slice(i + 1, braceEnd - 1);
           const alternatives = braceContent.split(",");
-          regexStr += "(?:" + alternatives.map((alt) => alt.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")";
+          regexStr += "(?:" + alternatives.map(globToSource).join("|") + ")";
           i = braceEnd;
         } else {
           // No matching }, treat as literal
@@ -112,7 +117,7 @@ function globToRegExp(pattern: string): RegExp {
     }
   }
 
-  return new RegExp("^" + regexStr + "$");
+  return regexStr;
 }
 
 /**

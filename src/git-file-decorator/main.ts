@@ -11,6 +11,13 @@ import type { GitExtension } from "./git";
  */
 export let printGitFileDecoratorOutput: (content: string, reveal?: boolean) => void;
 
+let decorator: GitFileDecorator | undefined;
+
+/** Files the current branch changed (see `GitFileDecorator`); empty while the decorator is not running. */
+export function getBranchChangedFiles(): vscode.Uri[] {
+  return decorator?.branchChangedFiles() ?? [];
+}
+
 /**
  * Runs the decorator while both the built-in Git extension and `vstoys.git.fileDecorator.enabled` are on,
  * starting and stopping it as either changes.
@@ -19,9 +26,13 @@ export function activateFileDecorator(name: string, context: vscode.ExtensionCon
   console.log(`${name} extension activated.`);
   printGitFileDecoratorOutput = createOutputChannel("Git File Decorator");
 
-  let decorator: GitFileDecorator | undefined;
   context.subscriptions.push(
-    { dispose: () => decorator?.dispose() },
+    {
+      dispose: () => {
+        decorator?.dispose();
+        decorator = undefined;
+      },
+    },
     vscode.commands.registerCommand("vstoys.git.fileDecorator.refresh", async () => {
       if (decorator) {
         await decorator.refreshAll();

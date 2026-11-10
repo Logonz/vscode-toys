@@ -1,7 +1,15 @@
 import * as vscode from "vscode";
 import * as path from "path";
 // import { minimatch } from "minimatch"; // Old working implementation, very large when compiled
-import { simpleMatch } from "./simpleGlob";
+import { globToRegExp } from "./simpleGlob";
+
+function compileGlob(pattern: string): RegExp | undefined {
+  try {
+    return globToRegExp(pattern);
+  } catch {
+    return undefined; // Same fallback as simpleMatch: an invalid glob only matches itself.
+  }
+}
 
 // This entire code is based on the CustomEditorLabelService class from the vscode repo:
 // https://github.com/microsoft/vscode/blob/8491f5724fe930cef67c40a2c5c05d2f4d5c2ee5/src/vs/workbench/services/editor/common/customEditorLabelService.ts
@@ -13,6 +21,8 @@ export interface ICustomEditorLabelPatterns {
 
 interface ICustomEditorLabelPattern {
   pattern: string;
+  /** Compiled once; undefined when the pattern is not a valid glob, which then only matches itself literally. */
+  regex: RegExp | undefined;
   template: string;
   isAbsolutePath: boolean;
 }
@@ -29,11 +39,6 @@ export function GetCustomLabelForFile(file: vscode.Uri): string | undefined {
   return undefined;
 }
 
-let maxWorkspaceFiles: number = 5000;
-export function GetMaxWorkspaceFiles(): number {
-  return maxWorkspaceFiles;
-}
-
 // Static cache for custom labels configuration
 let customLabelsEnabledCache: boolean = false;
 let customLabelsPatternsCache: ICustomEditorLabelPatterns | undefined = undefined;
@@ -41,6 +46,11 @@ let customLabelService: CustomEditorLabelService | undefined = undefined;
 
 export function IsCustomLabelsEnabled(): boolean {
   return customLabelsEnabledCache;
+}
+
+/** Whether any file can get a custom label: enabled (VS Code's default) and at least one pattern configured. */
+export function HasCustomLabelPatterns(): boolean {
+  return customLabelsEnabledCache && (customLabelService?.hasPatterns ?? false);
 }
 
 /**
@@ -73,20 +83,15 @@ export function updateCustomLabelConfiguration(): void {
 
   // * Get the custom label patterns
   updateCustomLabelsPatternsCache();
-
-  // * Get the max workspace files
-  const maxFiles: number | undefined = vscode.workspace
-    .getConfiguration("vstoys")
-    .get<number>("smart-open.maxWorkspaceFiles");
-  console.log("Max Files: ", maxFiles);
-  if (maxFiles !== undefined) {
-    maxWorkspaceFiles = maxFiles;
-  }
 }
 
 // ? CustomEditorLabelService - The actual functionality
 export class CustomEditorLabelService {
   private patterns: ICustomEditorLabelPattern[] = [];
+
+  get hasPatterns(): boolean {
+    return this.patterns.length > 0;
+  }
 
   constructor(customLabelsPatterns: ICustomEditorLabelPatterns) {
     this.storeCustomPatterns(customLabelsPatterns);
@@ -99,7 +104,7 @@ export class CustomEditorLabelService {
 
       const isAbsolutePath = path.isAbsolute(pattern);
 
-      this.patterns.push({ pattern, template, isAbsolutePath });
+      this.patterns.push({ pattern, regex: compileGlob(pattern), template, isAbsolutePath });
     }
 
     // Sort patterns by weight
@@ -144,7 +149,7 @@ export class CustomEditorLabelService {
         relevantPath = resource.path;
       }
 
-      if (simpleMatch(relevantPath, pattern.pattern)) {
+      if (pattern.regex ? pattern.regex.test(relevantPath) : relevantPath === pattern.pattern) {
         return this.applyTemplate(pattern.template, resource, relevantPath);
       }
     }
