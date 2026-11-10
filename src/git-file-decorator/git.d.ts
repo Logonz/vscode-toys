@@ -1,5 +1,6 @@
 /**
- * The subset of the built-in Git extension's API (`vscode.git`, `getAPI(1)`) that the file decorator uses.
+ * The subset of the built-in Git extension's API (`vscode.git`, `getAPI(1)`) that vstoys uses
+ * (the file decorator, and `vstoys.openFile` for following renames).
  * Copied from VS Code's extensions/git/src/api/git.d.ts; keep names in sync with that file when adding members.
  */
 import type { Event, Uri } from "vscode";
@@ -17,11 +18,15 @@ export interface API {
   readonly repositories: Repository[];
   readonly onDidOpenRepository: Event<Repository>;
   readonly onDidCloseRepository: Event<Repository>;
+  /** The open repository containing `uri` (matched by path, so the file need not exist), or null. */
+  getRepository(uri: Uri): Repository | null;
 }
 
 export interface Repository {
   readonly rootUri: Uri;
   readonly state: RepositoryState;
+  /** Files that differ between `ref` and the working tree (`git diff --name-status <ref>`), renames included. */
+  diffWith(ref: string): Promise<Change[]>;
 }
 
 export interface RepositoryState {
@@ -38,4 +43,8 @@ export interface RepositoryState {
 export interface Change {
   /** The file's current path (the new path for renames). */
   readonly uri: Uri;
+  /** The file's path before the change (the old path for renames). */
+  readonly originalUri: Uri;
+  /** A value of the Git extension's `Status` enum, e.g. 3 (INDEX_RENAMED) for renames. */
+  readonly status: number;
 }

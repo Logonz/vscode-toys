@@ -46,10 +46,9 @@ export function convertPredefinedVariables(input: string): string {
 
   // ${userHome} - Path of the user's home folder
   result = result.replace(/\$\{userHome\}/g, os.homedir());
-  // ~ - Path to the user's home directory
-  if (result.includes("~")) {
-    const homedir = os.homedir();
-    result = path.join(homedir, result.replace("~", ""));
+  // ~ - Path to the user's home directory, only as the first path segment ("file~1.ts" is just a name)
+  if (result === "~" || result.startsWith("~/") || result.startsWith("~\\")) {
+    result = path.join(os.homedir(), result.slice(1));
   }
 
   // ${workspaceFolder} - Path of the folder opened in VS Code
