@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { GetCustomLabelForFile, HasCustomLabelPatterns } from "../helpers/customEditorLabelService";
 import { createExcludeTest, enabledPatterns } from "./exclude";
-import { fileKey } from "./fileKey";
+import { fileKey, pathInFolder } from "./fileKey";
 import { deletedFileKeys, runGit } from "./git";
 import { parseTrackedFiles, parseUntrackedFiles } from "./gitOutput";
 import { virtualName } from "./query";
@@ -46,7 +46,7 @@ export function locate(uri: vscode.Uri): FileLocation | undefined {
   if (!folder) {
     return undefined;
   }
-  return locateInFolder(folder, path.posix.relative(folder.uri.path, uri.path), isMultiRoot());
+  return locateInFolder(folder, pathInFolder(folder.uri.path, uri.path), isMultiRoot());
 }
 
 function locateInFolder(folder: vscode.WorkspaceFolder, folderRelativePath: string, multiRoot: boolean): FileLocation {
@@ -292,7 +292,7 @@ async function listFolder(folder: vscode.WorkspaceFolder, excludePatterns: strin
   const exclude = flatPatterns.length > 0 ? `{${flatPatterns.join(",")}}` : undefined;
   const uris = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, "**/*"), exclude, limit);
   return {
-    paths: uris.map((uri) => path.posix.relative(folder.uri.path, uri.path)),
+    paths: uris.map((uri) => pathInFolder(folder.uri.path, uri.path)),
     source: `findFiles${gitProblem}`,
   };
 }
